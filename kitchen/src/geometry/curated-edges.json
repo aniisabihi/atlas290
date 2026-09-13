@@ -33,5 +33,12 @@
     "to": "0192",
     "toName": "Nynäshamn",
     "reason": "Destination Gotland's main ferry route is Nynäshamn–Visby, the way people in Sweden actually reach Gotland. The automatic pick was Haninge, which has no ferry terminus to Gotland."
+  },
+  {
+    "from": "0840",
+    "fromName": "Mörbylånga",
+    "to": "0880",
+    "toName": "Kalmar",
+    "reason": "Ölandsbron bridge carries the E22 from Öland (Mörbylånga) to the mainland at Kalmar — the real, primary link. This pair was previously an automatic nearest-centroid edge; it happened to already be the correct one, but curating it explicitly means Öland's mainland link is a documented decision rather than a coincidence of centroid distance."
   }
 ]

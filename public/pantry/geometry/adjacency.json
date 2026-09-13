@@ -1980,10 +1980,5 @@
     ]
   },
   "schemaVersion": 1,
-  "synthetic": [
-    [
-      "0840",
-      "0880"
-    ]
-  ]
+  "synthetic": []
 }
