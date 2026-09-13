@@ -8,7 +8,9 @@ import { parseMetadata, type TableMeta } from '../scb/client'
 import { toRows } from '../scb/jsonstat'
 import {
   buildPopulationSeries,
+  CKM_FROM,
   fetchPopulation,
+  LATEST_YEAR,
   populationSelection,
   quantileBreaks,
   withBreaks,
@@ -384,5 +386,55 @@ describe('breaks', () => {
     const ind = withBreaks(POPULATION, series, 3)
     expect(ind.scale.breaks).toHaveLength(2)
     expect(ind.scale.breaks[0]!).toBeLessThan(ind.scale.breaks[1]!)
+  })
+
+  it('throws, naming the indicator, when every value is null', () => {
+    const nullSeries = buildPopulationSeries(
+      [{ code: '0330', name: { sv: 'Knivsta', en: 'Knivsta' }, county: '03' }],
+      [],
+      [],
+      [2001], // before Knivsta existed: 'did-not-exist' everywhere, so no value is non-null
+    )
+    expect(() => withBreaks(POPULATION, nullSeries)).toThrow(/population/)
+  })
+})
+
+// Review finding 2: CKM_FROM (first year SCB perturbs) and LATEST_YEAR (newest published
+// reference year) used to be the same constant. This pins that the 'perturbed' status split
+// is keyed on CKM_FROM alone, and stays correct even when years extend past CKM_FROM the way
+// they would once LATEST_YEAR is bumped ahead of it by a future data refresh.
+describe('CKM_FROM vs LATEST_YEAR (review finding 2)', () => {
+  function chunkFor(year: number, value: number): FrozenData {
+    return {
+      kind: 'data',
+      table: 'TABFAKE',
+      lang: 'sv',
+      url: '',
+      selection: { Region: ['0380'], Tid: [String(year)] },
+      fetchedAt: '2026-09-13T10:00:00.000Z',
+      response: {
+        id: ['Region', 'Tid'],
+        size: [1, 1],
+        dimension: {
+          Region: { category: { index: ['0380'] } },
+          Tid: { category: { index: [String(year)] } },
+        },
+        value: [value],
+      },
+    }
+  }
+
+  it('a year at or after CKM_FROM is perturbed; an earlier one is not, regardless of how far the requested years extend past CKM_FROM', () => {
+    const uppsala = [{ code: '0380', name: { sv: 'Uppsala', en: 'Uppsala' }, county: '03' }]
+    // Simulates a future refresh where LATEST_YEAR has moved to CKM_FROM + 1 without
+    // CKM_FROM itself changing.
+    const years = [CKM_FROM - 1, CKM_FROM, CKM_FROM + 1]
+    const chunks = years.map((y, i) => chunkFor(y, 100_000 + i))
+    const series = buildPopulationSeries(uppsala, chunks, [], years)
+    const name = (j: number) => OBSERVATION_STATUS[series.status[0]![j]!]
+    expect(name(0)).toBe('present')
+    expect(name(1)).toBe('perturbed')
+    expect(name(2)).toBe('perturbed')
+    expect(LATEST_YEAR).toBeGreaterThanOrEqual(CKM_FROM)
   })
 })

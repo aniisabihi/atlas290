@@ -17,7 +17,27 @@ import { toRows } from '../scb/jsonstat'
 
 export const OLD_TABLE = 'TAB638' // 1968–2024
 export const NEW_TABLE = 'TAB5557' // 2025– with Cell Key Method noise
+
+/**
+ * First year SCB applies Cell Key Method noise and starts publishing from NEW_TABLE instead
+ * of OLD_TABLE. This is a fact about SCB's disclosure control method, not about how much data
+ * has been published — it changes only if SCB changes that method, never on a routine data
+ * refresh. Three things key off it: the old/new table split in fetchPopulation, the
+ * 'perturbed' status predicate in buildPopulationSeries, and the bubble layout's "last
+ * stable, unperturbed year" reference in publish.ts. Do NOT bump this to add a new year's
+ * data — that is LATEST_YEAR's job. Bumping CKM_FROM instead would silently relabel the
+ * current CKM_FROM year as unperturbed (wrong: SCB still perturbs it) and ask OLD_TABLE
+ * (which stops at 2024) for a year it does not have.
+ */
 export const CKM_FROM = 2025
+
+/**
+ * Newest reference year actually published in the pantry. Bumped every data refresh (e.g. to
+ * 2026 once SCB publishes that year) — unlike CKM_FROM, which stays fixed across refreshes.
+ * YEARS and the indicator's coverage.to are derived from this, so adding a year is a one-line
+ * change here rather than a change to the perturbation cutoff.
+ */
+export const LATEST_YEAR = 2025
 
 /**
  * Swedish label SCB uses for the "population count" content code in both tables. The code
@@ -37,7 +57,7 @@ export const POPULATION: Indicator = Indicator.parse({
   unit: 'count',
   priceBasis: 'none',
   scale: { kind: 'sequential', breaks: [] },
-  coverage: { from: 1968, to: CKM_FROM },
+  coverage: { from: 1968, to: LATEST_YEAR },
   caveat: {
     sv: 'Från 2025 innehåller värdena en liten slumpmässig störning från SCB, så summor stämmer inte alltid exakt.',
     en: 'From 2025 the values carry a small random perturbation added by SCB, so sums need not match exactly.',
@@ -228,12 +248,22 @@ export function quantileBreaks(nums: number[], classes: number): number[] {
   return Array.from({ length: classes - 1 }, (_, i) => at((i + 1) / classes))
 }
 
+/**
+ * Unreachable for population today (every municipality reports a value every year), but
+ * Plan 2 adds indicators with genuinely partial coverage. An all-null series would otherwise
+ * fall through quantileBreaks' `?? 0` fallback and publish `classes - 1` zero breaks that
+ * validate cleanly against the schema while producing a meaningless colour scale — so this
+ * must throw, naming the indicator, rather than publish a scale nobody can read.
+ */
 export function withBreaks(indicator: Indicator, series: IndicatorSeries, classes = 7): Indicator {
   const all = series.values.flat().filter((v): v is number => v !== null)
+  if (all.length === 0) {
+    throw new Error(`${indicator.id}: cannot compute colour breaks — every value is null`)
+  }
   return { ...indicator, scale: { ...indicator.scale, breaks: quantileBreaks(all, classes) } }
 }
 
-export const YEARS = Array.from({ length: CKM_FROM - 1968 + 1 }, (_, i) => 1968 + i)
+export const YEARS = Array.from({ length: LATEST_YEAR - 1968 + 1 }, (_, i) => 1968 + i)
 
 export async function fetchPopulation(opts: FreezeOpts = {}): Promise<{
   municipalities: Municipality[]
