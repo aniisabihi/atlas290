@@ -3,12 +3,16 @@ import type { MunicipalityTopology } from '../shared/geometry'
 
 /**
  * Loads the two pantry files the render check needs, straight from the public/pantry
- * directory (served at /pantry by Vite's publicDir). Both are validated against the
- * shared schemas so a malformed pantry fails loudly instead of rendering a broken map.
+ * directory (served at /pantry by Vite's publicDir).
  *
- * Note: the topology has no zod schema (topojson-specification's shape is structural,
- * not a runtime contract the pipeline owns) so it is only checked to be present JSON;
- * shape errors will surface as path-drawing failures rather than a validation error.
+ * The indicator data is validated against the shared `PantryData` zod schema, so a
+ * malformed data file fails loudly instead of rendering a broken map. The topology has
+ * no schema of its own — there is no runtime TopoJSON schema anywhere in this repo, and
+ * writing a full recursive one would be disproportionate for a file our own deterministic
+ * pipeline generates, validates by municipality count, and commits. Instead it gets a
+ * lightweight structural check: this loader only trusts that
+ * `objects.municipalities.geometries` exists and is an array, and fails loudly, by name,
+ * if it does not.
  */
 export async function loadPantry(): Promise<{ data: PantryData; topology: MunicipalityTopology }> {
   const [dataRes, topoRes] = await Promise.all([
@@ -18,8 +22,12 @@ export async function loadPantry(): Promise<{ data: PantryData; topology: Munici
   if (!dataRes.ok || !topoRes.ok) {
     throw new Error('pantry files missing; run yarn kitchen publish')
   }
-  return {
-    data: PantryData.parse(await dataRes.json()),
-    topology: (await topoRes.json()) as MunicipalityTopology,
+  const data = PantryData.parse(await dataRes.json())
+  const topology = (await topoRes.json()) as MunicipalityTopology
+  if (!Array.isArray(topology?.objects?.municipalities?.geometries)) {
+    throw new Error(
+      'public/pantry/geometry/municipalities.topo.json has no objects.municipalities.geometries array; run yarn kitchen publish',
+    )
   }
+  return { data, topology }
 }

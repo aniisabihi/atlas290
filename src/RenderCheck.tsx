@@ -11,10 +11,13 @@ const NO_DATA_COLOUR = '#ddd'
 export function pathsFor(topology: MunicipalityTopology): Array<{ code: string; d: string }> {
   const fc = feature(topology, topology.objects.municipalities)
   const path = geoPath(projection(topology))
-  return fc.features.map((f) => ({
-    code: f.properties!.code,
-    d: path(f as GeoPermissibleObjects) ?? '',
-  }))
+  return fc.features.map((f) => {
+    const code = f.properties?.code
+    if (!code) {
+      throw new Error('municipality feature in the topology is missing its code property')
+    }
+    return { code, d: path(f as GeoPermissibleObjects) ?? '' }
+  })
 }
 
 export function colourFor(indicator: Indicator, value: number | null): string {
@@ -35,8 +38,14 @@ export function RenderCheck({
   topology: MunicipalityTopology
   year: number
 }) {
-  const indicator = data.indicators[0]!
-  const series = data.series.find((s) => s.indicator === indicator.id)!
+  const indicator = data.indicators[0]
+  if (!indicator) {
+    throw new Error('pantry data has no indicators')
+  }
+  const series = data.series.find((s) => s.indicator === indicator.id)
+  if (!series) {
+    throw new Error(`pantry data has no series for indicator "${indicator.id}"`)
+  }
   const yi = series.years.indexOf(year)
   const names = new Map(data.municipalities.map((m) => [m.code, m.name]))
   const values = new Map(
