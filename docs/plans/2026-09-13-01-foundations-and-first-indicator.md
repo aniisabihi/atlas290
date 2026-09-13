@@ -21,7 +21,7 @@
 - Both languages: every human-readable name in the pantry has `sv` and `en`.
 - Public repository, MIT code, CC0 pantry. No secrets exist, so none may appear.
 - Conventional Commits. Never commit on `main` after the initial scaffold: work on branch `feat/plan-01-foundations`, squash-merge at the end.
-- Attribution in commit trailers: `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
+- Attribution in commit trailers: `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>`.
 
 ## File structure
 
@@ -338,7 +338,7 @@ Decisions taken during discovery and design live in the decision table of [docs/
 git add -A
 git commit -m "chore: scaffold toolchain (vite, vitest, tsx, strict ts, lint)
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -614,7 +614,7 @@ Expected: 3 tests PASS.
 git add shared/pantry.ts shared/pantry.test.ts
 git commit -m "feat(shared): pantry schemas, the contract between kitchen and site
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -954,7 +954,7 @@ Expected: 7 tests PASS.
 git add kitchen/src/scb/client.ts kitchen/src/scb/client.test.ts
 git commit -m "feat(kitchen): SCB v2 client with cell chunking and rate limiting
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -1094,7 +1094,7 @@ Expected: 2 tests PASS.
 git add kitchen/src/scb/jsonstat.ts kitchen/src/scb/jsonstat.test.ts kitchen/fixtures/jsonstat-2x3.json
 git commit -m "feat(kitchen): JSON-stat2 parser
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -1305,7 +1305,7 @@ Expected: 2 tests PASS.
 git add kitchen/src/scb/freeze.ts kitchen/src/scb/freeze.test.ts
 git commit -m "feat(kitchen): freeze stage caches SCB responses in the repo
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -1424,7 +1424,7 @@ In `docs/research/README.md`, under "Open verification items", replace the two b
 git add kitchen/spikes/open-questions.ts kitchen/raw docs/research/README.md docs/DESIGN.md docs/kitchen.md
 git commit -m "docs(kitchen): resolve pre-split and CKM aggregation questions with a live spike
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -1585,7 +1585,7 @@ Expected: 3 tests PASS.
 git add kitchen/src/municipalities.ts kitchen/src/municipalities.test.ts
 git commit -m "feat(kitchen): municipality registry with split history
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -1893,7 +1893,7 @@ Expected: `290 58 [ ...6 numbers... ]`. New files appear under `kitchen/raw/TAB6
 git add kitchen/src/indicators kitchen/fixtures kitchen/raw
 git commit -m "feat(kitchen): population indicator 1968–2025 with statuses and fixed breaks
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -2300,7 +2300,7 @@ Expected: all PASS.
 git add kitchen/raw/geometry kitchen/src/geometry
 git commit -m "feat(kitchen): TopoJSON build, keyboard adjacency, Dorling bubble layout
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -2544,7 +2544,7 @@ Running `publish` twice produces byte-identical files. If a pull request shows a
 git add kitchen/src/publish.ts kitchen/src/publish.test.ts kitchen/src/cli.ts kitchen/src/indicators/population.ts public/pantry docs/kitchen.md
 git commit -m "feat(kitchen): deterministic publish stage, CLI and pantry files
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -2710,7 +2710,7 @@ Expected: test PASS, typecheck clean, and at `http://localhost:5173` a blue-shad
 git add src docs/plans/assets
 git commit -m "feat(site): render check draws the pantry map once
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```
 
 ---
