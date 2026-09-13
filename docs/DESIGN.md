@@ -1,6 +1,8 @@
 # Sweden Data Explorer — design
 
-Date: 2026-09-10, revised 2026-09-13 after design review. Status: agreed, not yet implemented.
+Date: 2026-09-10, revised 2026-09-13 after design review. Status: Plan 1 (foundations and the
+first indicator) is implemented and the pantry is committed; the product itself — the map,
+time travel, cartogram morph and facts engine described below — is not yet built.
 Research behind every factual claim: [docs/research/](research/README.md).
 
 ## 1. What we are building
@@ -62,7 +64,7 @@ Each stage is separately runnable and separately testable.
 
 ### Geometry
 
-Municipality and county boundaries come from SCB's own CC0 shapefile: 290 municipalities, roughly 9,700 points, 168 KB, already generalised for thematic maps and already free of sea area. It is reprojected to web coordinates, simplified with shape retention so no municipality can vanish, stripped of the smallest skerries, and quantised into TopoJSON. Sweden's shape is reproduced with a transverse Mercator projection centred on 15 degrees east, which matches the national grid.
+Municipality and county boundaries come from SCB's own CC0 shapefile: 290 municipalities, roughly 9,700 points, 168 KB, already generalised for thematic maps and already free of sea area. The pipeline reprojects it to WGS84, runs mapshaper's `-clean` with an explicit `gap-width=1.5km` to remove digitisation slivers, and quantises the result into TopoJSON at `1e5`. There is no simplification step and no filtering of small islands: SCB's file already arrives generalised for thematic maps, at 9,748 vertices for the whole country (see [boundary-geodata.md](research/reports/boundary-geodata.md)), so there is nothing left worth stripping — adding a simplify or filter-islands pass here would only remove real shape at no size benefit. Sweden's shape is reproduced with a transverse Mercator projection centred on 15 degrees east, which matches the national grid.
 
 Lantmäteriet's authoritative boundaries are the documented upgrade path if we ever need exact geometry or historical boundaries. They are also CC0, but need a free account, arrive at cadastral precision, and include sea out to the territorial limit, so they must be clipped.
 
