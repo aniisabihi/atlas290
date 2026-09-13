@@ -42,6 +42,9 @@ export const CREATED: Record<string, number> = {
   '0330': 2002, // Knivsta, from Uppsala (formal 2003-01-01)
 }
 
+// No consumer yet: Plan 2's break-flagging (docs/DESIGN.md's "parents get a flagged break the
+// year a child split off") is what will read this map. Kept here now, alongside CREATED and
+// existed(), because it is registry data discovered during this task, not code to write twice.
 export const SPLIT_PARENT: Record<string, string> = {
   '0461': '0480',
   '0488': '0480',

@@ -126,6 +126,9 @@ export async function fetchMetadataRaw(
   return request(metadataUrl(tableId, lang), { method: 'GET' }, deps)
 }
 
+// No production caller: the pipeline always uses fetchMetadataRaw + parseMetadata separately
+// (freeze.ts freezes the raw response before parsing it). Kept as the convenience one-call
+// wrapper the two are equivalent to, and exercised directly by client.test.ts.
 export async function fetchMetadata(
   tableId: string,
   lang: Lang,
