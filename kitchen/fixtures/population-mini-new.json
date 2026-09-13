@@ -1,0 +1,18 @@
+{
+  "kind": "data",
+  "table": "TAB5557",
+  "lang": "sv",
+  "url": "https://statistikdatabasen.scb.se/api/v2/tables/TAB5557/data?lang=sv&outputFormat=json-stat2",
+  "selection": { "Region": ["0330", "0380"], "Kon": ["1", "2"], "Tid": ["2025"] },
+  "fetchedAt": "2026-09-13T10:00:00.000Z",
+  "response": {
+    "id": ["Region", "Kon", "Tid"],
+    "size": [2, 2, 1],
+    "dimension": {
+      "Region": { "category": { "index": ["0330", "0380"] } },
+      "Kon": { "category": { "index": ["1", "2"] } },
+      "Tid": { "category": { "index": ["2025"] } }
+    },
+    "value": [10001, 10002, 120003, 118004]
+  }
+}
