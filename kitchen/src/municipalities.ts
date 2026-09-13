@@ -67,14 +67,35 @@ export function municipalitiesFromMetadata(sv: FrozenMeta, en: FrozenMeta): Muni
   }
   const svNames = region(sv)
   const enNames = region(en)
-  return [...svNames.keys()]
-    .filter((code) => /^\d{4}$/.test(code))
-    .sort()
-    .map((code) =>
-      Municipality.parse({
-        code,
-        name: { sv: svNames.get(code) ?? code, en: enNames.get(code) ?? svNames.get(code) ?? code },
-        county: countyOf(code),
-      }),
+
+  const svCodes = [...svNames.keys()].filter((code) => /^\d{4}$/.test(code))
+  const enCodes = [...enNames.keys()].filter((code) => /^\d{4}$/.test(code))
+  const enSet = new Set(enCodes)
+  const svSet = new Set(svCodes)
+  const missingFromEn = svCodes.filter((code) => !enSet.has(code)).sort()
+  const missingFromSv = enCodes.filter((code) => !svSet.has(code)).sort()
+  // Bilingual output is a stated product commitment: a municipality silently rendered in
+  // the wrong language is invisible in every view, so a code mismatch between the sv and
+  // en metadata must fail loudly here rather than fall back to the other language's name.
+  if (missingFromEn.length > 0 || missingFromSv.length > 0) {
+    const parts: string[] = []
+    if (missingFromEn.length > 0)
+      parts.push(`present in sv but missing from en: ${missingFromEn.join(', ')}`)
+    if (missingFromSv.length > 0)
+      parts.push(`present in en but missing from sv: ${missingFromSv.join(', ')}`)
+    throw new Error(
+      `municipalitiesFromMetadata: ${sv.table} sv/en Region metadata disagree on municipality codes (${parts.join('; ')})`,
     )
+  }
+
+  return svCodes.sort().map((code) =>
+    Municipality.parse({
+      code,
+      // The equality check above guarantees both maps have `code`; `?? code` is an
+      // unreachable defensive default only for Map.get's `T | undefined` typing — it
+      // is never a real language substitution, unlike the fallback this replaced.
+      name: { sv: svNames.get(code) ?? code, en: enNames.get(code) ?? code },
+      county: countyOf(code),
+    }),
+  )
 }
