@@ -58,7 +58,8 @@ Svensk Mäklarstatistik, Booli, Hemnet, Valueguard (proprietary, no redistributi
 
 To resolve during prototyping, not before:
 
-- Whether SCB municipality tables return empty cells or parent-inclusive values before a split (Knivsta before 2003, Nykvarn before 1999).
+- **Resolved 2026-09-13** (live spike, `kitchen/spikes/open-questions.ts`, TAB638): SCB municipality tables return numeric `0` — not null, and not a parent-inclusive back-cast value — for Knivsta (0330) in 1998–2001, before its 2003-01-01 creation; Knivsta's population figure turns real (12,586) starting with the *2002* row, one year early, because TAB638's own note states year-Y population is reported on the administrative division as of 1 January (Y+1). Uppsala (0380) drops from 191,110 (2001) to 179,673 (2002), a fall of 11,437, in step with Knivsta's appearance — so the parent's flagged split-year break belongs at **2002**, not the nominal 2003 creation year.
+- **Resolved 2026-09-13** (live spike, TAB5557, Stockholm 0180, 2025): an aggregated age cell is perturbed independently, not derived by summing already-perturbed single-year cells. Summing all 101 single-year age cells gives 999,237 against a published total (`TOT1`/`TOT5`/`TOT10`/`TotSA`, all identical) of 999,239 (diff −2); summing the 21 five-year-group cells gives 999,228 (diff −11); summing the 11 ten-year-group cells gives 999,234 (diff −5). The same holds at a single age-band: single ages 20–24 sum to 54,253 against a published `'20-24'` cell of 54,255. Derived age-group indicators must therefore be requested from SCB's own coarser Alder codes (e.g. `'20-24'`, or `TOT5`) rather than computed by summing finer, independently-noised cells.
 - Start year of Lantmäteriet's annual boundary series, and the exact GeoPackage layer names.
 - Thenmap's data license (historical municipality boundaries 1974–).
 - Whether SCB's rent table has gaps for small municipalities.

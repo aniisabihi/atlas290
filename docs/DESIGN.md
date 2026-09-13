@@ -175,5 +175,3 @@ Deliberately undecided until we prototype or reach them:
 - Indicators beyond the first ten.
 - Visual design language.
 - Project name, with one hard constraint: it must not suggest affiliation with SCB.
-- Whether SCB perturbs an aggregated age-group cell once or sums already-perturbed single-year cells. Resolve in the first fetch spike.
-- Whether pre-split municipalities return empty cells or parent-inclusive values. Resolve in the first fetch spike.
