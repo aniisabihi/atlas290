@@ -3,3 +3,7 @@ dist/
 .claude/worktrees/
 .DS_Store
 .superpowers/
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+coverage/

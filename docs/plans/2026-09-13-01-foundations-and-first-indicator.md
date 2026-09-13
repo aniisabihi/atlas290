@@ -74,10 +74,12 @@ docs/kitchen.md                 how to run the kitchen, stage by stage
 ### Task 1: Repository scaffold
 
 **Files:**
+
 - Create: `.nvmrc`, `.yarnrc.yml`, `package.json`, `tsconfig.json`, `tsconfig.base.json`, `tsconfig.app.json`, `tsconfig.kitchen.json`, `vite.config.ts`, `vitest.config.ts`, `index.html`, `src/main.tsx`, `shared/smoke.test.ts`, `.prettierrc`, `.oxlintrc.json`, `LICENSE`, `README.md`, `docs/decisions/README.md`
 - Modify: `.gitignore`
 
 **Interfaces:**
+
 - Produces: the scripts `yarn dev`, `yarn build`, `yarn typecheck`, `yarn test`, `yarn lint`, `yarn format`, `yarn kitchen <stage>` that every later task relies on.
 
 - [ ] **Step 1: Create the branch**
@@ -89,24 +91,29 @@ git switch -c feat/plan-01-foundations
 - [ ] **Step 2: Pin Node and Yarn**
 
 `.nvmrc`:
+
 ```
 22
 ```
 
 `.yarnrc.yml`:
+
 ```yaml
 nodeLinker: node-modules
 ```
 
 Run:
+
 ```bash
 corepack enable && yarn set version stable && yarn init -p
 ```
+
 Expected: `package.json` created, `packageManager` field set to `yarn@4.x`.
 
 - [ ] **Step 3: Write package.json scripts and metadata**
 
 Replace `package.json` with:
+
 ```json
 {
   "name": "sweden-data-explorer",
@@ -127,6 +134,7 @@ Replace `package.json` with:
   }
 }
 ```
+
 Keep the `packageManager` line Yarn added.
 
 - [ ] **Step 4: Install dependencies at their current versions**
@@ -135,11 +143,13 @@ Keep the `packageManager` line Yarn added.
 yarn add react react-dom zod d3-geo d3-force d3-scale d3-scale-chromatic topojson-client
 yarn add -D typescript vite @vitejs/plugin-react vitest tsx prettier oxlint mapshaper @types/node @types/react @types/react-dom @types/d3-geo @types/d3-force @types/d3-scale @types/d3-scale-chromatic @types/topojson-client @types/topojson-specification
 ```
+
 Expected: `yarn.lock` and `node_modules/` created. Check `node_modules` is ignored by `.gitignore` (it is).
 
 - [ ] **Step 5: TypeScript configuration**
 
 `tsconfig.base.json`:
+
 ```json
 {
   "compilerOptions": {
@@ -159,6 +169,7 @@ Expected: `yarn.lock` and `node_modules/` created. Check `node_modules` is ignor
 ```
 
 `tsconfig.app.json`:
+
 ```json
 {
   "extends": "./tsconfig.base.json",
@@ -173,6 +184,7 @@ Expected: `yarn.lock` and `node_modules/` created. Check `node_modules` is ignor
 ```
 
 `tsconfig.kitchen.json`:
+
 ```json
 {
   "extends": "./tsconfig.base.json",
@@ -186,6 +198,7 @@ Expected: `yarn.lock` and `node_modules/` created. Check `node_modules` is ignor
 ```
 
 `tsconfig.json`:
+
 ```json
 {
   "files": [],
@@ -196,6 +209,7 @@ Expected: `yarn.lock` and `node_modules/` created. Check `node_modules` is ignor
 - [ ] **Step 6: Vite and Vitest configuration**
 
 `vite.config.ts`:
+
 ```ts
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -207,6 +221,7 @@ export default defineConfig({
 ```
 
 `vitest.config.ts`:
+
 ```ts
 import { defineConfig } from 'vitest/config'
 
@@ -219,6 +234,7 @@ export default defineConfig({
 ```
 
 `index.html`:
+
 ```html
 <!doctype html>
 <html lang="sv">
@@ -235,6 +251,7 @@ export default defineConfig({
 ```
 
 `src/main.tsx` (placeholder, replaced in Task 10):
+
 ```tsx
 import { createRoot } from 'react-dom/client'
 
@@ -244,11 +261,13 @@ createRoot(document.getElementById('root')!).render(<p>Kitchen not run yet.</p>)
 - [ ] **Step 7: Lint and format configuration**
 
 `.prettierrc`:
+
 ```json
 { "semi": false, "singleQuote": true, "printWidth": 100, "trailingComma": "all" }
 ```
 
 `.oxlintrc.json`:
+
 ```json
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
@@ -259,6 +278,7 @@ createRoot(document.getElementById('root')!).render(<p>Kitchen not run yet.</p>)
 ```
 
 Append to `.gitignore`:
+
 ```
 .yarn/*
 !.yarn/releases
@@ -269,6 +289,7 @@ coverage/
 - [ ] **Step 8: Write the smoke test**
 
 `shared/smoke.test.ts`:
+
 ```ts
 import { describe, expect, it } from 'vitest'
 
@@ -289,6 +310,7 @@ Expected: typecheck clean, 1 test passing, lint clean, `dist/` produced. If Pret
 `LICENSE`: the MIT text with `Copyright (c) 2026 Aniisa Bihi`.
 
 `README.md`:
+
 ```markdown
 # Sweden Data Explorer
 
@@ -303,6 +325,7 @@ Code is MIT. Generated data files under `public/pantry/` are CC0, derived from S
 ```
 
 `docs/decisions/README.md`:
+
 ```markdown
 # Decision log
 
@@ -323,9 +346,11 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 2: The wall — pantry schemas
 
 **Files:**
+
 - Create: `shared/pantry.ts`, `shared/pantry.test.ts`
 
 **Interfaces:**
+
 - Produces: zod schemas and inferred types `Municipality`, `Indicator`, `IndicatorSeries`, `PantryData`, `Adjacency`, `Bubbles`, `Manifest`, plus `OBSERVATION_STATUS` and `statusCode()`. Every later task imports from `shared/pantry.ts` and nothing else crosses the wall.
 
 Design notes carried into code: observations are stored columnar (municipalities × years) for compactness, a status byte per cell, no "higher is better" flag, a neutral scale hint instead, and a `sensitivity` class per indicator.
@@ -333,9 +358,17 @@ Design notes carried into code: observations are stored columnar (municipalities
 - [ ] **Step 1: Write the failing test**
 
 `shared/pantry.test.ts`:
+
 ```ts
 import { describe, expect, it } from 'vitest'
-import { Indicator, IndicatorSeries, Municipality, OBSERVATION_STATUS, PantryData, statusCode } from './pantry'
+import {
+  Indicator,
+  IndicatorSeries,
+  Municipality,
+  OBSERVATION_STATUS,
+  PantryData,
+  statusCode,
+} from './pantry'
 
 const stockholm = { code: '0180', name: { sv: 'Stockholm', en: 'Stockholm' }, county: '01' }
 
@@ -384,7 +417,18 @@ describe('pantry schemas', () => {
     })
     expect(pantry.series[0]?.values[0]?.[1]).toBe(990000)
     expect(() =>
-      PantryData.parse({ ...pantry, series: [{ ...series, values: [[1, 2], [3, 4]] }] }),
+      PantryData.parse({
+        ...pantry,
+        series: [
+          {
+            ...series,
+            values: [
+              [1, 2],
+              [3, 4],
+            ],
+          },
+        ],
+      }),
     ).toThrow(/rows/)
   })
 })
@@ -398,6 +442,7 @@ Expected: FAIL, cannot resolve `./pantry`.
 - [ ] **Step 3: Write the schemas**
 
 `shared/pantry.ts`:
+
 ```ts
 import { z } from 'zod'
 
@@ -467,11 +512,22 @@ export const IndicatorSeries = z
     indicator: IndicatorId,
     years: z.array(z.number().int()),
     values: z.array(z.array(z.number().nullable())),
-    status: z.array(z.array(z.number().int().min(0).max(OBSERVATION_STATUS.length - 1))),
+    status: z.array(
+      z.array(
+        z
+          .number()
+          .int()
+          .min(0)
+          .max(OBSERVATION_STATUS.length - 1),
+      ),
+    ),
   })
   .superRefine((s, ctx) => {
     if (s.values.length !== s.status.length) {
-      ctx.addIssue({ code: 'custom', message: 'values and status must have the same number of rows' })
+      ctx.addIssue({
+        code: 'custom',
+        message: 'values and status must have the same number of rows',
+      })
     }
     for (const [i, row] of s.values.entries()) {
       if (row.length !== s.years.length || s.status[i]?.length !== s.years.length) {
@@ -479,7 +535,10 @@ export const IndicatorSeries = z
       }
       for (const [j, v] of row.entries()) {
         if (v === null && s.status[i]?.[j] === 0) {
-          ctx.addIssue({ code: 'custom', message: `row ${i} col ${j}: null value cannot be 'present'` })
+          ctx.addIssue({
+            code: 'custom',
+            message: `row ${i} col ${j}: null value cannot be 'present'`,
+          })
         }
       }
     }
@@ -520,7 +579,9 @@ export type Adjacency = z.infer<typeof Adjacency>
 export const Bubbles = z.object({
   schemaVersion: z.literal(1),
   basedOn: z.object({ indicator: IndicatorId, year: z.number().int() }),
-  circles: z.array(z.object({ code: MunicipalityCode, x: z.number(), y: z.number(), r: z.number() })),
+  circles: z.array(
+    z.object({ code: MunicipalityCode, x: z.number(), y: z.number(), r: z.number() }),
+  ),
 })
 export type Bubbles = z.infer<typeof Bubbles>
 
@@ -561,9 +622,11 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 3: SCB client — counting, chunking, throttling, fetching
 
 **Files:**
+
 - Create: `kitchen/src/scb/client.ts`, `kitchen/src/scb/client.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `type Selection = Record<string, string[]>` (variable code → value codes)
   - `cellCount(sel: Selection): number`
@@ -578,6 +641,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - [ ] **Step 1: Confirm the v2 request shape before writing code**
 
 Open `https://github.com/PxTools/PxApiSpecs/blob/master/PxAPI-2.yml` and check:
+
 1. Data endpoint path: `POST /tables/{id}/data?lang={lang}&outputFormat=json-stat2`.
 2. Body schema named `VariablesSelection`: `{ "selection": [ { "variableCode": "...", "valueCodes": ["..."] } ] }`.
 3. Metadata endpoint: `GET /tables/{id}/metadata?lang={lang}` returning a JSON-stat2 dataset whose `dimension` object lists variables with `category.index` and `category.label`.
@@ -587,6 +651,7 @@ If any of the three differs, adjust `toRequestBody`, `dataUrl`, `metadataUrl` or
 - [ ] **Step 2: Write the failing tests**
 
 `kitchen/src/scb/client.test.ts`:
+
 ```ts
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -634,10 +699,15 @@ describe('RateLimiter', () => {
   it('allows maxCalls immediately then waits for the window', async () => {
     let now = 0
     const sleeps: number[] = []
-    const limiter = new RateLimiter(3, 10_000, () => now, async (ms) => {
-      sleeps.push(ms)
-      now += ms
-    })
+    const limiter = new RateLimiter(
+      3,
+      10_000,
+      () => now,
+      async (ms) => {
+        sleeps.push(ms)
+        now += ms
+      },
+    )
     await limiter.acquire()
     await limiter.acquire()
     await limiter.acquire()
@@ -660,18 +730,22 @@ describe('toRequestBody', () => {
 
 describe('fetch functions', () => {
   it('fetchMetadata parses variables from a JSON-stat2 dimension object', async () => {
-    const fetchImpl = vi.fn(async () =>
-      new Response(
-        JSON.stringify({
-          id: ['Region', 'Tid'],
-          label: 'Folkmängd',
-          dimension: {
-            Region: { label: 'region', category: { index: { '0180': 0 }, label: { '0180': 'Stockholm' } } },
-            Tid: { label: 'år', category: { index: { '2024': 0 }, label: { '2024': '2024' } } },
-          },
-        }),
-        { status: 200 },
-      ),
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            id: ['Region', 'Tid'],
+            label: 'Folkmängd',
+            dimension: {
+              Region: {
+                label: 'region',
+                category: { index: { '0180': 0 }, label: { '0180': 'Stockholm' } },
+              },
+              Tid: { label: 'år', category: { index: { '2024': 0 }, label: { '2024': '2024' } } },
+            },
+          }),
+          { status: 200 },
+        ),
     ) as unknown as typeof fetch
     const meta = await fetchMetadata('TAB638', 'sv', { fetchImpl })
     expect(meta.variables).toEqual([
@@ -685,7 +759,9 @@ describe('fetch functions', () => {
   })
 
   it('fetchData POSTs the body and throws on non-2xx with the status in the message', async () => {
-    const ok = vi.fn(async () => new Response('{"value":[1]}', { status: 200 })) as unknown as typeof fetch
+    const ok = vi.fn(
+      async () => new Response('{"value":[1]}', { status: 200 }),
+    ) as unknown as typeof fetch
     await expect(fetchData('TAB638', { Tid: ['2024'] }, 'sv', { fetchImpl: ok })).resolves.toEqual({
       value: [1],
     })
@@ -698,10 +774,12 @@ describe('fetch functions', () => {
       selection: [{ variableCode: 'Tid', valueCodes: ['2024'] }],
     })
 
-    const tooMany = vi.fn(async () => new Response('slow down', { status: 429 })) as unknown as typeof fetch
-    await expect(fetchData('TAB638', { Tid: ['2024'] }, 'sv', { fetchImpl: tooMany })).rejects.toThrow(
-      /429/,
-    )
+    const tooMany = vi.fn(
+      async () => new Response('slow down', { status: 429 }),
+    ) as unknown as typeof fetch
+    await expect(
+      fetchData('TAB638', { Tid: ['2024'] }, 'sv', { fetchImpl: tooMany }),
+    ).rejects.toThrow(/429/)
   })
 })
 ```
@@ -714,6 +792,7 @@ Expected: FAIL, cannot resolve `./client`.
 - [ ] **Step 4: Write the client**
 
 `kitchen/src/scb/client.ts`:
+
 ```ts
 export const SCB_BASE = 'https://statistikdatabasen.scb.se/api/v2'
 /** From the live /config endpoint, verified 2026-09-10. */
@@ -743,7 +822,9 @@ export function chunkSelection(sel: Selection, maxCells = SCB_MAX_CELLS): Select
     cur[1].length > best[1].length ? cur : best,
   )
   if (values.length < 2) {
-    throw new Error(`cannot chunk ${code}: every variable has one value but ${cellCount(sel)} cells`)
+    throw new Error(
+      `cannot chunk ${code}: every variable has one value but ${cellCount(sel)} cells`,
+    )
   }
   const mid = Math.ceil(values.length / 2)
   return [
@@ -795,10 +876,15 @@ export function toRequestBody(sel: Selection): {
 async function request(url: string, init: RequestInit, deps: Deps): Promise<unknown> {
   const fetchImpl = deps.fetchImpl ?? fetch
   await deps.limiter?.acquire()
-  const res = await fetchImpl(url, { ...init, headers: { accept: 'application/json', ...init.headers } })
+  const res = await fetchImpl(url, {
+    ...init,
+    headers: { accept: 'application/json', ...init.headers },
+  })
   if (!res.ok) {
     const text = await res.text()
-    throw new Error(`SCB ${init.method ?? 'GET'} ${url} failed: ${res.status} ${text.slice(0, 200)}`)
+    throw new Error(
+      `SCB ${init.method ?? 'GET'} ${url} failed: ${res.status} ${text.slice(0, 200)}`,
+    )
   }
   return res.json()
 }
@@ -827,7 +913,11 @@ export function parseMetadata(tableId: string, body: unknown): TableMeta {
   return { id: tableId, label: b.label ?? tableId, variables }
 }
 
-export async function fetchMetadata(tableId: string, lang: Lang, deps: Deps = {}): Promise<TableMeta> {
+export async function fetchMetadata(
+  tableId: string,
+  lang: Lang,
+  deps: Deps = {},
+): Promise<TableMeta> {
   const body = await request(metadataUrl(tableId, lang), { method: 'GET' }, deps)
   return parseMetadata(tableId, body)
 }
@@ -872,9 +962,11 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 4: JSON-stat2 to rows
 
 **Files:**
+
 - Create: `kitchen/src/scb/jsonstat.ts`, `kitchen/src/scb/jsonstat.test.ts`, `kitchen/fixtures/jsonstat-2x3.json`
 
 **Interfaces:**
+
 - Produces:
   - `interface JsonStat2 { id: string[]; size: number[]; dimension: Record<string, { category: { index: Record<string, number> | string[]; label?: Record<string, string> } }>; value: Array<number | null> }`
   - `type Row = { dims: Record<string, string>; value: number | null }`
@@ -884,6 +976,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - [ ] **Step 1: Write the fixture and the failing test**
 
 `kitchen/fixtures/jsonstat-2x3.json`:
+
 ```json
 {
   "version": "2.0",
@@ -891,7 +984,12 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
   "id": ["Region", "Tid"],
   "size": [2, 3],
   "dimension": {
-    "Region": { "category": { "index": { "0180": 0, "0380": 1 }, "label": { "0180": "Stockholm", "0380": "Uppsala" } } },
+    "Region": {
+      "category": {
+        "index": { "0180": 0, "0380": 1 },
+        "label": { "0180": "Stockholm", "0380": "Uppsala" }
+      }
+    },
     "Tid": { "category": { "index": ["2022", "2023", "2024"] } }
   },
   "value": [978770, 984748, 990000, 237596, 240000, null]
@@ -899,6 +997,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
 
 `kitchen/src/scb/jsonstat.test.ts`:
+
 ```ts
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
@@ -931,6 +1030,7 @@ Expected: FAIL, cannot resolve `./jsonstat`.
 - [ ] **Step 3: Write the parser**
 
 `kitchen/src/scb/jsonstat.ts`:
+
 ```ts
 export interface JsonStat2 {
   id: string[]
@@ -1002,9 +1102,11 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 5: Freeze — fetch through a committed cache
 
 **Files:**
+
 - Create: `kitchen/src/scb/freeze.ts`, `kitchen/src/scb/freeze.test.ts`
 
 **Interfaces:**
+
 - Consumes: `fetchData`, `fetchMetadata`, `chunkSelection`, `dataUrl`, `RateLimiter`, `Selection`, `Lang` from `./client`; `JsonStat2`, `isJsonStat2` from `./jsonstat`.
 - Produces:
   - `interface FrozenData { kind: 'data'; table: string; lang: Lang; url: string; selection: Selection; fetchedAt: string; response: JsonStat2 }`
@@ -1017,6 +1119,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - [ ] **Step 1: Write the failing test**
 
 `kitchen/src/scb/freeze.test.ts`:
+
 ```ts
 import { mkdtempSync, readdirSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -1075,6 +1178,7 @@ Expected: FAIL, cannot resolve `./freeze`.
 - [ ] **Step 3: Write freeze**
 
 `kitchen/src/scb/freeze.ts`:
+
 ```ts
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -1117,7 +1221,10 @@ export interface FrozenMeta {
 export type FreezeOpts = { rawDir?: string; deps?: Deps; clock?: () => string }
 
 export function selectionKey(sel: Selection): string {
-  return createHash('sha256').update(JSON.stringify(toRequestBody(sel))).digest('hex').slice(0, 16)
+  return createHash('sha256')
+    .update(JSON.stringify(toRequestBody(sel)))
+    .digest('hex')
+    .slice(0, 16)
 }
 
 export function rawPath(rawDir: string, table: string, lang: Lang, key: string): string {
@@ -1131,7 +1238,11 @@ function writeJson(path: string, value: unknown): void {
 
 const sharedLimiter = new RateLimiter()
 
-export async function freezeMetadata(table: string, lang: Lang, opts: FreezeOpts = {}): Promise<FrozenMeta> {
+export async function freezeMetadata(
+  table: string,
+  lang: Lang,
+  opts: FreezeOpts = {},
+): Promise<FrozenMeta> {
   const rawDir = opts.rawDir ?? DEFAULT_RAW_DIR
   const path = rawPath(rawDir, table, lang, 'metadata')
   if (existsSync(path)) return JSON.parse(readFileSync(path, 'utf8')) as FrozenMeta
@@ -1204,15 +1315,18 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 This task touches the network once, on purpose, and produces documentation, not product code. Its answers change how Task 8 marks statuses.
 
 **Files:**
+
 - Create: `kitchen/spikes/open-questions.ts`, `kitchen/raw/TAB638/sv/metadata.json`, `kitchen/raw/TAB5557/sv/metadata.json` (written by the spike via freeze)
 - Modify: `docs/research/README.md` (Open verification items), `docs/DESIGN.md` section 9
 
 **Interfaces:**
+
 - Consumes: `freezeMetadata`, `freezeData` from `kitchen/src/scb/freeze.ts`; `toRows` from `kitchen/src/scb/jsonstat.ts`.
 
 - [ ] **Step 1: Write the spike script**
 
 `kitchen/spikes/open-questions.ts`:
+
 ```ts
 /**
  * Answers two questions from docs/DESIGN.md section 9 with real SCB data:
@@ -1229,7 +1343,10 @@ const OLD = 'TAB638' // Folkmängden efter region, civilstånd, ålder och kön 
 const NEW = 'TAB5557' // same, 2025– with Cell Key Method noise
 
 function find(meta: Awaited<ReturnType<typeof freezeMetadata>>, code: string) {
-  const dims = (meta.response as { id: string[]; dimension: Record<string, { category: { index: Record<string, number> | string[] } }> })
+  const dims = meta.response as {
+    id: string[]
+    dimension: Record<string, { category: { index: Record<string, number> | string[] } }>
+  }
   const idx = dims.dimension[code]?.category.index
   if (!idx) throw new Error(`no variable ${code}; variables are ${dims.id.join(', ')}`)
   return Array.isArray(idx) ? idx : Object.keys(idx)
@@ -1262,12 +1379,16 @@ for (const f of frozenA) {
   for (const r of toRows(f.response)) {
     const k = `${r.dims.Region} ${r.dims.Tid}`
     const prev = totals.get(k)
-    totals.set(k, r.value === null ? prev ?? null : (prev ?? 0) + r.value)
+    totals.set(k, r.value === null ? (prev ?? null) : (prev ?? 0) + r.value)
   }
 }
 for (const [k, v] of [...totals.entries()].sort()) console.log('A:', k, v)
-console.log('A: If Knivsta shows null before 2003 → status did-not-exist. If it shows numbers → SCB back-casts; use them and drop the did-not-exist rule for Knivsta.')
-console.log('A: Uppsala should drop by roughly Knivsta\'s size between 2002 and 2003 → confirms the parent-break flag is needed.')
+console.log(
+  'A: If Knivsta shows null before 2003 → status did-not-exist. If it shows numbers → SCB back-casts; use them and drop the did-not-exist rule for Knivsta.',
+)
+console.log(
+  "A: Uppsala should drop by roughly Knivsta's size between 2002 and 2003 → confirms the parent-break flag is needed.",
+)
 
 // B. Stockholm 2025: single-year ages summed vs the 5-year aggregate codelist, if the API exposes one.
 const newAges = find(newMeta, 'Alder')
@@ -1283,7 +1404,9 @@ const frozenB = await freezeData(NEW, selB, 'sv')
 let sumSingle = 0
 for (const f of frozenB) for (const r of toRows(f.response)) sumSingle += r.value ?? 0
 console.log('B: Stockholm 2025 sum of single-year age cells =', sumSingle)
-console.log('B: Compare with SCB\'s published Stockholm total for 2025-12-31 (statistikdatabasen table view). If they differ by a few units, SCB perturbs each cell independently and derived age indicators must be computed from the coarsest cells available. Record the difference.')
+console.log(
+  "B: Compare with SCB's published Stockholm total for 2025-12-31 (statistikdatabasen table view). If they differ by a few units, SCB perturbs each cell independently and derived age indicators must be computed from the coarsest cells available. Record the difference.",
+)
 ```
 
 - [ ] **Step 2: Run the spike**
@@ -1309,9 +1432,11 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 7: Municipality registry — codes, names, counties, creation years
 
 **Files:**
+
 - Create: `kitchen/src/municipalities.ts`, `kitchen/src/municipalities.test.ts`
 
 **Interfaces:**
+
 - Consumes: `FrozenMeta` from `./scb/freeze`, `parseMetadata` from `./scb/client`, `Municipality` from `shared/pantry.ts`.
 - Produces:
   - `CREATED: Record<string, number>` — first year a municipality exists in SCB's current code system: `{ '0461': 1992, '0488': 1992, '1535': 1995, '1814': 1995, '0140': 1999, '0330': 2003 }`
@@ -1325,6 +1450,7 @@ Facts come from SCB's "Ändringar i kommunindelningen efter 1974" (see `docs/res
 - [ ] **Step 1: Write the failing test**
 
 `kitchen/src/municipalities.test.ts`:
+
 ```ts
 import { describe, expect, it } from 'vitest'
 import { countyOf, existed, municipalitiesFromMetadata, SPLIT_PARENT } from './municipalities'
@@ -1339,7 +1465,13 @@ function meta(lang: 'sv' | 'en', names: Record<string, string>) {
     response: {
       id: ['Region', 'Tid'],
       dimension: {
-        Region: { label: 'region', category: { index: Object.fromEntries(Object.keys(names).map((k, i) => [k, i])), label: names } },
+        Region: {
+          label: 'region',
+          category: {
+            index: Object.fromEntries(Object.keys(names).map((k, i) => [k, i])),
+            label: names,
+          },
+        },
         Tid: { label: 'år', category: { index: ['2024'] } },
       },
     },
@@ -1360,8 +1492,18 @@ describe('municipality registry', () => {
   })
 
   it('builds bilingual municipalities from sv and en metadata, dropping riket and counties', () => {
-    const sv = meta('sv', { '00': 'Riket', '01': 'Stockholms län', '0180': 'Stockholm', '0114': 'Upplands Väsby' })
-    const en = meta('en', { '00': 'Sweden', '01': 'Stockholm county', '0180': 'Stockholm', '0114': 'Upplands Väsby' })
+    const sv = meta('sv', {
+      '00': 'Riket',
+      '01': 'Stockholms län',
+      '0180': 'Stockholm',
+      '0114': 'Upplands Väsby',
+    })
+    const en = meta('en', {
+      '00': 'Sweden',
+      '01': 'Stockholm county',
+      '0180': 'Stockholm',
+      '0114': 'Upplands Väsby',
+    })
     expect(municipalitiesFromMetadata(sv, en)).toEqual([
       { code: '0114', name: { sv: 'Upplands Väsby', en: 'Upplands Väsby' }, county: '01' },
       { code: '0180', name: { sv: 'Stockholm', en: 'Stockholm' }, county: '01' },
@@ -1378,6 +1520,7 @@ Expected: FAIL, cannot resolve `./municipalities`.
 - [ ] **Step 3: Write the registry**
 
 `kitchen/src/municipalities.ts`:
+
 ```ts
 import { Municipality } from '../../shared/pantry'
 import { parseMetadata } from './scb/client'
@@ -1450,9 +1593,11 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 8: Population indicator end to end
 
 **Files:**
+
 - Create: `kitchen/src/indicators/population.ts`, `kitchen/src/indicators/population.test.ts`, `kitchen/fixtures/population-mini-old.json`, `kitchen/fixtures/population-mini-new.json`
 
 **Interfaces:**
+
 - Consumes: `FrozenData` and `freezeData`/`freezeMetadata` from `../scb/freeze`; `toRows` from `../scb/jsonstat`; `existed`, `municipalitiesFromMetadata` from `../municipalities`; `Indicator`, `IndicatorSeries`, `Municipality`, `statusCode` from `shared/pantry.ts`.
 - Produces:
   - `POPULATION: Indicator` (breaks filled at build time by `withBreaks`)
@@ -1467,6 +1612,7 @@ Status rules: value present and year ≤ 2024 → `present`; year ≥ 2025 → `
 - [ ] **Step 1: Write the fixtures**
 
 `kitchen/fixtures/population-mini-old.json` (two municipalities, two sexes, two years; Knivsta null before 2003):
+
 ```json
 {
   "kind": "data",
@@ -1489,6 +1635,7 @@ Status rules: value present and year ≤ 2024 → `present`; year ≥ 2025 → `
 ```
 
 `kitchen/fixtures/population-mini-new.json`:
+
 ```json
 {
   "kind": "data",
@@ -1513,6 +1660,7 @@ Status rules: value present and year ≤ 2024 → `present`; year ≥ 2025 → `
 - [ ] **Step 2: Write the failing test**
 
 `kitchen/src/indicators/population.test.ts`:
+
 ```ts
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
@@ -1520,8 +1668,12 @@ import { OBSERVATION_STATUS } from '../../../shared/pantry'
 import type { FrozenData } from '../scb/freeze'
 import { buildPopulationSeries, quantileBreaks, withBreaks, POPULATION } from './population'
 
-const oldChunk = JSON.parse(readFileSync('kitchen/fixtures/population-mini-old.json', 'utf8')) as FrozenData
-const newChunk = JSON.parse(readFileSync('kitchen/fixtures/population-mini-new.json', 'utf8')) as FrozenData
+const oldChunk = JSON.parse(
+  readFileSync('kitchen/fixtures/population-mini-old.json', 'utf8'),
+) as FrozenData
+const newChunk = JSON.parse(
+  readFileSync('kitchen/fixtures/population-mini-new.json', 'utf8'),
+) as FrozenData
 const municipalities = [
   { code: '0330', name: { sv: 'Knivsta', en: 'Knivsta' }, county: '03' },
   { code: '0380', name: { sv: 'Uppsala', en: 'Uppsala' }, county: '03' },
@@ -1571,8 +1723,14 @@ Expected: FAIL, cannot resolve `./population`.
 - [ ] **Step 4: Write the indicator**
 
 `kitchen/src/indicators/population.ts`:
+
 ```ts
-import { Indicator, type IndicatorSeries, type Municipality, statusCode } from '../../../shared/pantry'
+import {
+  Indicator,
+  type IndicatorSeries,
+  type Municipality,
+  statusCode,
+} from '../../../shared/pantry'
 import { existed, municipalitiesFromMetadata } from '../municipalities'
 import { parseMetadata, type Selection, type TableMeta } from '../scb/client'
 import { freezeData, freezeMetadata, type FreezeOpts, type FrozenData } from '../scb/freeze'
@@ -1603,12 +1761,16 @@ export const POPULATION: Indicator = Indicator.parse({
     { table: OLD_TABLE, contentCode: CONTENT_CODE, note: '1968–2024' },
     { table: NEW_TABLE, contentCode: CONTENT_CODE, note: '2025 onwards, CKM' },
   ],
-  derivation: 'Sum of SCB cell values over sex and marital status (and age, unless a total age code exists) per municipality and year.',
+  derivation:
+    'Sum of SCB cell values over sex and marital status (and age, unless a total age code exists) per municipality and year.',
 })
 
 function values(meta: TableMeta, code: string): string[] {
   const v = meta.variables.find((x) => x.code === code)
-  if (!v) throw new Error(`${meta.id}: no variable ${code}; have ${meta.variables.map((x) => x.code).join(', ')}`)
+  if (!v)
+    throw new Error(
+      `${meta.id}: no variable ${code}; have ${meta.variables.map((x) => x.code).join(', ')}`,
+    )
   return v.values.map((x) => x.code)
 }
 
@@ -1622,7 +1784,8 @@ export function populationSelection(meta: TableMeta, years: string[]): Selection
     ContentsCode: [CONTENT_CODE],
     Tid: years,
   }
-  if (meta.variables.some((x) => x.code === 'Civilstand')) sel.Civilstand = values(meta, 'Civilstand')
+  if (meta.variables.some((x) => x.code === 'Civilstand'))
+    sel.Civilstand = values(meta, 'Civilstand')
   return sel
 }
 
@@ -1653,7 +1816,10 @@ export function buildPopulationSeries(
     years.map((y) => {
       const v = totals.get(`${m.code}|${y}`) ?? null
       if (v === null) {
-        return { v: null, s: existed(m.code, y) ? statusCode('not-yet-published') : statusCode('did-not-exist') }
+        return {
+          v: null,
+          s: existed(m.code, y) ? statusCode('not-yet-published') : statusCode('did-not-exist'),
+        }
       }
       return { v, s: y >= CKM_FROM ? statusCode('perturbed') : statusCode('present') }
     }),
@@ -1735,10 +1901,12 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 9: Geometry — TopoJSON, adjacency, bubbles
 
 **Files:**
+
 - Create: `kitchen/src/geometry/build.ts`, `kitchen/src/geometry/adjacency.ts`, `kitchen/src/geometry/adjacency.test.ts`, `kitchen/src/geometry/bubbles.ts`, `kitchen/src/geometry/bubbles.test.ts`, `kitchen/src/geometry/curated-edges.json`, `kitchen/raw/geometry/shape_svenska_260225.zip`
 - Produces at publish: `public/pantry/geometry/municipalities.topo.json`, `public/pantry/geometry/adjacency.json`, `public/pantry/layout/bubbles.json`
 
 **Interfaces:**
+
 - Produces:
   - `buildTopology(opts?: { rawDir?: string; outFile?: string }): Promise<Topology>` — runs mapshaper, returns parsed TopoJSON with object `municipalities` whose geometries carry `properties.code` and `properties.name`.
   - `buildAdjacency(topology: Topology, centroids: Map<string, [number, number]>, curated: Array<[string, string]>): Adjacency` — topology neighbours plus curated edges plus automatic nearest-centroid edges until connected; `synthetic` lists the automatic ones.
@@ -1754,11 +1922,13 @@ curl -L -o kitchen/raw/geometry/shape_svenska_260225.zip "https://www.scb.se/con
 unzip -o kitchen/raw/geometry/shape_svenska_260225.zip -d kitchen/raw/geometry/shape
 ls kitchen/raw/geometry/shape
 ```
+
 Expected: `Kommun_Sweref99TM.shp` (+ .dbf .prj .shx) and `Lan_Sweref99TM_region.shp`. Keep only the zip and the extracted `Kommun_*` and `Lan_*` files; the zip is 215 KB.
 
 - [ ] **Step 2: Write the topology builder**
 
 `kitchen/src/geometry/build.ts`:
+
 ```ts
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
@@ -1768,7 +1938,10 @@ import { feature } from 'topojson-client'
 import type { GeometryCollection, Topology } from 'topojson-specification'
 
 export type MunicipalityProps = { code: string; name: string }
-export type MunicipalityTopology = Topology<{ municipalities: GeometryCollection<MunicipalityProps>; counties: GeometryCollection<{ code: string; name: string }> }>
+export type MunicipalityTopology = Topology<{
+  municipalities: GeometryCollection<MunicipalityProps>
+  counties: GeometryCollection<{ code: string; name: string }>
+}>
 
 export const FRAME: [number, number] = [1000, 2000]
 
@@ -1778,7 +1951,9 @@ export function projection(topology: MunicipalityTopology) {
   return geoTransverseMercator().rotate([-15, 0]).fitSize(FRAME, fc)
 }
 
-export async function buildTopology(opts: { rawDir?: string; outFile?: string } = {}): Promise<MunicipalityTopology> {
+export async function buildTopology(
+  opts: { rawDir?: string; outFile?: string } = {},
+): Promise<MunicipalityTopology> {
   const rawDir = opts.rawDir ?? 'kitchen/raw/geometry/shape'
   const outFile = opts.outFile ?? 'public/pantry/geometry/municipalities.topo.json'
   mkdirSync(dirname(outFile), { recursive: true })
@@ -1786,13 +1961,26 @@ export async function buildTopology(opts: { rawDir?: string; outFile?: string } 
     'yarn',
     [
       'mapshaper',
-      '-i', `${rawDir}/Kommun_Sweref99TM.shp`, `${rawDir}/Lan_Sweref99TM_region.shp`, 'combine-files',
-      '-proj', 'wgs84',
+      '-i',
+      `${rawDir}/Kommun_Sweref99TM.shp`,
+      `${rawDir}/Lan_Sweref99TM_region.shp`,
+      'combine-files',
+      '-proj',
+      'wgs84',
       '-clean',
-      '-rename-layers', 'municipalities,counties',
-      '-rename-fields', 'target=municipalities', 'code=KnKod,name=KnNamn',
-      '-rename-fields', 'target=counties', 'code=LnKod,name=LnNamn',
-      '-o', outFile, 'format=topojson', 'quantization=1e5', 'id-field=code',
+      '-rename-layers',
+      'municipalities,counties',
+      '-rename-fields',
+      'target=municipalities',
+      'code=KnKod,name=KnNamn',
+      '-rename-fields',
+      'target=counties',
+      'code=LnKod,name=LnNamn',
+      '-o',
+      outFile,
+      'format=topojson',
+      'quantization=1e5',
+      'id-field=code',
     ],
     { stdio: 'inherit' },
   )
@@ -1815,6 +2003,7 @@ export function centroids(topology: MunicipalityTopology): Map<string, [number, 
 - [ ] **Step 3: Write the failing adjacency test**
 
 `kitchen/src/geometry/adjacency.test.ts`:
+
 ```ts
 import { describe, expect, it } from 'vitest'
 import type { GeometryCollection, Topology } from 'topojson-specification'
@@ -1824,9 +2013,27 @@ import { buildAdjacency, isConnected } from './adjacency'
 const topo = {
   type: 'Topology',
   arcs: [
-    [[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]],
-    [[1, 0], [2, 0], [2, 1], [1, 1], [1, 0]],
-    [[5, 5], [6, 5], [6, 6], [5, 6], [5, 5]],
+    [
+      [0, 0],
+      [1, 0],
+      [1, 1],
+      [0, 1],
+      [0, 0],
+    ],
+    [
+      [1, 0],
+      [2, 0],
+      [2, 1],
+      [1, 1],
+      [1, 0],
+    ],
+    [
+      [5, 5],
+      [6, 5],
+      [6, 6],
+      [5, 6],
+      [5, 5],
+    ],
   ],
   objects: {
     municipalities: {
@@ -1866,9 +2073,10 @@ describe('buildAdjacency', () => {
 Note: shared-arc detection relies on `topojson.neighbors`, which uses arc indices, not coordinates. In this fixture A and B do not share an arc, so the test expects the auto-connect to make B–C and the topology neighbour A–B must come from... it does not. Fix the fixture so A and B share arc 1: make A `arcs: [[0, 1]]` style is complex; instead assert on real data in Step 6 and here only test island connection and curated preference. Replace the first expectation block with:
 
 ```ts
-    expect(adj.synthetic.length).toBeGreaterThan(0)
-    expect(isConnected(adj.neighbours)).toBe(true)
+expect(adj.synthetic.length).toBeGreaterThan(0)
+expect(isConnected(adj.neighbours)).toBe(true)
 ```
+
 and keep the curated test as is but assert `expect(adj.neighbours['0003']).toContain('0001')`.
 
 - [ ] **Step 4: Run test to verify it fails**
@@ -1879,6 +2087,7 @@ Expected: FAIL, cannot resolve `./adjacency`.
 - [ ] **Step 5: Write adjacency**
 
 `kitchen/src/geometry/adjacency.ts`:
+
 ```ts
 import { neighbors } from 'topojson-client'
 import type { GeometryCollection, Topology } from 'topojson-specification'
@@ -1933,7 +2142,9 @@ export function buildAdjacency(
 ): Adjacency {
   const geoms = topology.objects.municipalities.geometries
   const codes = geoms.map((g) => g.properties!.code)
-  const nb: Record<string, Set<string>> = Object.fromEntries(codes.map((c) => [c, new Set<string>()]))
+  const nb: Record<string, Set<string>> = Object.fromEntries(
+    codes.map((c) => [c, new Set<string>()]),
+  )
   neighbors(geoms).forEach((idxs, i) => {
     for (const j of idxs) {
       nb[codes[i]!]!.add(codes[j]!)
@@ -1971,6 +2182,7 @@ Run: `yarn vitest run kitchen/src/geometry/adjacency.test.ts`
 Expected: PASS.
 
 Create `kitchen/src/geometry/curated-edges.json` as `[]`, then run:
+
 ```bash
 yarn tsx -e "
 import { buildTopology, centroids } from './kitchen/src/geometry/build.ts';
@@ -1980,11 +2192,13 @@ const a = buildAdjacency(t, c, []);
 console.log(t.objects.municipalities.geometries.length, 'municipalities;', a.synthetic.length, 'synthetic edges:', JSON.stringify(a.synthetic));
 "
 ```
+
 Expected: `290 municipalities; N synthetic edges` where N is small (Gotland and a few island municipalities). Review each synthetic pair. Where the automatic choice is geographically silly, put the sensible pair into `curated-edges.json` (for example Gotland `0980` to Västervik `0883` or Nynäshamn `0192`, whichever matches how people think of the ferry). Rerun until the synthetic list is only edges you accept.
 
 - [ ] **Step 7: Write the failing bubbles test**
 
 `kitchen/src/geometry/bubbles.test.ts`:
+
 ```ts
 import { describe, expect, it } from 'vitest'
 import { buildBubbles } from './bubbles'
@@ -2026,6 +2240,7 @@ Expected: FAIL, cannot resolve `./bubbles`.
 - [ ] **Step 9: Write bubbles**
 
 `kitchen/src/geometry/bubbles.ts`:
+
 ```ts
 import { forceCollide, forceSimulation, forceX, forceY } from 'd3-force'
 import { Bubbles } from '../../../shared/pantry'
@@ -2093,10 +2308,12 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 10: Publish — assemble the pantry deterministically
 
 **Files:**
+
 - Create: `kitchen/src/publish.ts`, `kitchen/src/publish.test.ts`, `kitchen/src/cli.ts`, `docs/kitchen.md`
 - Produces: `public/pantry/data/indicators.json`, `public/pantry/manifest.json`, `public/pantry/geometry/adjacency.json`, `public/pantry/layout/bubbles.json`
 
 **Interfaces:**
+
 - Consumes: `fetchPopulation` (Task 8), `buildTopology`, `centroids` (Task 9), `buildAdjacency`, `buildBubbles`, `PantryData`, `Manifest`, `Adjacency`, `Bubbles` schemas.
 - Produces:
   - `stableStringify(value: unknown): string` — sorted keys, 2-space indent, trailing newline.
@@ -2108,6 +2325,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - [ ] **Step 1: Write the failing test**
 
 `kitchen/src/publish.test.ts`:
+
 ```ts
 import { describe, expect, it } from 'vitest'
 import { buildManifest, stableStringify } from './publish'
@@ -2130,7 +2348,12 @@ describe('buildManifest', () => {
         url: 'https://statistikdatabasen.scb.se/api/v2/tables/TAB638/data?lang=sv&outputFormat=json-stat2',
         selection: { Tid: ['2024'] },
         fetchedAt: '2026-09-13T10:00:00.000Z',
-        response: { id: ['Tid'], size: [1], dimension: { Tid: { category: { index: ['2024'] } } }, value: [1] },
+        response: {
+          id: ['Tid'],
+          size: [1],
+          dimension: { Tid: { category: { index: ['2024'] } } },
+          value: [1],
+        },
       },
     ])
     expect(m.license).toBe('CC0-1.0')
@@ -2149,6 +2372,7 @@ Expected: FAIL, cannot resolve `./publish`.
 - [ ] **Step 3: Write publish and the CLI**
 
 `kitchen/src/publish.ts`:
+
 ```ts
 import { createHash } from 'node:crypto'
 import { mkdirSync, writeFileSync } from 'node:fs'
@@ -2205,7 +2429,9 @@ export function buildManifest(frozen: Array<FrozenData | FrozenMeta>): Manifest 
 }
 
 const offline: typeof fetch = async (input) => {
-  throw new Error(`publish must be offline but tried to fetch ${String(input)}; run 'yarn kitchen fetch' first`)
+  throw new Error(
+    `publish must be offline but tried to fetch ${String(input)}; run 'yarn kitchen fetch' first`,
+  )
 }
 
 export async function publish(opts: { pantryDir?: string; rawDir?: string } = {}): Promise<void> {
@@ -2213,20 +2439,34 @@ export async function publish(opts: { pantryDir?: string; rawDir?: string } = {}
   const freezeOpts = { rawDir: opts.rawDir, deps: { fetchImpl: offline } }
   const { municipalities, indicator, series, frozen } = await fetchPopulation(freezeOpts)
 
-  const topology = await buildTopology({ outFile: join(pantryDir, 'geometry/municipalities.topo.json') })
-  const geoCodes = new Set(topology.objects.municipalities.geometries.map((g) => g.properties!.code))
+  const topology = await buildTopology({
+    outFile: join(pantryDir, 'geometry/municipalities.topo.json'),
+  })
+  const geoCodes = new Set(
+    topology.objects.municipalities.geometries.map((g) => g.properties!.code),
+  )
   const missing = municipalities.filter((m) => !geoCodes.has(m.code)).map((m) => m.code)
   if (missing.length || geoCodes.size !== municipalities.length) {
-    throw new Error(`geometry/statistics mismatch: ${geoCodes.size} shapes vs ${municipalities.length} municipalities; missing shapes for ${missing.join(',')}`)
+    throw new Error(
+      `geometry/statistics mismatch: ${geoCodes.size} shapes vs ${municipalities.length} municipalities; missing shapes for ${missing.join(',')}`,
+    )
   }
 
   const c = centroids(topology)
-  writePantryFile(join(pantryDir, 'geometry/adjacency.json'), Adjacency, buildAdjacency(topology, c, curated as Array<[string, string]>))
+  writePantryFile(
+    join(pantryDir, 'geometry/adjacency.json'),
+    Adjacency,
+    buildAdjacency(topology, c, curated as Array<[string, string]>),
+  )
 
   const latestYear = 2024
   const yi = series.years.indexOf(latestYear)
   const population = new Map(municipalities.map((m, i) => [m.code, series.values[i]?.[yi] ?? 0]))
-  writePantryFile(join(pantryDir, 'layout/bubbles.json'), Bubbles, buildBubbles(c, population, latestYear))
+  writePantryFile(
+    join(pantryDir, 'layout/bubbles.json'),
+    Bubbles,
+    buildBubbles(c, population, latestYear),
+  )
 
   writePantryFile(join(pantryDir, 'data/indicators.json'), PantryData, {
     schemaVersion: 1,
@@ -2241,6 +2481,7 @@ export async function publish(opts: { pantryDir?: string; rawDir?: string } = {}
 Update `fetchPopulation` in `kitchen/src/indicators/population.ts` to also return `frozen: [...oldChunks, ...newChunks, svMeta, enMeta, newMeta]` so the manifest can be built, and add `"resolveJsonModule": true` is already in the base tsconfig for the curated JSON import.
 
 `kitchen/src/cli.ts`:
+
 ```ts
 import { fetchPopulation } from './indicators/population'
 import { publish } from './publish'
@@ -2274,23 +2515,26 @@ Expected: tests PASS, pantry written twice, `IDENTICAL` printed. If the diff sho
 - [ ] **Step 5: Write docs/kitchen.md**
 
 `docs/kitchen.md`:
+
 ```markdown
 # Running the kitchen
 
 The kitchen is the offline data pipeline. It is the only code that talks to SCB.
 
-| Command | Network | What it does |
-| --- | --- | --- |
-| `yarn kitchen fetch` | yes | Downloads the tables the indicators need and freezes each response under `kitchen/raw/<table>/<lang>/`. Already-frozen chunks are skipped, so re-running is cheap. |
-| `yarn kitchen publish` | **no** | Reads only `kitchen/raw/`, builds geometry, adjacency, bubbles and the indicator file into `public/pantry/`. Refuses to touch the network. |
-| `yarn kitchen all` | yes | Both, in order. |
+| Command                | Network | What it does                                                                                                                                                       |
+| ---------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `yarn kitchen fetch`   | yes     | Downloads the tables the indicators need and freezes each response under `kitchen/raw/<table>/<lang>/`. Already-frozen chunks are skipped, so re-running is cheap. |
+| `yarn kitchen publish` | **no**  | Reads only `kitchen/raw/`, builds geometry, adjacency, bubbles and the indicator file into `public/pantry/`. Refuses to touch the network.                         |
+| `yarn kitchen all`     | yes     | Both, in order.                                                                                                                                                    |
 
 Running `publish` twice produces byte-identical files. If a pull request shows a pantry diff, a number changed at SCB or the code changed; never both silently.
 
 ## SCB limits the client enforces
+
 150,000 cells per query (selections are split automatically) and 30 calls per 10 seconds per IP address.
 
 ## SCB table facts learned
+
 (Filled by Task 6 of Plan 1.)
 ```
 
@@ -2310,15 +2554,18 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 Throwaway proof that the site can draw the map from pantry files alone. Plan 3 replaces it.
 
 **Files:**
+
 - Create: `src/RenderCheck.tsx`, `src/RenderCheck.test.ts`, `src/pantry.ts`
 - Modify: `src/main.tsx`
 
 **Interfaces:**
+
 - Produces: `src/pantry.ts` with `loadPantry(): Promise<{ data: PantryData; topology: MunicipalityTopology }>` fetching `/pantry/data/indicators.json` and `/pantry/geometry/municipalities.topo.json` and validating both with the shared schemas. Plan 3 keeps this module.
 
 - [ ] **Step 1: Write the failing test**
 
 `src/RenderCheck.test.ts`:
+
 ```ts
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
@@ -2326,7 +2573,9 @@ import { PantryData } from '../shared/pantry'
 import { pathsFor, colourFor } from './RenderCheck'
 
 const topology = JSON.parse(readFileSync('public/pantry/geometry/municipalities.topo.json', 'utf8'))
-const data = PantryData.parse(JSON.parse(readFileSync('public/pantry/data/indicators.json', 'utf8')))
+const data = PantryData.parse(
+  JSON.parse(readFileSync('public/pantry/data/indicators.json', 'utf8')),
+)
 
 describe('render check', () => {
   it('produces one SVG path per municipality with a colour from the fixed breaks', () => {
@@ -2348,6 +2597,7 @@ Expected: FAIL, cannot resolve `./RenderCheck`.
 - [ ] **Step 3: Write the loader and component**
 
 `src/pantry.ts`:
+
 ```ts
 import { PantryData } from '../shared/pantry'
 import type { MunicipalityTopology } from '../kitchen/src/geometry/build'
@@ -2365,9 +2615,10 @@ export async function loadPantry(): Promise<{ data: PantryData; topology: Munici
 }
 ```
 
-Note: importing the *type* from the kitchen is fine (types are erased). No kitchen *code* may be imported by `src/`; Plan 3 moves `projection` into `shared/`.
+Note: importing the _type_ from the kitchen is fine (types are erased). No kitchen _code_ may be imported by `src/`; Plan 3 moves `projection` into `shared/`.
 
 `src/RenderCheck.tsx`:
+
 ```tsx
 import { geoPath, geoTransverseMercator, type GeoPermissibleObjects } from 'd3-geo'
 import { scaleThreshold } from 'd3-scale'
@@ -2380,27 +2631,53 @@ const FRAME: [number, number] = [1000, 2000]
 
 export function pathsFor(topology: MunicipalityTopology): Array<{ code: string; d: string }> {
   const fc = feature(topology, topology.objects.municipalities)
-  const projection = geoTransverseMercator().rotate([-15, 0]).fitSize(FRAME, fc as unknown as GeoPermissibleObjects)
+  const projection = geoTransverseMercator()
+    .rotate([-15, 0])
+    .fitSize(FRAME, fc as unknown as GeoPermissibleObjects)
   const path = geoPath(projection)
-  return fc.features.map((f) => ({ code: f.properties!.code, d: path(f as GeoPermissibleObjects) ?? '' }))
+  return fc.features.map((f) => ({
+    code: f.properties!.code,
+    d: path(f as GeoPermissibleObjects) ?? '',
+  }))
 }
 
 export function colourFor(indicator: Indicator, value: number | null): string {
   if (value === null) return '#ddd'
   const n = indicator.scale.breaks.length + 1
-  const scale = scaleThreshold<number, string>().domain(indicator.scale.breaks).range(schemeBlues[n] ?? schemeBlues[9]!)
+  const scale = scaleThreshold<number, string>()
+    .domain(indicator.scale.breaks)
+    .range(schemeBlues[n] ?? schemeBlues[9]!)
   return scale(value)
 }
 
-export function RenderCheck({ data, topology, year }: { data: PantryData; topology: MunicipalityTopology; year: number }) {
+export function RenderCheck({
+  data,
+  topology,
+  year,
+}: {
+  data: PantryData
+  topology: MunicipalityTopology
+  year: number
+}) {
   const indicator = data.indicators[0]!
   const series = data.series[0]!
   const yi = series.years.indexOf(year)
   const row = new Map(data.municipalities.map((m, i) => [m.code, series.values[i]?.[yi] ?? null]))
   return (
-    <svg viewBox={`0 0 ${FRAME[0]} ${FRAME[1]}`} style={{ height: '100vh' }} role="img" aria-label={`${indicator.name.en} ${year}`}>
+    <svg
+      viewBox={`0 0 ${FRAME[0]} ${FRAME[1]}`}
+      style={{ height: '100vh' }}
+      role="img"
+      aria-label={`${indicator.name.en} ${year}`}
+    >
       {pathsFor(topology).map((p) => (
-        <path key={p.code} d={p.d} fill={colourFor(indicator, row.get(p.code) ?? null)} stroke="#fff" strokeWidth={0.5}>
+        <path
+          key={p.code}
+          d={p.d}
+          fill={colourFor(indicator, row.get(p.code) ?? null)}
+          stroke="#fff"
+          strokeWidth={0.5}
+        >
           <title>{`${p.code}: ${row.get(p.code) ?? 'no data'}`}</title>
         </path>
       ))}
@@ -2410,13 +2687,16 @@ export function RenderCheck({ data, topology, year }: { data: PantryData; topolo
 ```
 
 `src/main.tsx`:
+
 ```tsx
 import { createRoot } from 'react-dom/client'
 import { loadPantry } from './pantry'
 import { RenderCheck } from './RenderCheck'
 
 const root = createRoot(document.getElementById('root')!)
-loadPantry().then(({ data, topology }) => root.render(<RenderCheck data={data} topology={topology} year={2024} />))
+loadPantry().then(({ data, topology }) =>
+  root.render(<RenderCheck data={data} topology={topology} year={2024} />),
+)
 ```
 
 - [ ] **Step 4: Run test, typecheck, and look at it**
