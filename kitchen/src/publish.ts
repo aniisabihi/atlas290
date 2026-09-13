@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import type { ZodType } from 'zod'
 import { Adjacency, Bubbles, Manifest, PantryData } from '../../shared/pantry'
@@ -9,6 +10,18 @@ import { buildTopology, centroids } from './geometry/build'
 import { municipalityProps } from './geometry/props'
 import { CKM_FROM, fetchPopulation } from './indicators/population'
 import type { FrozenData, FrozenMeta } from './scb/freeze'
+
+/**
+ * Plain, structural ordering — never `String.prototype.localeCompare` — for anything whose
+ * order ends up in a committed pantry file. Municipality codes and SCB table ids happen to be
+ * ASCII digits/letters, so no locale's collation actually reorders them today; but a
+ * determinism guarantee that holds only because of what the data happens to look like is
+ * weaker than one that holds structurally regardless of the machine's locale. This is
+ * hardening, not a fix for a live bug.
+ */
+function cmp(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0
+}
 
 export const DEFAULT_PANTRY_DIR = 'public/pantry'
 
@@ -61,7 +74,7 @@ export function buildManifest(frozen: Array<FrozenData | FrozenMeta>): Manifest 
         sha256: createHash('sha256').update(JSON.stringify(f.response)).digest('hex'),
         cells: f.response.value.length,
       }))
-      .sort((a, b) => a.table.localeCompare(b.table) || a.sha256.localeCompare(b.sha256)),
+      .sort((a, b) => cmp(a.table, b.table) || cmp(a.sha256, b.sha256)),
   })
 }
 
@@ -98,50 +111,76 @@ const offline: typeof fetch = async (input) => {
   )
 }
 
-export async function publish(opts: { pantryDir?: string; rawDir?: string } = {}): Promise<void> {
+export type PublishDeps = {
+  fetchPopulation?: typeof fetchPopulation
+  buildTopology?: typeof buildTopology
+}
+
+export async function publish(
+  opts: { pantryDir?: string; rawDir?: string; deps?: PublishDeps } = {},
+): Promise<void> {
   const pantryDir = opts.pantryDir ?? DEFAULT_PANTRY_DIR
-  const { municipalities, indicator, series, frozen } = await fetchPopulation({
+  const doFetchPopulation = opts.deps?.fetchPopulation ?? fetchPopulation
+  const doBuildTopology = opts.deps?.buildTopology ?? buildTopology
+
+  const { municipalities, indicator, series, frozen } = await doFetchPopulation({
     rawDir: opts.rawDir,
     deps: { fetchImpl: offline },
   })
 
-  const topology = await buildTopology({
-    outFile: join(pantryDir, 'geometry/municipalities.topo.json'),
-  })
-  const geoCodes = topology.objects.municipalities.geometries.map(
-    (g, i) => municipalityProps(g, i).code,
-  )
-  assertCodesMatch(
-    geoCodes,
-    municipalities.map((m) => m.code),
-  )
+  const topoOutFile = join(pantryDir, 'geometry/municipalities.topo.json')
+  // Review finding 1: buildTopology() writes its output file as a side effect of running
+  // mapshaper, and that used to happen before assertCodesMatch ran — so a genuine code
+  // mismatch threw *after* the topology file already existed on disk, leaving a stale file
+  // behind and contradicting both R22 and docs/kitchen.md's "refuses to write anything"
+  // claim. Building into a scratch directory outside the pantry first, and only copying into
+  // the pantry once the codes are proven to match, makes "throws before writing anything"
+  // actually true rather than true only for the files publish() itself writes via
+  // writePantryFile.
+  const scratchDir = mkdtempSync(join(tmpdir(), 'sde-publish-'))
+  try {
+    const scratchTopoFile = join(scratchDir, 'municipalities.topo.json')
+    const topology = await doBuildTopology({ outFile: scratchTopoFile })
+    const geoCodes = topology.objects.municipalities.geometries.map(
+      (g, i) => municipalityProps(g, i).code,
+    )
+    assertCodesMatch(
+      geoCodes,
+      municipalities.map((m) => m.code),
+    )
 
-  const c = centroids(topology)
-  const curated = curatedEdgePairs(
-    loadCuratedEdges(join(import.meta.dirname, 'geometry/curated-edges.json')),
-  )
-  writePantryFile(
-    join(pantryDir, 'geometry/adjacency.json'),
-    Adjacency,
-    buildAdjacency(topology, c, curated),
-  )
+    mkdirSync(dirname(topoOutFile), { recursive: true })
+    copyFileSync(scratchTopoFile, topoOutFile)
 
-  // Last year before SCB's Cell Key Method perturbation begins: a stable, unperturbed
-  // reference year for the bubble layout, rather than always the newest one.
-  const latestYear = CKM_FROM - 1
-  const yi = series.years.indexOf(latestYear)
-  const population = new Map(municipalities.map((m, i) => [m.code, series.values[i]?.[yi] ?? 0]))
-  writePantryFile(
-    join(pantryDir, 'layout/bubbles.json'),
-    Bubbles,
-    buildBubbles(c, population, latestYear),
-  )
+    const c = centroids(topology)
+    const curated = curatedEdgePairs(
+      loadCuratedEdges(join(import.meta.dirname, 'geometry/curated-edges.json')),
+    )
+    writePantryFile(
+      join(pantryDir, 'geometry/adjacency.json'),
+      Adjacency,
+      buildAdjacency(topology, c, curated),
+    )
 
-  writePantryFile(join(pantryDir, 'data/indicators.json'), PantryData, {
-    schemaVersion: 1,
-    municipalities,
-    indicators: [indicator],
-    series: [series],
-  })
-  writePantryFile(join(pantryDir, 'manifest.json'), Manifest, buildManifest(frozen))
+    // Last year before SCB's Cell Key Method perturbation begins: a stable, unperturbed
+    // reference year for the bubble layout, rather than always the newest one.
+    const latestYear = CKM_FROM - 1
+    const yi = series.years.indexOf(latestYear)
+    const population = new Map(municipalities.map((m, i) => [m.code, series.values[i]?.[yi] ?? 0]))
+    writePantryFile(
+      join(pantryDir, 'layout/bubbles.json'),
+      Bubbles,
+      buildBubbles(c, population, latestYear),
+    )
+
+    writePantryFile(join(pantryDir, 'data/indicators.json'), PantryData, {
+      schemaVersion: 1,
+      municipalities,
+      indicators: [indicator],
+      series: [series],
+    })
+    writePantryFile(join(pantryDir, 'manifest.json'), Manifest, buildManifest(frozen))
+  } finally {
+    rmSync(scratchDir, { recursive: true, force: true })
+  }
 }

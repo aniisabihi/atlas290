@@ -1,5 +1,11 @@
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { assertCodesMatch, buildManifest, stableStringify } from './publish'
+import type { MunicipalityTopology } from '../../shared/geometry'
+import type { buildTopology } from './geometry/build'
+import { POPULATION, type fetchPopulation } from './indicators/population'
+import { assertCodesMatch, buildManifest, publish, stableStringify } from './publish'
 
 describe('stableStringify', () => {
   it('sorts keys recursively and ends with a newline', () => {
@@ -84,5 +90,84 @@ describe('assertCodesMatch (R22)', () => {
 
   it('throws when one set is a strict subset of the other (same members, different size)', () => {
     expect(() => assertCodesMatch(['0001', '0002', '0003'], ['0001', '0002'])).toThrow(/0003/)
+  })
+})
+
+// Review finding 1: buildTopology() writes municipalities.topo.json as a side effect of
+// running mapshaper, and that write used to happen *before* assertCodesMatch ran — so on a
+// genuine code mismatch, publish() threw but left a stale topology file already on disk,
+// contradicting R22's "must throw before writing anything" and docs/kitchen.md's claim that
+// publish refuses to write anything on a mismatch. Fixed by building the topology into a
+// scratch directory first and only copying it into the pantry once the check passes.
+describe('publish() writes nothing on a code mismatch (review finding 1)', () => {
+  const fakeFetchPopulation: typeof fetchPopulation = async () => ({
+    municipalities: [
+      { code: '0001', name: { sv: 'A', en: 'A' }, county: '00' },
+      { code: '0002', name: { sv: 'B', en: 'B' }, county: '00' },
+    ],
+    indicator: POPULATION,
+    series: {
+      indicator: 'population',
+      years: [2024],
+      values: [[1], [2]],
+      status: [[0], [0]],
+    },
+    frozen: [],
+  })
+
+  // Deliberately mismatched against fakeFetchPopulation's codes: '0002' is missing here,
+  // '0003' is extra — proves the geometry/statistics equality check, not just a length check.
+  const fakeTopology = {
+    type: 'Topology',
+    arcs: [
+      [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+        [0, 0],
+      ],
+    ],
+    objects: {
+      municipalities: {
+        type: 'GeometryCollection',
+        geometries: [
+          { type: 'Polygon', arcs: [[0]], properties: { code: '0001', name: 'A' } },
+          { type: 'Polygon', arcs: [[0]], properties: { code: '0003', name: 'C' } },
+        ],
+      },
+      counties: { type: 'GeometryCollection', geometries: [] },
+    },
+  } as unknown as MunicipalityTopology
+
+  const fakeBuildTopology: typeof buildTopology = async (opts = {}) => {
+    // Real buildTopology() writes its outFile as a side effect before returning — the fake
+    // reproduces exactly that side effect so this test exercises the real ordering hazard,
+    // not a hypothetical one.
+    if (opts.outFile) {
+      mkdirSync(dirname(opts.outFile), { recursive: true })
+      writeFileSync(opts.outFile, JSON.stringify(fakeTopology))
+    }
+    return fakeTopology
+  }
+
+  it('leaves no pantry file on disk — including the topology file itself — when codes mismatch', async () => {
+    const pantryDir = mkdtempSync(join(tmpdir(), 'sde-pantry-test-'))
+    try {
+      await expect(
+        publish({
+          pantryDir,
+          deps: { fetchPopulation: fakeFetchPopulation, buildTopology: fakeBuildTopology },
+        }),
+      ).rejects.toThrow(/mismatch/)
+
+      expect(existsSync(join(pantryDir, 'geometry/municipalities.topo.json'))).toBe(false)
+      expect(existsSync(join(pantryDir, 'geometry/adjacency.json'))).toBe(false)
+      expect(existsSync(join(pantryDir, 'layout/bubbles.json'))).toBe(false)
+      expect(existsSync(join(pantryDir, 'data/indicators.json'))).toBe(false)
+      expect(existsSync(join(pantryDir, 'manifest.json'))).toBe(false)
+    } finally {
+      rmSync(pantryDir, { recursive: true, force: true })
+    }
   })
 })

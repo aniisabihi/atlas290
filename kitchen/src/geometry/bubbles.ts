@@ -20,7 +20,11 @@ export function buildBubbles(
 ): Bubbles {
   const maxPop = Math.max(...population.values())
   const nodes: Node[] = [...centroids.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
+    // Plain structural comparison, not localeCompare: node order feeds the force simulation
+    // below, so the sort must not depend on the running machine's ICU collation. Municipality
+    // codes are ASCII digits, so no locale reorders them today — this is hardening a
+    // determinism guarantee that should hold structurally, not a fix for an observed bug.
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([code, [x, y]]) => ({
       code,
       x,

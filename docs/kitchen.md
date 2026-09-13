@@ -10,9 +10,12 @@ The kitchen is the offline data pipeline. It is the only code that talks to SCB.
 
 Running `publish` twice produces byte-identical files. If a pull request shows a pantry diff, a
 number changed at SCB or the code changed; never both silently. `publish()` also refuses to
-write anything unless the topology's municipality codes and the fetched statistics' municipality
-codes are exactly the same set — the map and the numbers are joined by code, and a silent
-mismatch there would mean a municipality is drawn with another's data, or drawn with none.
+write **any** pantry file — including the topology file itself — unless the topology's
+municipality codes and the fetched statistics' municipality codes are exactly the same set: the
+topology is built into a scratch directory first, the code check runs against that, and only a
+passing check lets the topology file land in `public/pantry/`. The map and the numbers are
+joined by code, and a silent mismatch there would mean a municipality is drawn with another's
+data, or drawn with none.
 
 ## SCB limits the client enforces
 
