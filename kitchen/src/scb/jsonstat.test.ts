@@ -18,4 +18,46 @@ describe('toRows', () => {
   it('rejects a dataset whose value length does not match its size', () => {
     expect(() => toRows({ ...fixture, value: [1, 2] })).toThrow(/size/)
   })
+
+  it('orders object-form index by position, not alphabetically', () => {
+    // This inline dataset has an index where position order differs from alphabetical order
+    // {"0380": 0, "0180": 1} means "0380" is first (position 0), "0180" is second (position 1)
+    // If sorted alphabetically, "0180" would come first, causing a silent corruption
+    const dataset = {
+      id: ['Region'],
+      size: [2],
+      dimension: {
+        Region: {
+          category: {
+            index: { '0380': 0, '0180': 1 },
+          },
+        },
+      },
+      value: [111, 222],
+    }
+    const rows = toRows(dataset)
+    expect(rows[0]).toEqual({ dims: { Region: '0380' }, value: 111 })
+    expect(rows[1]).toEqual({ dims: { Region: '0180' }, value: 222 })
+  })
+
+  it('rejects null dimension in type guard', () => {
+    expect(isJsonStat2({ ...fixture, dimension: null })).toBe(false)
+  })
+
+  it('throws when position is out of range for dimension', () => {
+    // Crafted to produce a position out of range
+    const dataset = {
+      id: ['Region'],
+      size: [1],
+      dimension: {
+        Region: {
+          category: {
+            index: ['0180'],
+          },
+        },
+      },
+      value: [111, 222], // Size is 1, but value length is 2
+    }
+    expect(() => toRows(dataset)).toThrow(/size/)
+  })
 })

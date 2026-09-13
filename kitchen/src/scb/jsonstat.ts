@@ -17,6 +17,7 @@ export function isJsonStat2(x: unknown): x is JsonStat2 {
     Array.isArray(o.id) &&
     Array.isArray(o.size) &&
     typeof o.dimension === 'object' &&
+    o.dimension !== null &&
     Array.isArray(o.value)
   )
 }
@@ -41,8 +42,22 @@ export function toRows(ds: JsonStat2): Row[] {
   return ds.value.map((value, flat) => {
     const dims: Record<string, string> = {}
     ds.id.forEach((dim, d) => {
-      const pos = Math.floor(flat / (strides[d] ?? 1)) % (ds.size[d] ?? 1)
-      dims[dim] = codes[d]?.[pos] ?? ''
+      const size = ds.size[d]
+      if (size === undefined) {
+        throw new Error(`size missing for dimension index ${d} (dimension name: ${dim})`)
+      }
+      const stride = strides[d]
+      if (stride === undefined) {
+        throw new Error(`stride missing for dimension index ${d} (dimension name: ${dim})`)
+      }
+      const pos = Math.floor(flat / stride) % size
+      const code = codes[d]?.[pos]
+      if (code === undefined) {
+        throw new Error(
+          `position ${pos} out of range for dimension ${dim} (has ${codes[d]?.length ?? 0} codes)`,
+        )
+      }
+      dims[dim] = code
     })
     return { dims, value }
   })
