@@ -1,0 +1,22 @@
+{
+  "license": "CC0-1.0",
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "cells": 290,
+      "fetchedAt": "2026-09-13T21:55:40.958Z",
+      "lang": "sv",
+      "sha256": "0769a87b70a383fcc8ad6a0fa37b49e33391aff215fd85acd8bdffa1043743fb",
+      "table": "TAB5557",
+      "url": "https://statistikdatabasen.scb.se/api/v2/tables/TAB5557/data?lang=sv&outputFormat=json-stat2"
+    },
+    {
+      "cells": 132240,
+      "fetchedAt": "2026-09-13T21:55:39.052Z",
+      "lang": "sv",
+      "sha256": "b2cddeb5681180e5143c7d6494a0752e215f8a08d5f727e3fa872eefcf9161f9",
+      "table": "TAB638",
+      "url": "https://statistikdatabasen.scb.se/api/v2/tables/TAB638/data?lang=sv&outputFormat=json-stat2"
+    }
+  ]
+}

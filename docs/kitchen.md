@@ -1,8 +1,23 @@
 # Running the kitchen
 
-(The full pipeline walkthrough — `fetch` / `publish` / `all`, determinism guarantee, SCB
-limits — is written by Task 10 of Plan 1. This file is created early, by Task 6's spike, only
-to record the section below before it is needed.)
+The kitchen is the offline data pipeline. It is the only code that talks to SCB.
+
+| Command                | Network | What it does                                                                                                                                                       |
+| ---------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `yarn kitchen fetch`   | yes     | Downloads the tables the indicators need and freezes each response under `kitchen/raw/<table>/<lang>/`. Already-frozen chunks are skipped, so re-running is cheap. |
+| `yarn kitchen publish` | **no**  | Reads only `kitchen/raw/`, builds geometry, adjacency, bubbles and the indicator file into `public/pantry/`. Refuses to touch the network.                         |
+| `yarn kitchen all`     | yes     | Both, in order.                                                                                                                                                    |
+
+Running `publish` twice produces byte-identical files. If a pull request shows a pantry diff, a
+number changed at SCB or the code changed; never both silently. `publish()` also refuses to
+write anything unless the topology's municipality codes and the fetched statistics' municipality
+codes are exactly the same set — the map and the numbers are joined by code, and a silent
+mismatch there would mean a municipality is drawn with another's data, or drawn with none.
+
+## SCB limits the client enforces
+
+150,000 cells per query (selections are split automatically) and 30 calls per 10 seconds per IP
+address.
 
 ## SCB table facts learned
 
