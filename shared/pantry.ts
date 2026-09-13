@@ -147,11 +147,37 @@ export const Manifest = z.object({
       table: z.string(),
       lang: z.enum(['sv', 'en']),
       url: z.string().url(),
+      /**
+       * Basename (minus extension) of the frozen raw file under kitchen/raw/ that holds this
+       * exact POST selection — see `selectionKey` in kitchen/src/scb/freeze.ts. The endpoint
+       * `url` alone is identical for every chunk of a table; this is what links a manifest
+       * entry to the specific committed file its selection came from.
+       */
+      selectionKey: z.string(),
+      /**
+       * The ContentsCode this selection actually resolved to at fetch time (see
+       * `contentsCodeSelection` in kitchen/src/indicators/population.ts), not a literal
+       * hardcoded in the indicator definition — so this tracks a codelist change the way the
+       * fetch itself does.
+       */
+      contentCode: z.string(),
       /** Copied from the frozen raw file; set once at freeze time, never at publish time. */
       fetchedAt: z.string().datetime(),
       sha256: z.string().length(64),
       cells: z.number().int().nonnegative(),
     }),
   ),
+  /**
+   * The SCB municipality/county boundary shapefile that every geometry-derived pantry file
+   * (topology, adjacency, bubbles) is built from. It is not an SCB PxWeb table chunk — there
+   * is no `selection` POST body, just a plain zip download — so it is recorded separately
+   * from `sources` rather than forced into that shape.
+   */
+  geometry: z.object({
+    url: z.string().url(),
+    filename: z.string(),
+    /** The version date SCB publishes in the filename/page, as YYYY-MM-DD. */
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'date must be YYYY-MM-DD'),
+  }),
 })
 export type Manifest = z.infer<typeof Manifest>

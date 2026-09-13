@@ -5,7 +5,19 @@ import { describe, expect, it } from 'vitest'
 import type { MunicipalityTopology } from '../../shared/geometry'
 import type { buildTopology } from './geometry/build'
 import { POPULATION, type fetchPopulation } from './indicators/population'
-import { assertCodesMatch, buildManifest, publish, stableStringify } from './publish'
+import {
+  assertCodesMatch,
+  buildManifest,
+  bubblePopulation,
+  publish,
+  stableStringify,
+} from './publish'
+
+const fakeGeometrySource = {
+  url: 'https://www.scb.se/contentassets/3443fea3fa6640f7a57ea15d9a372d33/shape_svenska_260225.zip',
+  filename: 'shape_svenska_260225.zip',
+  date: '2026-02-25',
+}
 
 describe('stableStringify', () => {
   it('sorts keys recursively and ends with a newline', () => {
@@ -16,41 +28,101 @@ describe('stableStringify', () => {
 })
 
 describe('buildManifest', () => {
-  it('records one source per frozen data chunk with a sha256 of its response', () => {
-    const m = buildManifest([
-      {
-        kind: 'data',
-        table: 'TAB638',
-        lang: 'sv',
-        url: 'https://statistikdatabasen.scb.se/api/v2/tables/TAB638/data?lang=sv&outputFormat=json-stat2',
-        selection: { Tid: ['2024'] },
-        fetchedAt: '2026-09-13T10:00:00.000Z',
-        response: {
-          id: ['Tid'],
-          size: [1],
-          dimension: { Tid: { category: { index: ['2024'] } } },
-          value: [1],
+  it('records one source per frozen data chunk with a sha256 of its response, plus its selectionKey and resolved contentCode', () => {
+    const m = buildManifest(
+      [
+        {
+          kind: 'data',
+          table: 'TAB638',
+          lang: 'sv',
+          url: 'https://statistikdatabasen.scb.se/api/v2/tables/TAB638/data?lang=sv&outputFormat=json-stat2',
+          selection: { Tid: ['2024'], ContentsCode: ['BE0101N1'] },
+          fetchedAt: '2026-09-13T10:00:00.000Z',
+          response: {
+            id: ['Tid'],
+            size: [1],
+            dimension: { Tid: { category: { index: ['2024'] } } },
+            value: [1],
+          },
         },
-      },
-    ])
+      ],
+      fakeGeometrySource,
+    )
     expect(m.license).toBe('CC0-1.0')
     expect(m.sources).toHaveLength(1)
     expect(m.sources[0]?.cells).toBe(1)
     expect(m.sources[0]?.sha256).toMatch(/^[0-9a-f]{64}$/)
+    expect(m.sources[0]?.contentCode).toBe('BE0101N1')
+    expect(m.sources[0]?.selectionKey).toMatch(/^[0-9a-f]{16}$/)
+    expect(m.geometry).toEqual(fakeGeometrySource)
   })
 
   it('ignores metadata chunks — only data chunks become sources', () => {
-    const m = buildManifest([
-      {
-        kind: 'metadata',
-        table: 'TAB638',
-        lang: 'sv',
-        url: 'https://statistikdatabasen.scb.se/api/v2/tables/TAB638/metadata?lang=sv',
-        fetchedAt: '2026-09-13T10:00:00.000Z',
-        response: {},
-      },
-    ])
+    const m = buildManifest(
+      [
+        {
+          kind: 'metadata',
+          table: 'TAB638',
+          lang: 'sv',
+          url: 'https://statistikdatabasen.scb.se/api/v2/tables/TAB638/metadata?lang=sv',
+          fetchedAt: '2026-09-13T10:00:00.000Z',
+          response: {},
+        },
+      ],
+      fakeGeometrySource,
+    )
     expect(m.sources).toHaveLength(0)
+  })
+
+  it('throws, naming the table and lang, when a data chunk selection has no single ContentsCode', () => {
+    const chunk = {
+      kind: 'data' as const,
+      table: 'TAB638',
+      lang: 'sv' as const,
+      url: 'https://statistikdatabasen.scb.se/api/v2/tables/TAB638/data?lang=sv&outputFormat=json-stat2',
+      selection: { Tid: ['2024'] },
+      fetchedAt: '2026-09-13T10:00:00.000Z',
+      response: {
+        id: ['Tid'],
+        size: [1],
+        dimension: { Tid: { category: { index: ['2024'] } } },
+        value: [1],
+      },
+    }
+    expect(() => buildManifest([chunk], fakeGeometrySource)).toThrow(/TAB638/)
+  })
+})
+
+describe('bubblePopulation (review finding 4)', () => {
+  const municipalities = [
+    { code: '0001', name: { sv: 'A', en: 'A' }, county: '00' },
+    { code: '0002', name: { sv: 'B', en: 'B' }, county: '00' },
+  ]
+  const series = {
+    indicator: 'population',
+    years: [2023, 2024],
+    values: [
+      [100, 110],
+      [200, null],
+    ],
+    status: [
+      [0, 0],
+      [0, 1],
+    ],
+  }
+
+  it('reads the value for the requested year per municipality', () => {
+    expect([...bubblePopulation(municipalities.slice(0, 1), series, 2023)]).toEqual([['0001', 100]])
+  })
+
+  it('throws, naming the year and the available range, when the year is not in the series', () => {
+    expect(() => bubblePopulation(municipalities, series, 2030)).toThrow(/2030/)
+    expect(() => bubblePopulation(municipalities, series, 2030)).toThrow(/2023/)
+    expect(() => bubblePopulation(municipalities, series, 2030)).toThrow(/2024/)
+  })
+
+  it('throws, naming the municipality, on a null value rather than substituting zero', () => {
+    expect(() => bubblePopulation(municipalities, series, 2024)).toThrow(/0002/)
   })
 })
 

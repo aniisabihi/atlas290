@@ -4,24 +4,15 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import type { ZodType } from 'zod'
 import { Adjacency, Bubbles, Manifest, PantryData } from '../../shared/pantry'
+import type { IndicatorSeries, Municipality } from '../../shared/pantry'
+import { cmp } from './cmp'
 import { buildAdjacency, curatedEdgePairs, type CuratedEdge } from './geometry/adjacency'
 import { buildBubbles } from './geometry/bubbles'
-import { buildTopology, centroids } from './geometry/build'
+import { buildTopology, centroids, GEOMETRY_SOURCE } from './geometry/build'
 import { municipalityProps } from './geometry/props'
 import { CKM_FROM, fetchPopulation } from './indicators/population'
+import { selectionKey as computeSelectionKey } from './scb/freeze'
 import type { FrozenData, FrozenMeta } from './scb/freeze'
-
-/**
- * Plain, structural ordering — never `String.prototype.localeCompare` — for anything whose
- * order ends up in a committed pantry file. Municipality codes and SCB table ids happen to be
- * ASCII digits/letters, so no locale's collation actually reorders them today; but a
- * determinism guarantee that holds only because of what the data happens to look like is
- * weaker than one that holds structurally regardless of the machine's locale. This is
- * hardening, not a fix for a live bug.
- */
-function cmp(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0
-}
 
 export const DEFAULT_PANTRY_DIR = 'public/pantry'
 
@@ -60,7 +51,27 @@ export function writePantryFile(path: string, schema: ZodType, value: unknown): 
   writeFileSync(path, stableStringify(parsed))
 }
 
-export function buildManifest(frozen: Array<FrozenData | FrozenMeta>): Manifest {
+/**
+ * The ContentsCode a frozen chunk's selection actually resolved to (review finding 3):
+ * read off the frozen `selection` itself, which `contentsCodeSelection`
+ * (kitchen/src/indicators/population.ts) resolved by label at fetch time — never a literal
+ * hardcoded here — so the manifest tracks a codelist change the same way the fetch does.
+ */
+function sourceContentCode(f: FrozenData): string {
+  const codes = f.selection['ContentsCode']
+  if (!codes || codes.length !== 1) {
+    throw new Error(
+      `${f.table} ${f.lang}: expected exactly one ContentsCode in the frozen selection for ` +
+        `provenance, got ${JSON.stringify(codes)}`,
+    )
+  }
+  return codes[0]!
+}
+
+export function buildManifest(
+  frozen: Array<FrozenData | FrozenMeta>,
+  geometry: Manifest['geometry'],
+): Manifest {
   return Manifest.parse({
     schemaVersion: 1,
     license: 'CC0-1.0',
@@ -70,11 +81,14 @@ export function buildManifest(frozen: Array<FrozenData | FrozenMeta>): Manifest 
         table: f.table,
         lang: f.lang,
         url: f.url,
+        selectionKey: computeSelectionKey(f.selection),
+        contentCode: sourceContentCode(f),
         fetchedAt: f.fetchedAt,
         sha256: createHash('sha256').update(JSON.stringify(f.response)).digest('hex'),
         cells: f.response.value.length,
       }))
       .sort((a, b) => cmp(a.table, b.table) || cmp(a.sha256, b.sha256)),
+    geometry,
   })
 }
 
@@ -101,6 +115,40 @@ export function assertCodesMatch(
       `${statSet.size} statistics codes. Only in geometry (${onlyInGeometry.length}): ` +
       `${onlyInGeometry.join(', ') || '(none)'}. Only in statistics (${onlyInStatistics.length}): ` +
       `${onlyInStatistics.join(', ') || '(none)'}.`,
+  )
+}
+
+/**
+ * Population for every municipality in `year`, for the bubble layout (review finding 4).
+ * `series.values[i]?.[yi] ?? 0` used to substitute zero both when the year was not found
+ * (yi === -1, never checked) and when a municipality's value was genuinely null — violating
+ * the project's rule that absence is never zero. If the reference year ever fell outside the
+ * series, every bubble would silently get radius zero and publish as 290 invisible points. Now
+ * both cases throw, naming the year, the available range, or the offending municipality.
+ */
+export function bubblePopulation(
+  municipalities: Municipality[],
+  series: IndicatorSeries,
+  year: number,
+): Map<string, number> {
+  const yi = series.years.indexOf(year)
+  if (yi === -1) {
+    throw new Error(
+      `bubble layout: reference year ${year} not found in population series; available ` +
+        `years are ${series.years[0]}–${series.years[series.years.length - 1]}`,
+    )
+  }
+  return new Map(
+    municipalities.map((m, i) => {
+      const v = series.values[i]?.[yi]
+      if (v == null) {
+        throw new Error(
+          `bubble layout: population for ${m.code} in ${year} is null; cannot size a bubble ` +
+            'without a real value',
+        )
+      }
+      return [m.code, v]
+    }),
   )
 }
 
@@ -163,14 +211,15 @@ export async function publish(
     )
 
     // Last year before SCB's Cell Key Method perturbation begins: a stable, unperturbed
-    // reference year for the bubble layout, rather than always the newest one.
-    const latestYear = CKM_FROM - 1
-    const yi = series.years.indexOf(latestYear)
-    const population = new Map(municipalities.map((m, i) => [m.code, series.values[i]?.[yi] ?? 0]))
+    // reference year for the bubble layout, rather than always the newest one. Deliberately
+    // named apart from population.ts's LATEST_YEAR (review finding 2): this is "the last
+    // unperturbed year", tied to CKM_FROM, not "the newest published year".
+    const bubbleReferenceYear = CKM_FROM - 1
+    const population = bubblePopulation(municipalities, series, bubbleReferenceYear)
     writePantryFile(
       join(pantryDir, 'layout/bubbles.json'),
       Bubbles,
-      buildBubbles(c, population, latestYear),
+      buildBubbles(c, population, bubbleReferenceYear),
     )
 
     writePantryFile(join(pantryDir, 'data/indicators.json'), PantryData, {
@@ -179,7 +228,11 @@ export async function publish(
       indicators: [indicator],
       series: [series],
     })
-    writePantryFile(join(pantryDir, 'manifest.json'), Manifest, buildManifest(frozen))
+    writePantryFile(
+      join(pantryDir, 'manifest.json'),
+      Manifest,
+      buildManifest(frozen, GEOMETRY_SOURCE),
+    )
   } finally {
     rmSync(scratchDir, { recursive: true, force: true })
   }

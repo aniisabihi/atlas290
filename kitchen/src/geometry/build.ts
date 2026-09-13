@@ -7,8 +7,17 @@ import type { GeoPermissibleObjects } from 'd3-geo'
 import { FRAME, projection, type MunicipalityTopology } from '../../../shared/geometry'
 import { municipalityProps } from './props'
 
-export type { MunicipalityProps, MunicipalityTopology } from '../../../shared/geometry'
-export { FRAME, projection } from '../../../shared/geometry'
+/**
+ * The SCB municipality/county boundary shapefile `buildTopology` reads (review finding 3):
+ * recorded in the provenance manifest since it is a data source like any SCB table, even
+ * though it is a hand-downloaded zip rather than something kitchen/src/scb/client.ts fetched.
+ * URL, filename and version date are from docs/research/reports/boundary-geodata.md section 2.
+ */
+export const GEOMETRY_SOURCE = {
+  url: 'https://www.scb.se/contentassets/3443fea3fa6640f7a57ea15d9a372d33/shape_svenska_260225.zip',
+  filename: 'shape_svenska_260225.zip',
+  date: '2026-02-25',
+}
 
 export async function buildTopology(
   opts: { rawDir?: string; outFile?: string } = {},
