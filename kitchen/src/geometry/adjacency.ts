@@ -1,8 +1,28 @@
 import { neighbors } from 'topojson-client'
 import type { GeometryCollection, Topology } from 'topojson-specification'
 import { Adjacency } from '../../../shared/pantry'
+import { municipalityProps } from './props'
 
 type Topo = Topology<{ municipalities: GeometryCollection<{ code: string; name: string }> }>
+
+/**
+ * One entry of `curated-edges.json` (review finding 3): carries both codes, both
+ * municipality names, and the reason the pair was chosen, so a future maintainer can
+ * judge whether an entry is still right by reading the file itself, without needing this
+ * task's report.
+ */
+export type CuratedEdge = {
+  from: string
+  fromName: string
+  to: string
+  toName: string
+  reason: string
+}
+
+/** Converts the annotated curated-edges.json records into the plain [from, to] code pairs `buildAdjacency` expects. */
+export function curatedEdgePairs(edges: CuratedEdge[]): Array<[string, string]> {
+  return edges.map((e) => [e.from, e.to])
+}
 
 export function isConnected(neighbours: Record<string, string[]>): boolean {
   const codes = Object.keys(neighbours)
@@ -55,9 +75,8 @@ export function buildAdjacency(
   curated: Array<[string, string]>,
 ): Adjacency {
   const geoms = topology.objects.municipalities.geometries
-  // Every real municipality geometry carries { code, name }; only a topojson NullObject
-  // (never produced by our build) would leave `properties` untyped, hence the assertion.
-  const codes = geoms.map((g) => (g.properties as { code: string; name: string }).code)
+  const codes = geoms.map((g, i) => municipalityProps(g, i).code)
+  const codeSet = new Set(codes)
   const nb: Record<string, Set<string>> = Object.fromEntries(
     codes.map((c) => [c, new Set<string>()]),
   )
@@ -68,8 +87,19 @@ export function buildAdjacency(
     }
   })
   for (const [a, b] of curated) {
-    nb[a]?.add(b)
-    nb[b]?.add(a)
+    // Review finding 2: `nb[a]?.add(...)` on a typo'd code used to be a silent no-op. A
+    // curated edge naming a code that isn't a real municipality in this topology now
+    // fails loudly, naming both the offending code and the pair it came from, instead of
+    // quietly dropping a keyboard-navigation edge or crashing later with a confusing
+    // "reading properties of undefined" when the synthetic-join step looks it up.
+    if (!codeSet.has(a)) {
+      throw new Error(`curated edge ['${a}', '${b}']: '${a}' is not a real municipality code`)
+    }
+    if (!codeSet.has(b)) {
+      throw new Error(`curated edge ['${a}', '${b}']: '${b}' is not a real municipality code`)
+    }
+    nb[a]!.add(b)
+    nb[b]!.add(a)
   }
   const synthetic: Array<[string, string]> = []
   const plain = () => Object.fromEntries(Object.entries(nb).map(([k, v]) => [k, [...v].sort()]))

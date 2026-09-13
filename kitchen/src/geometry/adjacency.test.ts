@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { GeometryCollection, Topology } from 'topojson-specification'
-import { buildAdjacency, isConnected } from './adjacency'
+import { buildAdjacency, curatedEdgePairs, isConnected, type CuratedEdge } from './adjacency'
 
 // Three squares, each with its own arc: A and B are coincident in space but share no arc
 // index, so topojson.neighbors (which detects neighbours by shared arc index, not by
@@ -72,5 +72,24 @@ describe('buildAdjacency', () => {
     ])
     expect(adj.neighbours['0003']).toContain('0001')
     expect(adj.synthetic).toEqual([])
+  })
+
+  it('throws naming the pair and the unknown code when a curated edge is not a real municipality', () => {
+    expect(() => buildAdjacency(topo, centroids, [['0003', '9999']])).toThrow(/9999/)
+    expect(() => buildAdjacency(topo, centroids, [['0003', '9999']])).toThrow(/0003/)
+    expect(() => buildAdjacency(topo, centroids, [['8888', '0001']])).toThrow(/8888/)
+  })
+})
+
+describe('curatedEdgePairs', () => {
+  it('extracts plain [from, to] code pairs from the annotated curated-edges.json records', () => {
+    const edges: CuratedEdge[] = [
+      { from: '0980', fromName: 'Gotland', to: '0192', toName: 'Nynäshamn', reason: 'ferry' },
+      { from: '1407', fromName: 'Öckerö', to: '1480', toName: 'Göteborg', reason: 'ferry' },
+    ]
+    expect(curatedEdgePairs(edges)).toEqual([
+      ['0980', '0192'],
+      ['1407', '1480'],
+    ])
   })
 })

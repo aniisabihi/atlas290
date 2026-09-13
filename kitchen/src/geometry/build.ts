@@ -5,6 +5,7 @@ import { geoPath } from 'd3-geo'
 import { feature } from 'topojson-client'
 import type { GeoPermissibleObjects } from 'd3-geo'
 import { FRAME, projection, type MunicipalityTopology } from '../../../shared/geometry'
+import { municipalityProps } from './props'
 
 export type { MunicipalityProps, MunicipalityTopology } from '../../../shared/geometry'
 export { FRAME, projection } from '../../../shared/geometry'
@@ -25,7 +26,15 @@ export async function buildTopology(
       'combine-files',
       '-proj',
       'wgs84',
+      // gap-width pinned explicitly rather than left on mapshaper's "automatic" default
+      // (review finding 1): on the real SCB shapefile this removes 3 of 10 detected
+      // slivers ("[clean] Removed 3 of 10 slivers using 1.5km width threshold"). 1.5km is
+      // far below the size of any real municipality feature, so this is digitisation
+      // noise cleanup, not a loss of real thematic boundary detail — but the value is
+      // now a decision recorded in source control, not whatever mapshaper's heuristic
+      // happens to compute from the data on a given run/version.
       '-clean',
+      'gap-width=1.5km',
       '-rename-layers',
       'municipalities,counties',
       '-rename-fields',
@@ -49,13 +58,11 @@ export function centroids(topology: MunicipalityTopology): Map<string, [number, 
   const proj = projection(topology)
   const path = geoPath(proj)
   const out = new Map<string, [number, number]>()
-  for (const g of topology.objects.municipalities.geometries) {
+  topology.objects.municipalities.geometries.forEach((g, i) => {
     const f = feature(topology, g) as unknown as GeoPermissibleObjects
     const [x, y] = path.centroid(f)
-    // Every real municipality geometry carries { code, name }; only a topojson NullObject
-    // (never produced by our build) would leave `properties` untyped, hence the assertion.
-    const props = g.properties as { code: string; name: string }
-    out.set(props.code, [x / FRAME[0], y / FRAME[1]])
-  }
+    const { code } = municipalityProps(g, i)
+    out.set(code, [x / FRAME[0], y / FRAME[1]])
+  })
   return out
 }

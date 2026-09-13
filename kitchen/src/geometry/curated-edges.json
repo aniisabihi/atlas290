@@ -1,7 +1,37 @@
 [
-  ["1407", "1480"],
-  ["1419", "1415"],
-  ["0125", "0180"],
-  ["0186", "0180"],
-  ["0980", "0192"]
+  {
+    "from": "1407",
+    "fromName": "Öckerö",
+    "to": "1480",
+    "toName": "Göteborg",
+    "reason": "Real ferry (Öckeröleden) lands at Fiskebäck in Göteborg. The automatic nearest-centroid pick was Kungälv, which Öckerö has no ferry or bridge link to."
+  },
+  {
+    "from": "1419",
+    "fromName": "Tjörn",
+    "to": "1415",
+    "toName": "Stenungsund",
+    "reason": "Tjörnbroarna bridge is Tjörn's real, primary link to the mainland at Stenungsund. The automatic pick was Orust, a neighbouring island, not the mainland a person would expect to land on."
+  },
+  {
+    "from": "0125",
+    "fromName": "Ekerö",
+    "to": "0180",
+    "toName": "Stockholm",
+    "reason": "Ekerö's road bridges connect it to Stockholm (and Upplands-Bro). The automatic pick was Salem, which shares no bridge or ferry with Ekerö."
+  },
+  {
+    "from": "0186",
+    "fromName": "Lidingö",
+    "to": "0180",
+    "toName": "Stockholm",
+    "reason": "Lidingöbron bridge connects Lidingö directly to Stockholm. The automatic pick was Vaxholm, a separate archipelago municipality reached only by ferry."
+  },
+  {
+    "from": "0980",
+    "fromName": "Gotland",
+    "to": "0192",
+    "toName": "Nynäshamn",
+    "reason": "Destination Gotland's main ferry route is Nynäshamn–Visby, the way people in Sweden actually reach Gotland. The automatic pick was Haninge, which has no ferry terminus to Gotland."
+  }
 ]
