@@ -24,22 +24,12 @@ export function curatedEdgePairs(edges: CuratedEdge[]): Array<[string, string]> 
   return edges.map((e) => [e.from, e.to])
 }
 
-export function isConnected(neighbours: Record<string, string[]>): boolean {
-  const codes = Object.keys(neighbours)
-  if (codes.length === 0) return true
-  const seen = new Set<string>([codes[0]!])
-  const stack = [codes[0]!]
-  while (stack.length) {
-    for (const n of neighbours[stack.pop()!] ?? []) {
-      if (!seen.has(n)) {
-        seen.add(n)
-        stack.push(n)
-      }
-    }
-  }
-  return seen.size === codes.length
-}
-
+/**
+ * Connected components of the graph, largest first, each sorted for determinism. The single
+ * traversal both `isConnected` and `buildAdjacency`'s joining loop need — collapsed into one
+ * so the graph is never walked twice to answer what is really the same question ("how many
+ * pieces is this in?").
+ */
 function components(neighbours: Record<string, string[]>): string[][] {
   const seen = new Set<string>()
   const out: string[][] = []
@@ -63,7 +53,26 @@ function components(neighbours: Record<string, string[]>): string[][] {
   return out.sort((a, b) => b.length - a.length)
 }
 
-const dist = (a: [number, number], b: [number, number]) => Math.hypot(a[0] - b[0], a[1] - b[1])
+/** A graph is connected iff it has at most one component (an empty graph trivially is). */
+export function isConnected(neighbours: Record<string, string[]>): boolean {
+  return components(neighbours).length <= 1
+}
+
+/**
+ * Straight-line distance between two municipalities' centroids. `centroids.get(a)!` on a code
+ * missing from the map used to yield `undefined`, so the subtraction produced `NaN` — and
+ * because every `NaN < x` comparison is false, the `best` candidate in buildAdjacency's
+ * nearest-centroid search would silently keep whatever pair it first considered instead of
+ * failing, picking an arbitrary (and wrong) join rather than erroring. This throws instead,
+ * naming the missing code.
+ */
+function dist(centroids: Map<string, [number, number]>, a: string, b: string): number {
+  const pa = centroids.get(a)
+  if (!pa) throw new Error(`dist: no centroid for municipality code '${a}'`)
+  const pb = centroids.get(b)
+  if (!pb) throw new Error(`dist: no centroid for municipality code '${b}'`)
+  return Math.hypot(pa[0] - pb[0], pa[1] - pb[1])
+}
 
 /**
  * Topology neighbours, plus curated edges, plus automatic nearest-centroid edges from every
@@ -103,13 +112,13 @@ export function buildAdjacency(
   }
   const synthetic: Array<[string, string]> = []
   const plain = () => Object.fromEntries(Object.entries(nb).map(([k, v]) => [k, [...v].sort()]))
-  while (!isConnected(plain())) {
-    const [main, ...rest] = components(plain())
+  for (let comps = components(plain()); comps.length > 1; comps = components(plain())) {
+    const [main, ...rest] = comps
     const island = rest[0]!
     let best: [string, string, number] | null = null
     for (const a of island) {
       for (const b of main!) {
-        const d = dist(centroids.get(a)!, centroids.get(b)!)
+        const d = dist(centroids, a, b)
         if (!best || d < best[2]) best = [a, b, d]
       }
     }
