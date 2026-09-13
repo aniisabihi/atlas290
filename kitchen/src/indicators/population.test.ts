@@ -1,11 +1,14 @@
-import { readFileSync } from 'node:fs'
-import { describe, expect, it } from 'vitest'
+import { mkdtempSync, readFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { describe, expect, it, vi } from 'vitest'
 import { OBSERVATION_STATUS } from '../../../shared/pantry'
 import type { FrozenData, FrozenMeta } from '../scb/freeze'
-import { parseMetadata } from '../scb/client'
+import { parseMetadata, type TableMeta } from '../scb/client'
 import { toRows } from '../scb/jsonstat'
 import {
   buildPopulationSeries,
+  fetchPopulation,
   populationSelection,
   quantileBreaks,
   withBreaks,
@@ -156,6 +159,218 @@ describe('populationSelection', () => {
     )
     expect(series.values[0]).toEqual([999239])
     expect(OBSERVATION_STATUS[series.status[0]![0]!]).toBe('perturbed')
+  })
+})
+
+/** Minimal fake TableMeta for testing populationSelection's guard rails without real SCB JSON. */
+function fakeMeta(
+  id: string,
+  overrides: Record<string, Array<{ code: string; label: string }>>,
+): TableMeta {
+  const defaults: Record<string, Array<{ code: string; label: string }>> = {
+    Region: [{ code: '0001', label: 'Fake municipality' }],
+    Alder: [{ code: 'tot', label: 'totalt' }],
+    Kon: [{ code: 'TotSa', label: 'totalt' }],
+    Civilstand: [{ code: 'SC', label: 'totalt' }],
+    ContentsCode: [{ code: 'X1', label: 'Folkmängd' }],
+  }
+  const vars = { ...defaults, ...overrides }
+  return {
+    id,
+    label: id,
+    variables: Object.entries(vars).map(([code, values]) => ({ code, label: code, values })),
+  }
+}
+
+describe('populationSelection: ContentsCode ambiguity guard (review finding 2)', () => {
+  it('throws, naming every matching code, when two ContentsCode values share the population label', () => {
+    const meta = fakeMeta('TABFAKE', {
+      ContentsCode: [
+        { code: 'X1', label: 'Folkmängd' },
+        { code: 'X2', label: 'Folkmängd' },
+      ],
+    })
+    expect(() => populationSelection(meta, ['2025'])).toThrow(/X1/)
+    expect(() => populationSelection(meta, ['2025'])).toThrow(/X2/)
+  })
+})
+
+describe('populationSelection: total-code allowlist, not an unguarded sum fallback (review finding 3)', () => {
+  it('throws, naming the table and dimension, when a dimension has no recognised total and summing is not declared safe', () => {
+    const meta = fakeMeta('TABFAKE', {
+      Kon: [
+        { code: '1', label: 'män' },
+        { code: '2', label: 'kvinnor' },
+      ],
+    })
+    expect(() => populationSelection(meta, ['2025'])).toThrow(/TABFAKE/)
+    expect(() => populationSelection(meta, ['2025'])).toThrow(/Kon/)
+  })
+
+  it('throws for an unrecognised Civilstand too, not just Kon', () => {
+    const meta = fakeMeta('TABFAKE', {
+      Civilstand: [
+        { code: 'OG', label: 'ogift' },
+        { code: 'G', label: 'gift' },
+      ],
+    })
+    expect(() => populationSelection(meta, ['2025'])).toThrow(/TABFAKE/)
+    expect(() => populationSelection(meta, ['2025'])).toThrow(/Civilstand/)
+  })
+
+  it('still sums TAB638 Kon and Civilstand: they are explicitly declared safe, not a silent fallback', () => {
+    const meta = fakeMeta('TAB638', {
+      Kon: [
+        { code: '1', label: 'män' },
+        { code: '2', label: 'kvinnor' },
+      ],
+      Civilstand: [
+        { code: 'OG', label: 'ogift' },
+        { code: 'G', label: 'gift' },
+        { code: 'SK', label: 'skild' },
+        { code: 'ÄNKL', label: 'änka/änkling' },
+      ],
+    })
+    const sel = populationSelection(meta, ['2024'])
+    expect(sel.Kon).toEqual(['1', '2'])
+    expect(sel.Civilstand).toEqual(['OG', 'G', 'SK', 'ÄNKL'])
+  })
+})
+
+describe('buildPopulationSeries: mixed null/real subgroups (review finding 4)', () => {
+  function chunkWith(value: Array<number | null>): FrozenData {
+    return {
+      kind: 'data',
+      table: 'TAB638',
+      lang: 'sv',
+      url: '',
+      selection: { Region: ['0380'], Kon: ['1', '2'], Tid: ['2010'] },
+      fetchedAt: '2026-09-13T10:00:00.000Z',
+      response: {
+        id: ['Region', 'Kon', 'Tid'],
+        size: [1, 2, 1],
+        dimension: {
+          Region: { category: { index: ['0380'] } },
+          Kon: { category: { index: ['1', '2'] } },
+          Tid: { category: { index: ['2010'] } },
+        },
+        value,
+      },
+    }
+  }
+  const uppsala = [{ code: '0380', name: { sv: 'Uppsala', en: 'Uppsala' }, county: '03' }]
+
+  it('a partial cell (null seen first, then a real value) resolves to null / not-yet-published, never a partial sum', () => {
+    // Old buggy behaviour: `(prev ?? 0) + 93000` treats the earlier null as 0, silently
+    // publishing 93000 as if it were the complete total.
+    const series = buildPopulationSeries(uppsala, [chunkWith([null, 93000])], [], [2010])
+    expect(series.values[0]).toEqual([null])
+    expect(OBSERVATION_STATUS[series.status[0]![0]!]).toBe('not-yet-published')
+  })
+
+  it('a partial cell (real value seen first, then null) also resolves to null / not-yet-published', () => {
+    // Old buggy behaviour: the `if (!totals.has(key))` guard silently drops a null that
+    // arrives after a real value was already summed, again publishing a partial total.
+    const series = buildPopulationSeries(uppsala, [chunkWith([93000, null])], [], [2010])
+    expect(series.values[0]).toEqual([null])
+    expect(OBSERVATION_STATUS[series.status[0]![0]!]).toBe('not-yet-published')
+  })
+
+  it('a fully real cell (no nulls) still sums normally', () => {
+    const series = buildPopulationSeries(uppsala, [chunkWith([93000, 94000])], [], [2010])
+    expect(series.values[0]).toEqual([187000])
+    expect(OBSERVATION_STATUS[series.status[0]![0]!]).toBe('present')
+  })
+})
+
+describe('fetchPopulation: returns frozen chunks and metadata for provenance (review finding 1 / ruling R2)', () => {
+  it('returns { municipalities, indicator, series, frozen } with frozen = [...oldChunks, ...newChunks, svMeta, enMeta, newMeta]', async () => {
+    const oldMetaSv = {
+      id: ['Region', 'Civilstand', 'Alder', 'Kon', 'ContentsCode', 'Tid'],
+      dimension: {
+        Region: { category: { index: ['0180'] } },
+        Civilstand: { category: { index: ['OG', 'G'] } },
+        Alder: { category: { index: ['tot'] } },
+        Kon: { category: { index: ['1', '2'] } },
+        ContentsCode: {
+          category: {
+            index: ['BE0101N1', 'BE0101N2'],
+            label: { BE0101N1: 'Folkmängd', BE0101N2: 'Folkökning' },
+          },
+        },
+        Tid: { category: { index: ['2024'] } },
+      },
+    }
+    const oldMetaEn = {
+      id: ['Region'],
+      dimension: { Region: { category: { index: ['0180'], label: { '0180': 'Stockholm' } } } },
+    }
+    const newMetaSv = {
+      id: ['Region', 'Civilstand', 'Alder', 'Kon', 'ContentsCode', 'Tid'],
+      dimension: {
+        Region: { category: { index: ['0180'] } },
+        Civilstand: { category: { index: ['SC', 'OG', 'G'] } },
+        Alder: { category: { index: ['TotSA'] } },
+        Kon: { category: { index: ['TotSa'] } },
+        ContentsCode: {
+          category: {
+            index: ['000007ME', '000007MG'],
+            label: { '000007ME': 'Folkmängd', '000007MG': 'Folkökning' },
+          },
+        },
+        Tid: { category: { index: ['2025'] } },
+      },
+    }
+
+    const fetchImpl = vi.fn(async (url: string | URL, init?: RequestInit) => {
+      const u = String(url)
+      const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200 })
+      if (init?.method === 'POST') {
+        const body = JSON.parse(init.body as string) as {
+          selection: Array<{ variableCode: string; valueCodes: string[] }>
+        }
+        const ids = body.selection.map((s) => s.variableCode)
+        const sizes = body.selection.map((s) => s.valueCodes.length)
+        const dimension: Record<string, { category: { index: string[] } }> = {}
+        for (const s of body.selection)
+          dimension[s.variableCode] = { category: { index: s.valueCodes } }
+        const total = sizes.reduce((n, s) => n * s, 1)
+        return json({
+          id: ids,
+          size: sizes,
+          dimension,
+          value: Array.from({ length: total }, () => 100),
+        })
+      }
+      if (u.includes('/TAB638/metadata') && u.includes('lang=sv')) return json(oldMetaSv)
+      if (u.includes('/TAB638/metadata') && u.includes('lang=en')) return json(oldMetaEn)
+      if (u.includes('/TAB5557/metadata') && u.includes('lang=sv')) return json(newMetaSv)
+      throw new Error(`unexpected request: ${init?.method ?? 'GET'} ${u}`)
+    })
+    const rawDir = mkdtempSync(join(tmpdir(), 'population-raw-'))
+    const opts = {
+      rawDir,
+      deps: { fetchImpl: fetchImpl as unknown as typeof fetch },
+      clock: () => '2026-09-13T10:00:00.000Z',
+    }
+
+    const result = await fetchPopulation(opts)
+
+    expect(result.municipalities).toHaveLength(1)
+    expect(result.frozen).toHaveLength(5)
+    expect(result.frozen[0]?.kind).toBe('data')
+    expect((result.frozen[0] as FrozenData).table).toBe('TAB638')
+    expect(result.frozen[1]?.kind).toBe('data')
+    expect((result.frozen[1] as FrozenData).table).toBe('TAB5557')
+    expect(result.frozen[2]).toEqual(
+      expect.objectContaining({ kind: 'metadata', table: 'TAB638', lang: 'sv' }),
+    )
+    expect(result.frozen[3]).toEqual(
+      expect.objectContaining({ kind: 'metadata', table: 'TAB638', lang: 'en' }),
+    )
+    expect(result.frozen[4]).toEqual(
+      expect.objectContaining({ kind: 'metadata', table: 'TAB5557', lang: 'sv' }),
+    )
   })
 })
 

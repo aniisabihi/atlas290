@@ -6,7 +6,13 @@ import {
 } from '../../../shared/pantry'
 import { existed, municipalitiesFromMetadata } from '../municipalities'
 import { parseMetadata, type Selection, type TableMeta } from '../scb/client'
-import { freezeData, freezeMetadata, type FreezeOpts, type FrozenData } from '../scb/freeze'
+import {
+  freezeData,
+  freezeMetadata,
+  type FreezeOpts,
+  type FrozenData,
+  type FrozenMeta,
+} from '../scb/freeze'
 import { toRows } from '../scb/jsonstat'
 
 export const OLD_TABLE = 'TAB638' // 1968–2024
@@ -60,44 +66,71 @@ function values(meta: TableMeta, code: string): string[] {
   return variable(meta, code).values.map((x) => x.code)
 }
 
+/** Recognised total codes per dimension. Any one of these, if present, is used alone. */
+const TOTAL_CODES: Record<'Alder' | 'Kon' | 'Civilstand', string[]> = {
+  Alder: ['tot', 'TotSA', 'TOT1'],
+  Kon: ['TotSa'],
+  Civilstand: ['SC'],
+}
+
 /**
- * One total-age code per table (ruling R17): `tot` where the table has it (TAB638), else
- * `TotSA` (TAB5557 — TOT1 agrees per the Task 6 spike, but TotSA is the "overall total" code).
- * Falls back to every age value (summed) only if neither total exists, which is not expected
- * for either table currently in use.
+ * Table+dimension pairs where summing every value (because no total code exists) has been
+ * verified safe — the values are disjoint and unperturbed, so their sum equals the true total.
+ * This is an explicit opt-in allowlist (review finding 3), not a fallback every table gets by
+ * default: an unlisted table with no recognised total throws instead of silently summing,
+ * because ruling R17 exists precisely because summing an unverified set of "everything" can
+ * silently overcount by a large multiple (as it would for TAB5557's Alder/Kon/Civilstand).
+ * TAB638's Kon and Civilstand are declared here because the Task 6 spike verified they carry
+ * no Cell Key Method noise and partition every person exactly once.
  */
-function ageSelection(meta: TableMeta): string[] {
-  const ages = values(meta, 'Alder')
-  if (ages.includes('tot')) return ['tot']
-  if (ages.includes('TotSA')) return ['TotSA']
-  if (ages.includes('TOT1')) return ['TOT1']
-  return ages
+const SUM_SAFE: Record<string, Array<'Alder' | 'Kon' | 'Civilstand'>> = {
+  [OLD_TABLE]: ['Kon', 'Civilstand'],
 }
 
-/** One total-sex code (`TotSa`) if the table has it, else both sexes (summed; disjoint, unperturbed). */
-function sexSelection(meta: TableMeta): string[] {
-  const kon = values(meta, 'Kon')
-  return kon.includes('TotSa') ? ['TotSa'] : kon
+/**
+ * Selects the single total-code value for a dimension where the table declares one (ruling
+ * R17), else falls back to summing every value ONLY where that has been explicitly declared
+ * safe for this exact table in `SUM_SAFE` (review finding 3). Anything else — an unrecognised
+ * total AND no declared-safe entry — throws loudly, naming the table, the dimension and its
+ * values, rather than silently summing an unverified set of cells.
+ */
+function totalOrDeclaredSum(meta: TableMeta, dim: 'Alder' | 'Kon' | 'Civilstand'): string[] {
+  const vals = values(meta, dim)
+  for (const total of TOTAL_CODES[dim]) {
+    if (vals.includes(total)) return [total]
+  }
+  if (SUM_SAFE[meta.id]?.includes(dim)) return vals
+  throw new Error(
+    `${meta.id}: dimension ${dim} has no recognised total code (looked for ` +
+      `${TOTAL_CODES[dim].join(', ')}) and summing ${meta.id}.${dim} is not declared safe in ` +
+      `SUM_SAFE; refusing to silently sum an unverified set of cells. Values were: ` +
+      `${vals.join(', ')}`,
+  )
 }
 
-/** One total-civil-status code (`SC`) if the table has it, else all four states (summed). */
-function civilSelection(meta: TableMeta): string[] {
-  const cs = values(meta, 'Civilstand')
-  return cs.includes('SC') ? ['SC'] : cs
-}
-
-/** Resolves the population ContentsCode from the table's own metadata, by label, per table. */
+/**
+ * Resolves the population ContentsCode from the table's own metadata, by label, per table.
+ * Throws if no code carries the label (wrong table/label drift) or if more than one does
+ * (review finding 2: an ambiguous match must never be silently resolved by array order).
+ */
 function contentsCodeSelection(meta: TableMeta): string[] {
   const v = variable(meta, 'ContentsCode')
-  const match = v.values.find((x) => x.label === POPULATION_CONTENT_LABEL)
-  if (!match) {
+  const matches = v.values.filter((x) => x.label === POPULATION_CONTENT_LABEL)
+  if (matches.length === 0) {
     throw new Error(
       `${meta.id}: no ContentsCode labelled '${POPULATION_CONTENT_LABEL}'; have ${v.values
         .map((x) => `${x.code}=${x.label}`)
         .join(', ')}`,
     )
   }
-  return [match.code]
+  if (matches.length > 1) {
+    throw new Error(
+      `${meta.id}: ${matches.length} ContentsCode values are labelled ` +
+        `'${POPULATION_CONTENT_LABEL}' (${matches.map((x) => x.code).join(', ')}) — ambiguous, ` +
+        `pick one explicitly instead of silently taking the first`,
+    )
+  }
+  return [matches[0]!.code]
 }
 
 /**
@@ -109,29 +142,42 @@ function contentsCodeSelection(meta: TableMeta): string[] {
 export function populationSelection(meta: TableMeta, years: string[]): Selection {
   const sel: Selection = {
     Region: values(meta, 'Region').filter((c) => /^\d{4}$/.test(c)),
-    Alder: ageSelection(meta),
-    Kon: sexSelection(meta),
+    Alder: totalOrDeclaredSum(meta, 'Alder'),
+    Kon: totalOrDeclaredSum(meta, 'Kon'),
     ContentsCode: contentsCodeSelection(meta),
     Tid: years,
   }
   if (meta.variables.some((x) => x.code === 'Civilstand')) {
-    sel.Civilstand = civilSelection(meta)
+    sel.Civilstand = totalOrDeclaredSum(meta, 'Civilstand')
   }
   return sel
 }
 
+/**
+ * Sums SCB cell values per municipality+year. Review finding 4: if the constituent rows for a
+ * key are a MIX of null and real values (a partial SCB publication), the result must be null —
+ * never a partial sum silently presented as the complete total, and never dependent on the
+ * order rows happen to arrive in. A key that is either fully null or fully real behaves as
+ * before (null, or the real sum, respectively).
+ */
 function sumByRegionYear(chunks: FrozenData[]): Map<string, number | null> {
-  const totals = new Map<string, number | null>()
+  const acc = new Map<string, { sum: number; sawNull: boolean; sawValue: boolean }>()
   for (const chunk of chunks) {
     for (const r of toRows(chunk.response)) {
       const key = `${r.dims.Region}|${r.dims.Tid}`
-      const prev = totals.get(key)
+      const entry = acc.get(key) ?? { sum: 0, sawNull: false, sawValue: false }
       if (r.value === null) {
-        if (!totals.has(key)) totals.set(key, null)
+        entry.sawNull = true
       } else {
-        totals.set(key, (prev ?? 0) + r.value)
+        entry.sum += r.value
+        entry.sawValue = true
       }
+      acc.set(key, entry)
     }
+  }
+  const totals = new Map<string, number | null>()
+  for (const [key, entry] of acc) {
+    totals.set(key, entry.sawNull ? null : entry.sum)
   }
   return totals
 }
@@ -189,7 +235,12 @@ export function withBreaks(indicator: Indicator, series: IndicatorSeries, classe
 
 export const YEARS = Array.from({ length: CKM_FROM - 1968 + 1 }, (_, i) => 1968 + i)
 
-export async function fetchPopulation(opts: FreezeOpts = {}) {
+export async function fetchPopulation(opts: FreezeOpts = {}): Promise<{
+  municipalities: Municipality[]
+  indicator: Indicator
+  series: IndicatorSeries
+  frozen: Array<FrozenData | FrozenMeta>
+}> {
   const [svMeta, enMeta, newMeta] = await Promise.all([
     freezeMetadata(OLD_TABLE, 'sv', opts),
     freezeMetadata(OLD_TABLE, 'en', opts),
@@ -211,5 +262,15 @@ export async function fetchPopulation(opts: FreezeOpts = {}) {
     opts,
   )
   const series = buildPopulationSeries(municipalities, oldChunks, newChunks, YEARS)
-  return { municipalities, indicator: withBreaks(POPULATION, series), series }
+  // Ruling R2 (Task 10 needs this for the provenance manifest without reopening this module):
+  // every frozen chunk and metadata response involved in producing this series, in a fixed
+  // order — data chunks first (old, then new), then the three metadata responses.
+  const frozen: Array<FrozenData | FrozenMeta> = [
+    ...oldChunks,
+    ...newChunks,
+    svMeta,
+    enMeta,
+    newMeta,
+  ]
+  return { municipalities, indicator: withBreaks(POPULATION, series), series, frozen }
 }
