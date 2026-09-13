@@ -1,0 +1,16 @@
+{
+  "version": "2.0",
+  "class": "dataset",
+  "id": ["Region", "Tid"],
+  "size": [2, 3],
+  "dimension": {
+    "Region": {
+      "category": {
+        "index": { "0180": 0, "0380": 1 },
+        "label": { "0180": "Stockholm", "0380": "Uppsala" }
+      }
+    },
+    "Tid": { "category": { "index": ["2022", "2023", "2024"] } }
+  },
+  "value": [978770, 984748, 990000, 237596, 240000, null]
+}
