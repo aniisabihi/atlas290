@@ -20,16 +20,19 @@ describe('toRows', () => {
   })
 
   it('orders object-form index by position, not alphabetically', () => {
-    // This inline dataset has an index where position order differs from alphabetical order
-    // {"0380": 0, "0180": 1} means "0380" is first (position 0), "0180" is second (position 1)
-    // If sorted alphabetically, "0180" would come first, causing a silent corruption
+    // This inline dataset has an index where position order differs from both insertion and alphabetical order
+    // {"0180": 1, "0380": 0} means "0380" is first (position 0), "0180" is second (position 1)
+    // Insertion order: ["0180", "0380"] (keys in declaration order)
+    // Alphabetical order: ["0180", "0380"]
+    // Position order: ["0380", "0180"] (sorted by position value)
+    // If the sort is removed or replaced with Object.keys/alphabetical, the test fails
     const dataset = {
       id: ['Region'],
       size: [2],
       dimension: {
         Region: {
           category: {
-            index: { '0380': 0, '0180': 1 },
+            index: { '0180': 1, '0380': 0 },
           },
         },
       },
@@ -45,10 +48,12 @@ describe('toRows', () => {
   })
 
   it('throws when position is out of range for dimension', () => {
-    // Crafted to produce a position out of range
+    // Dataset with size product matching value length, but codes array too short
+    // size: [2] means 2 positions (0, 1), value length 2 passes size-product check
+    // But index has only 1 code, so position 1 is out of range
     const dataset = {
       id: ['Region'],
-      size: [1],
+      size: [2],
       dimension: {
         Region: {
           category: {
@@ -56,8 +61,8 @@ describe('toRows', () => {
           },
         },
       },
-      value: [111, 222], // Size is 1, but value length is 2
+      value: [111, 222],
     }
-    expect(() => toRows(dataset)).toThrow(/size/)
+    expect(() => toRows(dataset)).toThrow(/position .* out of range/)
   })
 })
