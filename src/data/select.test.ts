@@ -3,6 +3,7 @@ import rawData from '../../public/pantry/data/indicators.json'
 import { PantryData } from '../../shared/pantry'
 import {
   classOf,
+  statusesIn,
   extremesFor,
   lookup,
   nearestCoveredYear,
@@ -170,5 +171,27 @@ describe('extremesFor', () => {
 
   it('is null for a year with nothing published', () => {
     expect(extremesFor(lk, 'mean-age', 1970)).toBeNull()
+  })
+})
+
+describe('statusesIn', () => {
+  it('reports only what actually occurs, so the legend can stay honest', () => {
+    expect(statusesIn(lk, 'population', 2024)).toEqual(new Set(['present']))
+  })
+
+  it('finds the suppressed cells on a year of house prices that has them', () => {
+    expect(statusesIn(lk, 'house-prices', 1989)).toContain('too-few-cases')
+  })
+
+  it('finds municipalities that did not exist yet', () => {
+    expect(statusesIn(lk, 'population', 2000)).toEqual(new Set(['present', 'did-not-exist']))
+  })
+
+  it('reports a whole year outside coverage as exactly that and nothing else', () => {
+    expect(statusesIn(lk, 'mean-age', 1970)).toEqual(new Set(['outside-coverage']))
+  })
+
+  it('finds the year SCB perturbs', () => {
+    expect(statusesIn(lk, 'population', 2025)).toContain('perturbed')
   })
 })

@@ -5,7 +5,7 @@ import { observationAt, type Lookup } from '../data/select'
 import { formatWithUnit, statusPhrase } from '../i18n/format'
 import { t } from '../i18n/strings'
 import type { Lang } from '../state/url'
-import { FOCUS_RING, NO_VALUE_FILLS, fillFor } from '../map/colour'
+import { FOCUS_RING, fillFor } from '../map/colour'
 import { FRAME, shapesFor } from '../map/geometry'
 import { step, type Direction, type NavContext } from '../map/navigate'
 
@@ -27,51 +27,6 @@ const ARROWS: Record<string, Direction> = {
  * would be hostile with a keyboard and worse with a screen reader. The arrow keys move within,
  * which Task 8 wires to the adjacency graph.
  */
-
-/** Diagonal hatch, cross-hatch, stipple, and a plain ground: absence told apart without colour. */
-function NoDataPatterns() {
-  const stroke = '#6b6b6b'
-  return (
-    <defs>
-      <pattern
-        id={NO_VALUE_FILLS['not-yet-published'].patternId}
-        width={6}
-        height={6}
-        patternUnits="userSpaceOnUse"
-        patternTransform="rotate(45)"
-      >
-        <rect width={6} height={6} fill={NO_VALUE_FILLS['not-yet-published'].ground} />
-        <line x1={0} y1={0} x2={0} y2={6} stroke={stroke} strokeWidth={1.2} />
-      </pattern>
-      <pattern
-        id={NO_VALUE_FILLS['too-few-cases'].patternId}
-        width={5}
-        height={5}
-        patternUnits="userSpaceOnUse"
-      >
-        <rect width={5} height={5} fill={NO_VALUE_FILLS['too-few-cases'].ground} />
-        <circle cx={2.5} cy={2.5} r={1} fill={stroke} />
-      </pattern>
-      <pattern
-        id={NO_VALUE_FILLS['structural-break'].patternId}
-        width={7}
-        height={7}
-        patternUnits="userSpaceOnUse"
-      >
-        <rect width={7} height={7} fill={NO_VALUE_FILLS['structural-break'].ground} />
-        <path d="M0,0 L7,7 M7,0 L0,7" stroke={stroke} strokeWidth={1} />
-      </pattern>
-      <pattern
-        id={NO_VALUE_FILLS['did-not-exist'].patternId}
-        width={8}
-        height={8}
-        patternUnits="userSpaceOnUse"
-      >
-        <rect width={8} height={8} fill={NO_VALUE_FILLS['did-not-exist'].ground} />
-      </pattern>
-    </defs>
-  )
-}
 
 export function MapView({
   lk,
@@ -171,7 +126,6 @@ export function MapView({
       className="map"
       onKeyDown={onKeyDown}
     >
-      <NoDataPatterns />
       {shapes.map((shape) => {
         const municipality = lk.municipality(shape.code)
         const name = municipality?.name[lang] ?? shape.code

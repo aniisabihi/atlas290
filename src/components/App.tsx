@@ -4,7 +4,9 @@ import { lookup } from '../data/select'
 import { t } from '../i18n/strings'
 import { metaFrom } from '../state/url'
 import { useAppState } from '../state/useAppState'
+import { Legend } from './Legend'
 import { MapView } from './MapView'
+import { NoDataPatterns } from './NoDataPatterns'
 
 /**
  * The shell. Everything it renders is a function of the URL; nothing else holds state.
@@ -29,6 +31,7 @@ export function App({
 
   return (
     <main>
+      <NoDataPatterns />
       <h1>{strings.siteName}</h1>
       <p>{strings.tagline}</p>
       <p id="map-hint">{strings.mapHint}</p>
@@ -42,6 +45,7 @@ export function App({
         lang={state.lang}
         onSelect={(code) => update({ selected: code === state.selected ? null : code })}
       />
+      <Legend lk={lk} indicatorId={state.indicator} year={state.year} lang={state.lang} />
     </main>
   )
 }

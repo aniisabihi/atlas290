@@ -91,14 +91,12 @@ describe('MapView', () => {
     expect(salem.getAttribute('fill')).toBe(`url(#${NO_VALUE_FILLS['too-few-cases'].patternId})`)
   })
 
-  it('defines every no-data pattern once, so a fill can never point at nothing', () => {
+  it('defines no patterns of its own, since they are shared with the legend', () => {
+    // They live in NoDataPatterns, rendered once by App. Defining them here as well would put
+    // duplicate ids in the document; defining them only here would make the legend's swatches
+    // depend on the map having rendered first.
     const { container } = draw()
-    const ids = new Set(
-      [...container.querySelectorAll('defs pattern')].map((p) => p.getAttribute('id')),
-    )
-    for (const { patternId } of Object.values(NO_VALUE_FILLS)) {
-      expect(ids.has(patternId), `pattern ${patternId} is referenced but never defined`).toBe(true)
-    }
+    expect(container.querySelectorAll('defs pattern')).toHaveLength(0)
   })
 
   it('marks the selected municipality for assistive technology', () => {

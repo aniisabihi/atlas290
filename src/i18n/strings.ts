@@ -26,6 +26,13 @@ const sv = {
   indicatorLegend: 'Mått',
   legendHeading: 'Teckenförklaring',
   legendZero: 'noll ligger här',
+  legendClasses: 'Färgklasser',
+  legendAbsences: 'Varför värden saknas',
+  legendUnder: (value: string) => `under ${value}`,
+  legendRange: (from: string, to: string) => `${from}–${to}`,
+  legendOver: (value: string) => `${value} och över`,
+  legendPerturbedNote:
+    'Från 2025 lägger SCB till slumpmässigt brus i folkmängden. Värdena visas ändå, med sin egen färg.',
 
   yearLabel: 'År',
   play: 'Spela',
@@ -73,6 +80,13 @@ const en: Strings = {
   indicatorLegend: 'Measure',
   legendHeading: 'Legend',
   legendZero: 'zero falls here',
+  legendClasses: 'Colour classes',
+  legendAbsences: 'Why values are missing',
+  legendUnder: (value: string) => `under ${value}`,
+  legendRange: (from: string, to: string) => `${from}–${to}`,
+  legendOver: (value: string) => `${value} and over`,
+  legendPerturbedNote:
+    'From 2025 Statistics Sweden adds random noise to population figures. The values are still shown, in their own colour.',
 
   yearLabel: 'Year',
   play: 'Play',

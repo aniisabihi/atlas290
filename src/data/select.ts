@@ -147,3 +147,18 @@ export function extremesFor(
   }
   return low && high ? { low, high } : null
 }
+
+/**
+ * Which statuses actually occur for an indicator in one year.
+ *
+ * The legend keys off this rather than listing every status the schema allows: a "too few sales"
+ * key on the population map would be noise, and a legend that never changes teaches the reader
+ * to stop reading it.
+ */
+export function statusesIn(lk: Lookup, indicatorId: string, year: number): Set<CellStatus> {
+  const found = new Set<CellStatus>()
+  for (const m of lk.data.municipalities) {
+    found.add(observationAt(lk, indicatorId, m.code, year).status)
+  }
+  return found
+}
