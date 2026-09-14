@@ -26,6 +26,10 @@ export default defineConfig({
           environment: 'jsdom',
           include: ['src/**/*.test.{ts,tsx}'],
           setupFiles: ['./src/test-setup.ts'],
+          // Vitest stubs CSS imports to an empty string unless told otherwise, which makes
+          // even a `?raw` import of a stylesheet come back blank. src/styles/tokens.test.ts
+          // asserts real contrast ratios out of the real stylesheet, so it needs the file.
+          css: true,
         },
       },
     ],
