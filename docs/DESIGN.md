@@ -57,7 +57,7 @@ Each stage is separately runnable and separately testable.
 2. **Freeze.** Write raw responses into the repo untouched. After this, the build needs no network, is repeatable, and survives SCB changing anything.
 3. **Fix.** Repair Sweden's administrative history. Knivsta did not exist before 2003, Nykvarn before 1999, or Bollebygd and Lekeberg before 1995. Every municipality code in Skåne changed in 1997 and in Västra Götaland in 1998. Heby changed county in 2007. Parents get a flagged break the year a child split off, so Uppsala does not appear to collapse in 2003. From reference year 2025, SCB adds small random noise to population figures and publishes them in separate tables, so old and new series must be stitched and the perturbation marked on every affected value.
 4. **Check.** Refuse to publish on anything suspicious: wrong municipality count, missing years, implausible jumps that are not flagged breaks, values outside a declared range, a municipality unreachable by keyboard.
-5. **Compute.** Derive what SCB does not publish: inflation-adjusted money, rates per 1,000 residents, interpolated median age, rankings, fixed colour breaks per indicator, the facts, the cartogram bubble layout, and the adjacency graph with hand-curated edges for islands so arrow keys never dead-end at Gotland.
+5. **Compute.** Derive what SCB does not publish: inflation-adjusted money, rates per 1,000 residents, rates per 1,000 residents, rankings, fixed colour breaks per indicator, the facts, the cartogram bubble layout, and the adjacency graph with hand-curated edges for islands so arrow keys never dead-end at Gotland.
 6. **Publish.** Write pantry files and the provenance manifest. Raw SCB values are labelled as SCB's. Derived values are labelled as our calculation from named SCB inputs with the method stated, because SCB's terms forbid crediting them for numbers we computed.
 
 **Determinism is a requirement, not an aspiration.** Sorted keys, fixed number formatting, no timestamps inside data files. Running the pipeline twice produces byte-identical output, so a data refresh shows up as a readable diff in a pull request.
@@ -94,13 +94,20 @@ There is no "higher is better" flag. Comparison says "higher on 7 of 10", never 
 
 ### Starting indicators
 
-Ten to open with, all verified as available per municipality from SCB:
+Ten to open with, each verified against live SCB metadata as available per municipality.
+One changed during the build: the list originally said _median_ age, derived by interpolating
+single-year ages. SCB publishes median age only down to county level, never per municipality,
+and deriving one ourselves would have cost roughly 130 MB of frozen source data for a figure
+we could only locate within a band. SCB does publish **mean** age per municipality directly,
+so that is what ships: exact, no interpolation, no precision caveat, at the price of starting
+in 1998 rather than 1968. Share aged 65 and over is unaffected — it needs only a threshold at
+65, not a full distribution. Measured and decided in the Task 2 spike; see `docs/kitchen.md`.
 
 | Indicator                                                   | From                                           | Coverage     |
 | ----------------------------------------------------------- | ---------------------------------------------- | ------------ |
 | Population                                                  | Population by age and sex                      | 1968 onwards |
 | Population change, per cent                                 | Derived                                        | 1968 onwards |
-| Median age, interpolated                                    | Derived from single-year ages                  | 1968 onwards |
+| Mean age                                                    | Mean age by region                             | 1998 onwards |
 | Share aged 65 and over                                      | Derived from age distribution                  | 1968 onwards |
 | Net migration per 1,000 residents                           | Migration by region                            | 1997 onwards |
 | Median earned income, inflation-adjusted                    | Total earned income plus consumer price index  | 1999 onwards |
