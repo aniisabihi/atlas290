@@ -178,6 +178,28 @@ export const Manifest = z.object({
     }),
   ),
   /**
+   * Task 13 (docs/plans/2026-09-14-02-the-ten-indicators.md): which of the flat `sources`
+   * chunks above actually back EACH published indicator, keyed by indicator id. Added
+   * additively — `sources` itself is unchanged in shape, this is a second, independent view
+   * over the same provenance data, cross-referenced by table + resolved content code against
+   * each indicator's own declared `Indicator.sources` (table/contentCode pairs, set by that
+   * indicator's own module). Every registered indicator gets an entry, even one with no
+   * declared sources at all (population-change, which fetches nothing) — an empty array,
+   * never an omitted key, so a reader can tell "fetches nothing" apart from "not recorded".
+   * A single declared (table, contentCode) pair can resolve to more than one row here when
+   * SCB's 150,000-cell limit forced the fetch to chunk into several physical requests.
+   */
+  indicatorSources: z.record(
+    IndicatorId,
+    z.array(
+      z.object({
+        table: z.string(),
+        contentCode: z.string(),
+        selectionKey: z.string(),
+      }),
+    ),
+  ),
+  /**
    * The SCB municipality/county boundary shapefile that every geometry-derived pantry file
    * (topology, adjacency, bubbles) is built from. It is not an SCB PxWeb table chunk — there
    * is no `selection` POST body, just a plain zip download — so it is recorded separately

@@ -4,13 +4,15 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import type { ZodType } from 'zod'
 import { Adjacency, Bubbles, Manifest, PantryData } from '../../shared/pantry'
-import type { IndicatorSeries, Municipality } from '../../shared/pantry'
+import type { Indicator, IndicatorSeries, Municipality } from '../../shared/pantry'
+import { check } from './check'
 import { cmp } from './cmp'
 import { buildAdjacency, curatedEdgePairs, type CuratedEdge } from './geometry/adjacency'
 import { buildBubbles } from './geometry/bubbles'
 import { buildTopology, centroids, GEOMETRY_SOURCE } from './geometry/build'
 import { municipalityProps } from './geometry/props'
-import { CKM_FROM, fetchPopulation } from './indicators/population'
+import { CKM_FROM, POPULATION } from './indicators/population'
+import { buildAll } from './indicators/registry'
 import { selectionKey as computeSelectionKey } from './scb/freeze'
 import type { FrozenData, FrozenMeta } from './scb/freeze'
 
@@ -68,15 +70,97 @@ function sourceContentCode(f: FrozenData): string {
   return codes[0]!
 }
 
+/**
+ * Task 13: more than one indicator can fetch the exact same table+lang+selection — median
+ * income and house prices each call `cpi.ts`'s `fetchCpi` independently (cpi.ts is
+ * deliberately independent of the registry, per its own module comment), so `ctx.frozen` ends
+ * up holding two byte-identical copies of every CPI chunk once both indicators have built.
+ * Deduping here, keyed on the one thing that actually identifies "the same frozen chunk"
+ * (table + lang + the selection's own hash), keeps the flat `sources` list one entry per real
+ * fetch rather than silently doubling every shared source — a wrong indicator/chunk pairing
+ * would still be a manifest bug, but a harmless duplicate listing would just be noise a human
+ * has to read past.
+ */
+function dedupeBy<T>(items: T[], keyOf: (item: T) => string): T[] {
+  const seen = new Set<string>()
+  const out: T[] = []
+  for (const item of items) {
+    const key = keyOf(item)
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(item)
+  }
+  return out
+}
+
+/**
+ * Task 13: which of an indicator's OWN frozen chunks actually back its published values,
+ * keyed by indicator id — populates `Manifest.indicatorSources`. Takes each indicator's own
+ * slice of chunks (`buildAll`'s `sourcesByIndicator`, exactly what THAT definition's own
+ * `build(ctx)` call pushed — never the flat, shared `frozen` array), then keeps only the ones
+ * matching one of the indicator's own DECLARED `sources` (table + contentCode pairs, set by
+ * that indicator's own module — e.g. `POPULATION.sources`, `TAX.sources`), resolved via
+ * `sourceContentCode` above rather than a literal hardcoded here, so this tracks a codelist
+ * change the same way the fetch itself does.
+ *
+ * Matching on (table, contentCode) against the per-indicator slice — not against the shared
+ * `frozen` array — matters concretely: population and share-65-plus both declare
+ * TAB638/`BE0101N1` as one of their own sources (a real fact — population fetches the age
+ * TOTAL from it, share-65-plus fetches ages 65+ from the very same table and content code, via
+ * a different `Alder` selection). Matching against the shared array first, before this was
+ * corrected, attributed share-65-plus's ~50 chunked requests to population too, and vice
+ * versa — caught by checking the two indicators' resulting chunk lists against each other,
+ * not by the code merely compiling and the row counts looking plausible.
+ *
+ * A declared pair can still match more than one physical chunk within an indicator's own
+ * slice (SCB's 150,000-cell limit can force `chunkSelection` to split one logical fetch into
+ * several requests, each its own frozen file with its own selectionKey) — every match is
+ * included, not just the first. An indicator with no declared sources at all
+ * (population-change, which fetches nothing) still gets its own key, with an empty array,
+ * rather than being silently omitted.
+ */
+export function buildIndicatorSources(
+  indicators: Indicator[],
+  sourcesByIndicator: Record<string, Array<FrozenData | FrozenMeta>>,
+): Record<string, Array<{ table: string; contentCode: string; selectionKey: string }>> {
+  const result: Record<
+    string,
+    Array<{ table: string; contentCode: string; selectionKey: string }>
+  > = {}
+  for (const indicator of indicators) {
+    const ownChunks = (sourcesByIndicator[indicator.id] ?? []).filter(
+      (f): f is FrozenData => f.kind === 'data',
+    )
+    const rows: Array<{ table: string; contentCode: string; selectionKey: string }> = []
+    for (const source of indicator.sources) {
+      for (const f of ownChunks) {
+        if (f.table !== source.table || sourceContentCode(f) !== source.contentCode) continue
+        rows.push({
+          table: f.table,
+          contentCode: source.contentCode,
+          selectionKey: computeSelectionKey(f.selection),
+        })
+      }
+    }
+    result[indicator.id] = rows
+  }
+  return result
+}
+
 export function buildManifest(
   frozen: Array<FrozenData | FrozenMeta>,
   geometry: Manifest['geometry'],
+  indicators: Indicator[] = [],
+  sourcesByIndicator: Record<string, Array<FrozenData | FrozenMeta>> = {},
 ): Manifest {
+  const dataChunks = dedupeBy(
+    frozen.filter((f): f is FrozenData => f.kind === 'data'),
+    (f) => `${f.table}|${f.lang}|${computeSelectionKey(f.selection)}`,
+  )
   return Manifest.parse({
     schemaVersion: 1,
     license: 'CC0-1.0',
-    sources: frozen
-      .filter((f): f is FrozenData => f.kind === 'data')
+    sources: dataChunks
       .map((f) => ({
         table: f.table,
         lang: f.lang,
@@ -88,6 +172,7 @@ export function buildManifest(
         cells: f.response.value.length,
       }))
       .sort((a, b) => cmp(a.table, b.table) || cmp(a.sha256, b.sha256)),
+    indicatorSources: buildIndicatorSources(indicators, sourcesByIndicator),
     geometry,
   })
 }
@@ -160,7 +245,7 @@ const offline: typeof fetch = async (input) => {
 }
 
 export type PublishDeps = {
-  fetchPopulation?: typeof fetchPopulation
+  buildAll?: typeof buildAll
   buildTopology?: typeof buildTopology
 }
 
@@ -168,10 +253,14 @@ export async function publish(
   opts: { pantryDir?: string; rawDir?: string; deps?: PublishDeps } = {},
 ): Promise<void> {
   const pantryDir = opts.pantryDir ?? DEFAULT_PANTRY_DIR
-  const doFetchPopulation = opts.deps?.fetchPopulation ?? fetchPopulation
+  const doBuildAll = opts.deps?.buildAll ?? buildAll
   const doBuildTopology = opts.deps?.buildTopology ?? buildTopology
 
-  const { municipalities, indicator, series, frozen } = await doFetchPopulation({
+  // Task 13: every registered indicator (population, tax rate, density, net migration,
+  // median income, house prices, post-secondary education, population change, mean age,
+  // share aged 65 and over), built through the shared registry path — not just population,
+  // the only indicator this pipeline published before this task.
+  const { municipalities, indicators, series, frozen, sourcesByIndicator } = await doBuildAll({
     rawDir: opts.rawDir,
     deps: { fetchImpl: offline },
   })
@@ -197,6 +286,19 @@ export async function publish(
       municipalities.map((m) => m.code),
     )
 
+    // Task 13: the check stage runs here — after buildAll() and after assertCodesMatch, but
+    // strictly before the FIRST write into `pantryDir` (the topology copy immediately below
+    // is that first write; everything above this point only touches `scratchDir`, a temp
+    // directory outside the pantry). A code mismatch above already throws before reaching
+    // this line, so check() never has to run against fabricated/mismatched fixtures used only
+    // to exercise assertCodesMatch (kitchen/src/publish.test.ts's R22 test uses a deliberately
+    // tiny two-municipality fake that would otherwise fail check()'s own 290-municipality
+    // rule for an unrelated reason). Either ordering satisfies "refuses to write anything on
+    // a failure" equally — nothing has touched `pantryDir` yet either way — so this placement
+    // is chosen to keep that existing, unrelated test coverage intact rather than to assert
+    // any priority between the two guards.
+    check({ municipalities, indicators, series })
+
     mkdirSync(dirname(topoOutFile), { recursive: true })
     copyFileSync(scratchTopoFile, topoOutFile)
 
@@ -215,7 +317,17 @@ export async function publish(
     // named apart from population.ts's LATEST_YEAR (review finding 2): this is "the last
     // unperturbed year", tied to CKM_FROM, not "the newest published year".
     const bubbleReferenceYear = CKM_FROM - 1
-    const population = bubblePopulation(municipalities, series, bubbleReferenceYear)
+    // The bubble layout is still sized off population specifically, not "whichever indicator
+    // happens to be first" — `series` is now every registered indicator's output, so find
+    // population's own series by id rather than assuming array position.
+    const populationSeries = series.find((s) => s.indicator === POPULATION.id)
+    if (!populationSeries) {
+      throw new Error(
+        `publish: buildAll() returned no '${POPULATION.id}' series — cannot size the bubble ` +
+          'layout without it',
+      )
+    }
+    const population = bubblePopulation(municipalities, populationSeries, bubbleReferenceYear)
     writePantryFile(
       join(pantryDir, 'layout/bubbles.json'),
       Bubbles,
@@ -225,13 +337,13 @@ export async function publish(
     writePantryFile(join(pantryDir, 'data/indicators.json'), PantryData, {
       schemaVersion: 1,
       municipalities,
-      indicators: [indicator],
-      series: [series],
+      indicators,
+      series,
     })
     writePantryFile(
       join(pantryDir, 'manifest.json'),
       Manifest,
-      buildManifest(frozen, GEOMETRY_SOURCE),
+      buildManifest(frozen, GEOMETRY_SOURCE, indicators, sourcesByIndicator),
     )
   } finally {
     rmSync(scratchDir, { recursive: true, force: true })

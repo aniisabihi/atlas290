@@ -15,7 +15,47 @@ municipality codes and the fetched statistics' municipality codes are exactly th
 topology is built into a scratch directory first, the code check runs against that, and only a
 passing check lets the topology file land in `public/pantry/`. The map and the numbers are
 joined by code, and a silent mismatch there would mean a municipality is drawn with another's
-data, or drawn with none.
+data, or drawn with none. Since Task 13, `publish()` also runs the check stage
+(`kitchen/src/check.ts`) against every registered indicator's built output before that same
+point — a failing check, like a code mismatch, leaves nothing on disk.
+
+## Every table the kitchen fetches (Task 13, docs/plans/2026-09-14-02-the-ten-indicators.md)
+
+All twelve tables `buildAll()` (`kitchen/src/indicators/registry.ts`) drives through the ten
+registered indicators, confirmed against the real indicator modules rather than assumed from
+this task's own brief (the brief's list of twelve tables was checked and found correct):
+
+| Table   | Used by                                                                 | Content code(s)                                                                                      | Coverage           |
+| ------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------ |
+| TAB638  | `population`; `share-65-plus` (65+ numerator)                           | `BE0101N1` Folkmängd                                                                                 | 1968–2024, pre-CKM |
+| TAB5557 | `population`; `share-65-plus` (65+ numerator)                           | `000007ME` Folkmängd                                                                                 | 2025, CKM          |
+| TAB2017 | `tax-rate`                                                              | `OE0101D1` Skattesats, total kommunal                                                                | 2000–2026          |
+| TAB628  | `density`; also fills `Municipality.landAreaKm2`                        | `BE0101U1` Invånare per kvadratkilometer, `BE0101U3` Landareal i kvadratkilometer                    | 1991–2025          |
+| TAB1211 | `net-migration-rate`                                                    | `BE0101C5` Flyttningsöverskott                                                                       | 1968–1996          |
+| TAB1212 | `net-migration-rate`                                                    | `BE0101AZ` Flyttningsöverskott                                                                       | 1997–2024          |
+| TAB6640 | `net-migration-rate`                                                    | `00000868` Flyttningsöverskott                                                                       | 2025, CKM          |
+| TAB3554 | `median-income`                                                         | `HE0110J8` Medianinkomst, tkr                                                                        | 1999–2024          |
+| TAB4352 | the CPI deflator (`cpi.ts`), used by `median-income` and `house-prices` | `000000KL` Index (1980 = 100)                                                                        | 1980–2025          |
+| TAB1169 | `house-prices`                                                          | `BO0501C2` Köpeskilling, medelvärde i tkr; `BO0501C1` Antal (sale count, for the minimum-count rule) | 1981–2025          |
+| TAB3981 | `post-secondary-education`                                              | `UF0506A1` Antal                                                                                     | 1985–2025          |
+| TAB637  | `mean-age`                                                              | `BE0101G9` Medelålder                                                                                | 1998–2025          |
+
+`population-change` fetches nothing at all — it is computed entirely from `population`'s own
+already-built series (`kitchen/src/indicators/derived.ts`), so it has no row in the table above
+and an empty `sources` array on its own `Indicator` definition.
+
+Each content code is resolved from the table's own metadata by its stable Swedish label, never
+hardcoded (docs/decisions/0001-plan-1-build-decisions.md's trap 2 — the same code can carry a
+different literal value in different tables, or different eras of the same table). The
+published `manifest.json`'s `indicatorSources` field records, per indicator, exactly which
+frozen chunk(s) under `kitchen/raw/` each declared (table, content code) pair actually resolved
+to at fetch time, by `selectionKey` — the provenance trail from a number on the map back to a
+specific committed SCB response.
+
+`yarn kitchen fetch` (and the `fetch` half of `yarn kitchen all`) drives `buildAll()` directly
+against the network (Task 13 also fixed this — before, it called `fetchPopulation()` alone,
+fetching only one of these twelve tables even though every indicator through Task 12 had
+already been fetched once, by hand, during its own task).
 
 ## SCB limits the client enforces
 
@@ -499,3 +539,47 @@ Checked live against TAB3981's real frozen metadata and real frozen data before 
   check. The one thing the brief did not mention (not "wrong", but missing) is the two
   time-series-break notes (1990, 2000) TAB3981's own metadata carries — added to the caveat
   here since they materially affect how early years in this series should be read.
+
+## Publish all ten: real size, real determinism (Task 13, 2026-09-14)
+
+`publish()` now drives `buildAll()` (every REGISTRY entry) instead of `fetchPopulation()` alone,
+runs the check stage (`kitchen/src/check.ts`) before anything lands in `public/pantry/`, and
+extends `manifest.json` with `indicatorSources` (see the table above). Population's own values
+were confirmed byte-for-byte unchanged by diffing the previously-committed
+`public/pantry/data/indicators.json` against the freshly published one: the `population`
+indicator object and its `series` entry (`values`, `status`, `years`) are deep-equal, and
+`municipalities` is unchanged apart from gaining `landAreaKm2` (density's own addition, expected
+since Plan 2 Task 5) — never re-derived here.
+
+- **Real size, measured, not estimated**: `public/pantry/data/indicators.json` is **4,962,191
+  bytes (≈ 4.7 MiB / 5.0 MB)** for all ten indicators, 290 municipalities, up to 58 years. This
+  is well past "approaching a megabyte" — it is about five times one — so Plan 3 does need to
+  decide whether to split the pantry per indicator for lazy loading; loading the whole file to
+  render one indicator's map is real, avoidable weight once there are ten instead of one.
+  `manifest.json` is 34,363 bytes.
+- **Determinism, reproven with ten indicators**: `public/pantry/` deleted entirely, published
+  twice from the same frozen `kitchen/raw/`. Every file's sha256 was identical across both
+  runs, including `data/indicators.json`
+  (`22555fa160823ddbcb1780fa4d46b3a3f8f576cbc9417f63b4ac204bcd6e4d10`) and `manifest.json`
+  (`41feedcf536303b6870231abb3ecb77b833f50f1085304509d221f4fe2359ca8` — see this task's own
+  commit message for the full five-file list). Plan 1's determinism property survives ten
+  indicators unchanged.
+- **`manifest.json`'s flat `sources` list is deduplicated** by (table, lang, resolved selection)
+  before being written: `median-income` and `house-prices` each call `cpi.ts`'s `fetchCpi`
+  independently (by design — `cpi.ts` is deliberately independent of the registry), so without
+  deduplication every CPI chunk would appear twice, byte-identically, once per indicator that
+  fetched it. `indicatorSources` still records the (table, contentCode, selectionKey) triple
+  correctly for whichever indicators declare it as one of their own sources.
+- **A real attribution bug, found and fixed before this task was done, not after**: the first
+  implementation of `indicatorSources` matched an indicator's declared (table, contentCode)
+  pairs against the whole shared `frozen` array, and `population` and `share-65-plus` both
+  genuinely declare `TAB638`/`BE0101N1` as one of their own sources — population fetches the
+  age TOTAL from it, share-65-plus fetches ages 65+ from the very same table and content code,
+  via a different `Alder` selection. That first version attributed share-65-plus's ~51
+  chunked requests to population too, and vice versa — a 100% false overlap, only caught by
+  comparing the two indicators' own chunk lists against each other rather than trusting that
+  the code compiled and the row counts looked plausible. Fixed by having `buildAll()`
+  (`kitchen/src/indicators/registry.ts`) return `sourcesByIndicator`: exactly the slice of
+  `ctx.frozen` each definition's OWN `build(ctx)` call pushed, so attribution never depends on
+  two indicators happening to share a table or content code. Verified against the real
+  published manifest: `population` now lists 2 chunks, `share-65-plus` 51, with zero overlap.

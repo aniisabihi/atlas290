@@ -309,6 +309,23 @@ export async function buildAll(
   indicators: Indicator[]
   series: IndicatorSeries[]
   frozen: Array<FrozenData | FrozenMeta>
+  /**
+   * Task 13: exactly the slice of `frozen` each definition's OWN `build(ctx)` call pushed,
+   * keyed by indicator id — never derived by matching an indicator's declared
+   * `Indicator.sources` (table + contentCode) back against the flat `frozen` array after the
+   * fact. That matching approach was tried first and found wrong by inspecting its own
+   * output: population and share-65-plus both declare TAB638/`BE0101N1` as one of their own
+   * sources (a real fact — population fetches the age TOTAL from it, share-65-plus fetches
+   * ages 65+ from the SAME table and content code, via a different `Alder` selection), so
+   * matching on (table, contentCode) alone attributed share-65-plus's ~50 chunked requests to
+   * population too, and vice versa — a 100% false overlap, caught by checking the two
+   * indicators' resulting chunk lists against each other rather than trusting the code
+   * compiled and the row counts looked plausible. `ctx.frozen`'s cumulative length before and
+   * after each `def.build(ctx)` call below is a precise boundary: whatever a definition's own
+   * build() pushed is unambiguously its own provenance, with no risk of attributing another
+   * definition's chunks to it just because both happen to share a table or content code.
+   */
+  sourcesByIndicator: Record<string, Array<FrozenData | FrozenMeta>>
 }> {
   // Only populate the real singleton when we are actually going to use it. Passing `defs`
   // is the tests' isolated path, and registering as a side effect of it would leave the
@@ -332,6 +349,7 @@ export async function buildAll(
   const indicators: Indicator[] = []
   const seriesList: IndicatorSeries[] = []
   const seenIds = new Set<string>()
+  const sourcesByIndicator: Record<string, Array<FrozenData | FrozenMeta>> = {}
 
   for (const def of list) {
     const id = def.indicator.id
@@ -340,7 +358,9 @@ export async function buildAll(
     }
     seenIds.add(id)
 
+    const frozenBefore = ctx.frozen.length
     const series = await def.build(ctx)
+    sourcesByIndicator[id] = ctx.frozen.slice(frozenBefore)
 
     // Population is the only definition that derives ctx.municipalities; everything else
     // maps onto it. If a definition ran before that happened, the row-count check below
@@ -367,5 +387,11 @@ export async function buildAll(
     indicators.push(withBreaks(def.indicator, series))
   }
 
-  return { municipalities: ctx.municipalities, indicators, series: seriesList, frozen: ctx.frozen }
+  return {
+    municipalities: ctx.municipalities,
+    indicators,
+    series: seriesList,
+    frozen: ctx.frozen,
+    sourcesByIndicator,
+  }
 }
