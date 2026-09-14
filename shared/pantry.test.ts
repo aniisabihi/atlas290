@@ -10,6 +10,9 @@ import {
 
 const stockholm = { code: '0180', name: { sv: 'Stockholm', en: 'Stockholm' }, county: '01' }
 
+/** Smallest index that satisfies the schema; only the money tests care what is in it. */
+const priceIndex = { base: 2025, values: { '2024': 100, '2025': 101 } }
+
 describe('pantry schemas', () => {
   it('accepts a valid municipality and rejects a code without leading zero', () => {
     expect(Municipality.parse(stockholm)).toEqual(stockholm)
@@ -66,6 +69,7 @@ describe('pantry schemas', () => {
       municipalities: [stockholm],
       indicators: [indicator],
       series: [series],
+      priceIndex,
     })
     expect(pantry.series[0]?.values[0]?.[1]).toBe(990000)
     expect(() =>
@@ -121,6 +125,7 @@ describe('pantry schemas', () => {
         municipalities: [stockholm],
         indicators: [indicator],
         series: [series],
+        priceIndex,
       }),
     ).toThrow(/missing-indicator/)
   })

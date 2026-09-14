@@ -7,6 +7,7 @@ import {
   type FrozenMeta,
 } from '../scb/freeze'
 import { toRows } from '../scb/jsonstat'
+import { PriceIndex } from '../../../shared/pantry'
 
 /**
  * National consumer price index (KPI), 1980 = 100. Unlike every other indicator in this
@@ -100,6 +101,17 @@ function resolveContentCode(meta: TableMeta, label: string): string {
  * kitchen/raw/ and every later run is offline) and returns it as a year -> index-value map,
  * plus every frozen chunk fetched, for the provenance manifest.
  */
+/**
+ * Turns the fetched index into the shape the pantry publishes, so the site can undo an
+ * inflation adjustment without a second copy of every money figure.
+ */
+export function toPriceIndex(index: Map<number, number>): PriceIndex {
+  return PriceIndex.parse({
+    base: assertCpiLatestYear(Math.max(...index.keys())),
+    values: Object.fromEntries([...index].map(([year, value]) => [String(year), value])),
+  })
+}
+
 export async function fetchCpi(
   opts: FreezeOpts = {},
 ): Promise<{ index: Map<number, number>; frozen: Array<FrozenData | FrozenMeta> }> {

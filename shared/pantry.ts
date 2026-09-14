@@ -105,6 +105,19 @@ export const Indicator = z
      * money presented as a fact.
      */
     priceBasisYear: z.number().int().optional(),
+    /**
+     * The smallest step the SOURCE publishes at, in this indicator's own unit — 1000 kronor for
+     * house prices, which SCB publishes as whole thousands, and 100 for median income, which it
+     * publishes as thousands to one decimal.
+     *
+     * It exists so the site can recover the figure SCB actually published from the
+     * inflation-adjusted one it stores, by undoing the adjustment and snapping back to the step
+     * the original always landed on. That recovery is exact — proven for all 20,260 money cells
+     * in src/data/nominal.test.ts — but only at the right step: snapping income to 1000 instead
+     * of 100 recovers 797 of 7,537 cells. So the step is published per indicator rather than
+     * assumed to be the same everywhere.
+     */
+    publishedStep: z.number().positive().optional(),
     /** Neutral scale hint. There is deliberately no "higher is better" flag. */
     scale: z.object({
       kind: z.enum(['sequential', 'diverging']),
@@ -127,6 +140,12 @@ export const Indicator = z
       ctx.addIssue({
         code: 'custom',
         message: `${i.id}: priceBasis is 'fixed-latest-year' but no priceBasisYear says which year`,
+      })
+    }
+    if (adjusted && i.publishedStep === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `${i.id}: adjusted for inflation but no publishedStep, so the figure SCB published cannot be recovered`,
       })
     }
     if (!adjusted && i.priceBasisYear !== undefined) {
@@ -180,12 +199,25 @@ export const IndicatorSeries = z
   })
 export type IndicatorSeries = z.infer<typeof IndicatorSeries>
 
+/**
+ * The national consumer price index, published so the site can undo an inflation adjustment.
+ * Forty-six numbers, against the 69 kB gzipped it would cost to store every money figure twice.
+ */
+export const PriceIndex = z.object({
+  /** The year every adjusted figure in the pantry is expressed in. */
+  base: z.number().int(),
+  /** Year (as a string, because JSON object keys are strings) to index value. */
+  values: z.record(z.string().regex(/^\d{4}$/), z.number().positive()),
+})
+export type PriceIndex = z.infer<typeof PriceIndex>
+
 export const PantryData = z
   .object({
     schemaVersion: z.literal(1),
     municipalities: z.array(Municipality),
     indicators: z.array(Indicator),
     series: z.array(IndicatorSeries),
+    priceIndex: PriceIndex,
   })
   .superRefine((p, ctx) => {
     for (const s of p.series) {
@@ -197,6 +229,17 @@ export const PantryData = z
       }
       if (!p.indicators.some((i) => i.id === s.indicator)) {
         ctx.addIssue({ code: 'custom', message: `series ${s.indicator} has no indicator` })
+      }
+    }
+    for (const i of p.indicators) {
+      if (
+        i.priceBasisYear !== undefined &&
+        p.priceIndex.values[String(i.priceBasisYear)] === undefined
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `${i.id}: adjusted to ${i.priceBasisYear}, which the price index does not cover`,
+        })
       }
     }
   })

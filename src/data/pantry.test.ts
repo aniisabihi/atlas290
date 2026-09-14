@@ -7,6 +7,7 @@ const validData = {
   municipalities: [],
   indicators: [],
   series: [],
+  priceIndex: { base: 2025, values: { '2025': 100 } },
 }
 
 const validAdjacency = { schemaVersion: 1, neighbours: {}, synthetic: [] }
