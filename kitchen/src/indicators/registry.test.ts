@@ -137,6 +137,35 @@ const migrationNewMetaSv = {
   },
 }
 
+const incomeMetaSv = {
+  id: ['Region', 'Kon', 'Alder', 'Inkomstklass', 'ContentsCode', 'Tid'],
+  dimension: {
+    Region: { category: { index: ['0180'] } },
+    Kon: { category: { index: ['1+2'] } },
+    Alder: { category: { index: ['tot16+'] } },
+    Inkomstklass: { category: { index: ['TOT'] } },
+    ContentsCode: {
+      category: { index: ['HE0110J8'], label: { HE0110J8: 'Medianinkomst, tkr' } },
+    },
+    Tid: { category: { index: ['2024'] } },
+  },
+}
+// CPI's fetchCpi (unlike every other indicator here) reads its own year list straight off the
+// table's metadata rather than a hardcoded range (cpi.ts has no Region dimension to iterate
+// over), so this fake's Tid list must cover every year income.ts's INCOME_YEARS actually
+// requests (1999-2024) — otherwise toCurrentKronor would throw for the years left out, and
+// this fake backend would be failing to exercise the real registry end to end for no reason
+// related to the code under test.
+const cpiMetaSv = {
+  id: ['ContentsCode', 'Tid'],
+  dimension: {
+    ContentsCode: { category: { index: ['000000KL'], label: { '000000KL': 'Index' } } },
+    Tid: {
+      category: { index: Array.from({ length: 2024 - 1999 + 1 }, (_, i) => String(1999 + i)) },
+    },
+  },
+}
+
 function fakeFetchImpl() {
   return vi.fn(async (url: string | URL, init?: RequestInit) => {
     const u = String(url)
@@ -166,6 +195,8 @@ function fakeFetchImpl() {
     if (u.includes('/TAB1211/metadata') && u.includes('lang=sv')) return json(migrationOldMetaSv)
     if (u.includes('/TAB1212/metadata') && u.includes('lang=sv')) return json(migrationMidMetaSv)
     if (u.includes('/TAB6640/metadata') && u.includes('lang=sv')) return json(migrationNewMetaSv)
+    if (u.includes('/TAB3554/metadata') && u.includes('lang=sv')) return json(incomeMetaSv)
+    if (u.includes('/TAB4352/metadata') && u.includes('lang=sv')) return json(cpiMetaSv)
     throw new Error(`unexpected request: ${init?.method ?? 'GET'} ${u}`)
   })
 }

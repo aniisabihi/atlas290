@@ -250,3 +250,56 @@ Checked live against SCB metadata before writing `kitchen/src/indicators/migrati
 
 Real spot-check (frozen 2026-09-14): see the migration.ts commit message for the actual growing-
 and shrinking-municipality figures.
+
+## Median income: population basis, and two findings that revise the plan's own traps (Task 7, 2026-09-14)
+
+Checked live against TAB3554's real frozen metadata before writing `kitchen/src/indicators/income.ts`.
+
+- **TAB3554** ("Total earned income for persons registered in the national population register
+  during the whole year by region, sex, age and income bracket. Year 1999-2024"), content code
+  `HE0110J8` = "Medianinkomst, tkr" (resolved by label, never hardcoded). `Alder` carries the age
+  total `'tot16+'`, `Kon` carries `'1+2'`, `Inkomstklass` carries `'TOT'` — all three added to
+  `registry.ts`'s `TOTAL_CODES` (`Inkomstklass` is a new key there).
+- **Population basis, decided by the architect rather than by this task**: TAB3554 covers people
+  registered in Sweden's population **the whole year**. TAB3558 publishes the identical measure
+  (same shape, content code `HE0110K2`, confirmed against its own frozen metadata) for people
+  registered **on 31 December**, reaching back to **1991** — eight years further. The two
+  populations differ (a 31-December figure includes people who moved in or out partway through
+  the year) and must never be mixed. TAB3554 was chosen because part-year residents make small
+  and student-heavy municipalities noisy, and comparability between places matters more here than
+  the extra history. Switching is a one-line change (`income.ts`'s module comment gives the exact
+  line), which is deliberately not taken here.
+- **Trap 5 from the plan's own brief, checked and found NOT to apply to TAB3554**: TAB1212 and
+  TAB6640 carry phantom four-digit "region" codes (`0010`/`0020`/`0030`, Stor-Stockholm/Göteborg/
+  Malmö) that a blind `/^\d{4}$/` filter would wrongly admit. TAB3554's own Region list was
+  checked the same way: of 312 entries, exactly **290** are four-digit, and all 290 are real,
+  current municipality codes — no phantom four-digit entries at all. `incomeSelection` still joins
+  against the known municipality list rather than a bare regex, both as the project's default
+  convention and as a safety margin should SCB add such a code to this table later.
+- **A finding the plan's own trap 4 did not anticipate: TAB3554 returns literal `null` for a
+  municipality-year before it existed, not literal `0`.** Population's TAB638 sends `0` for
+  Knivsta before 2002 (documented in `docs/decisions/0001-plan-1-build-decisions.md`), which is
+  why "existence must be decided by the registry, never by the value" is stated as a general rule.
+  Checked directly against TAB3554's real frozen response: Knivsta (`0330`) reads `null` for 1999,
+  2000 and 2001, and a real value (206.1 tkr) from 2002. The rule is followed exactly the same way
+  regardless (`existed()` gates before the value is even inspected, per `buildIncomeSeries`), so
+  no code depends on this difference — but the difference itself is worth recording, because the
+  plan stated the literal-zero behaviour as if it generalised, and here it does not.
+- **Income uses the same existence gate as population, tax rate and density
+  (`existed(m.code, y)`), not migration's one-year-later shift.** Net migration is a flow measured
+  during calendar year Y and needed its own gate; median income, like population, is a snapshot
+  measure taken under the administrative division already in force for that year's row. Verified
+  against the real data: Knivsta reads `did-not-exist` for 1999–2001 and `present` from 2002
+  onward, matching population's own `CREATED['0330'] = 2002` with no adjustment.
+- **Unit conversion**: SCB publishes this content code in thousands of kronor (tkr).
+  `income.ts` multiplies by 1,000 before storing, so the pantry's `sek`-unit values are true
+  kronor, not thousands of kronor labelled as kronor.
+- **Real spot-check** (all 290 municipalities, 1999–2024, frozen 2026-09-14): Danderyd (`0162`) is
+  the highest-median municipality in the real 2024 data (455.6 tkr nominal) and reads 209.6 tkr
+  nominal for 1999. Högsby (`0821`) is the real **lowest**-median municipality in 2024 (269.5 tkr
+  nominal — found by scanning every municipality's real 2024 figure, not assumed) and reads 140.6
+  tkr nominal for 1999. Adjusted to 2025 kronor (the latest year the real, frozen CPI series
+  covers) via `cpi.ts`'s `toCurrentKronor`: Danderyd's 1999 figure becomes 339,436.68 kronor
+  (up from a nominal 209,600 kronor) and Högsby's becomes 227,694.65 kronor (up from a nominal
+  140,600 kronor) — both roughly 62% higher than nominal, matching the real CPI ratio
+  417.98 / 258.1.

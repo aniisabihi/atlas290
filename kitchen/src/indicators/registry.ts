@@ -57,9 +57,10 @@ export function values(meta: TableMeta, code: string): string[] {
  * happens not to exist in a given table's value list is simply never matched there.
  */
 export const TOTAL_CODES: Record<string, string[]> = {
-  Alder: ['tot', 'TotSA', 'TOT1'],
+  Alder: ['tot', 'TotSA', 'TOT1', 'tot16+'],
   Kon: ['TotSa', '1+2'],
   Civilstand: ['SC'],
+  Inkomstklass: ['TOT'],
 }
 
 /**
@@ -204,6 +205,13 @@ import { densityDefinition } from './density'
 // this module's own top level — and a second reason it must be registered strictly after
 // populationDefinition below.
 import { migrationDefinition } from './migration'
+// Same deferred-read reasoning as every import above: the binding is always safe to import,
+// but ensureRegistered is what actually reads incomeDefinition, and only from inside buildAll.
+// Unlike migration, income does not read another indicator's series from ctx — it calls
+// cpi.ts's fetchCpi directly inside its own build() (see income.ts's module comment for why
+// that call is not routed through ctx.cpi yet) — so it has no ordering dependency on any other
+// REGISTRY entry beyond needing ctx.municipalities, which population alone establishes.
+import { incomeDefinition } from './income'
 
 /** Every indicator the pantry publishes, in build order. Population must stay first: it is
  * the only definition that derives `ctx.municipalities`, and every other definition depends
@@ -211,15 +219,23 @@ import { migrationDefinition } from './migration'
  * does not matter, since neither derives municipalities or reads another's series. Net
  * migration (Task 6) must come after population specifically — not merely after it happens to
  * run — because its build() reads `ctx.series.get(POPULATION.id)` and throws if that is not
- * yet set. Starts empty; `ensureRegistered` fills it in on first use (see the comment on the
- * imports above for why that can't happen at module-load time). */
+ * yet set. Median income (Task 7) has no such ordering requirement — it only needs
+ * `ctx.municipalities`, already established by population — so its position among the other
+ * non-population entries is arbitrary. Starts empty; `ensureRegistered` fills it in on first
+ * use (see the comment on the imports above for why that can't happen at module-load time). */
 export const REGISTRY: IndicatorDefinition[] = []
 
 let registered = false
 function ensureRegistered(): void {
   if (registered) return
   registered = true
-  REGISTRY.push(populationDefinition, taxDefinition, densityDefinition, migrationDefinition)
+  REGISTRY.push(
+    populationDefinition,
+    taxDefinition,
+    densityDefinition,
+    migrationDefinition,
+    incomeDefinition,
+  )
 }
 
 /**
