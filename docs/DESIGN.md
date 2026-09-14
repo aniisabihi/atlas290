@@ -1,11 +1,15 @@
 # Sweden Data Explorer — design
 
-Date: 2026-09-10, revised 2026-09-13 after design review, revised 2026-09-14 after Plan 2.
-Status: Plans 1 and 2 are implemented. The kitchen fetches, freezes, checks and publishes all
+Date: 2026-09-10, revised 2026-09-13 after design review, revised 2026-09-14 after Plans 2 and 3.
+Status: Plans 1, 2 and 3 are implemented. The kitchen fetches, freezes, checks and publishes all
 ten indicators for 290 municipalities, with map geometry, keyboard adjacency and the bubble
 layout; the published pantry is 1.04 MB, 275 kB gzipped, and rebuilds byte-identically from
-frozen source. The product itself — the map, time travel, cartogram morph and facts engine
-described below — is not yet built; that is Plan 3 onward.
+frozen source. The site now reads it: Swedish and English at their own paths, the whole view in
+the URL, the choropleth with a legend that admits what is missing, a year slider with play,
+diacritic-folding search, arrow-key navigation over the map, and a debounced live region. Still
+to come: the profile panel, comparison, the facts strip and the table twin (Plan 4), then CI,
+the accessibility audit and deployment (Plan 5). The cartogram morph remains an increment
+beyond the first slice.
 Research behind every factual claim: [docs/research/](research/README.md).
 
 ## 1. What we are building
