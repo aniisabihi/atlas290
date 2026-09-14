@@ -1,12 +1,11 @@
 import { createRoot } from 'react-dom/client'
+import './styles/app.css'
 import { loadPantry } from './data/pantry'
-import { RenderCheck } from './RenderCheck'
+import { App } from './components/App'
 
 const root = createRoot(document.getElementById('root')!)
 loadPantry()
-  .then(({ data, topology }) =>
-    root.render(<RenderCheck data={data} topology={topology} year={2024} />),
-  )
+  .then(({ data, topology }) => root.render(<App data={data} topology={topology} />))
   .catch((err: unknown) => {
     root.render(<pre>{String(err)}</pre>)
     throw err

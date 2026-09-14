@@ -1,0 +1,29 @@
+/*
+ * Minimal layout only. Task 14 of docs/plans/2026-09-14-03-dining-room-map-time-state.md is
+ * where this becomes a designed page, with tokens, dark mode and the responsive shell; what is
+ * here is the bare sizing the map needs to be usable and verifiable in the meantime.
+ */
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+}
+
+main {
+  padding: 1rem;
+}
+
+/*
+ * The render frame is 1000 x 2000, matching Sweden's north-south extent, so an unconstrained map
+ * is twice as tall as the page is wide. Height-constrained with automatic width instead.
+ */
+.map {
+  display: block;
+  height: min(85vh, 1000px);
+  width: auto;
+  margin: 0 auto;
+}
+
+.map path:focus-visible {
+  outline: none;
+}

@@ -1,0 +1,37 @@
+import type { MunicipalityTopology } from '../../shared/geometry'
+import type { PantryData } from '../../shared/pantry'
+import { lookup } from '../data/select'
+import { t } from '../i18n/strings'
+import { metaFrom } from '../state/url'
+import { useAppState } from '../state/useAppState'
+import { MapView } from './MapView'
+
+/**
+ * The shell. Everything it renders is a function of the URL; nothing else holds state.
+ *
+ * Plan 3's remaining tasks hang their controls here — the indicator picker, the year slider,
+ * search, the legend and the live region — each one reading the same state and reporting back
+ * through the same `update`.
+ */
+export function App({ data, topology }: { data: PantryData; topology: MunicipalityTopology }) {
+  const meta = metaFrom(data)
+  const lk = lookup(data)
+  const [state, update] = useAppState(meta)
+  const strings = t(state.lang)
+
+  return (
+    <main>
+      <h1>{strings.siteName}</h1>
+      <p>{strings.tagline}</p>
+      <MapView
+        lk={lk}
+        topology={topology}
+        indicatorId={state.indicator}
+        year={state.year}
+        selected={state.selected}
+        lang={state.lang}
+        onSelect={(code) => update({ selected: code === state.selected ? null : code })}
+      />
+    </main>
+  )
+}
