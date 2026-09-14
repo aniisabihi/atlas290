@@ -53,11 +53,14 @@ export function values(meta: TableMeta, code: string): string[] {
  * table-specific: a code here is used wherever a table's dimension happens to offer it.
  * Task 5 adds `'1+2'` for `Kon` (TAB628's density, selected instead of summing the two sexes —
  * ruling R1); Task 7 adds `Inkomstklass`'s `TOT` and `Alder`'s `tot16+` (income); Task 9 adds
- * `Alder`'s `tot16-74` (education). Extending this list is additive and safe: a total code that
- * happens not to exist in a given table's value list is simply never matched there.
+ * `Alder`'s `tot16-74` (education) — a DIFFERENT age total on a DIFFERENT table from `tot16+`:
+ * TAB3554 (income) carries `tot16+`, TAB3981 (education) carries `tot16-74`, and neither
+ * subsumes the other, so both are listed rather than assuming one covers both tables. Extending
+ * this list is additive and safe: a total code that happens not to exist in a given table's
+ * value list is simply never matched there.
  */
 export const TOTAL_CODES: Record<string, string[]> = {
-  Alder: ['tot', 'TotSA', 'TOT1', 'tot16+'],
+  Alder: ['tot', 'TotSA', 'TOT1', 'tot16+', 'tot16-74'],
   Kon: ['TotSa', '1+2'],
   Civilstand: ['SC'],
   Inkomstklass: ['TOT'],
@@ -80,6 +83,14 @@ export const SUM_SAFE: Record<string, string[]> = {
   // own 'TotSa' total instead, so it never needs this fallback).
   TAB1211: ['Kon'],
   TAB1212: ['Kon'],
+  // Task 9 (education): TAB3981's Kon has exactly two values, '1' and '2', and no total code —
+  // verified live 2026-09-14 against the table's own metadata, so summing the two sexes here is
+  // not optional, it is required before a share can be computed at all. Declared safe for the
+  // same reason as TAB638/TAB1211/TAB1212 above: TAB3981 carries no Cell Key Method
+  // perturbation note (its metadata's own notes cover two unrelated time-series breaks, 1990
+  // and 2000, not disclosure-control noise), so summing the two sexes' counts is exact
+  // arithmetic over real, disjoint, unperturbed cells — never an approximation over fuzzed ones.
+  TAB3981: ['Kon'],
 }
 
 /**
@@ -218,6 +229,11 @@ import { incomeDefinition } from './income'
 // through ctx.cpi (Task 13 wires that slot), so it has no ordering dependency on any other
 // REGISTRY entry beyond needing ctx.municipalities, which population alone establishes.
 import { housingDefinition } from './housing'
+// Same deferred-read reasoning as every import above: the binding is always safe to import,
+// but ensureRegistered is what actually reads educationDefinition, and only from inside
+// buildAll. Like income and housing, education has no ordering dependency on any other
+// REGISTRY entry beyond needing ctx.municipalities, which population alone establishes.
+import { educationDefinition } from './education'
 
 /** Every indicator the pantry publishes, in build order. Population must stay first: it is
  * the only definition that derives `ctx.municipalities`, and every other definition depends
@@ -225,11 +241,11 @@ import { housingDefinition } from './housing'
  * does not matter, since neither derives municipalities or reads another's series. Net
  * migration (Task 6) must come after population specifically — not merely after it happens to
  * run — because its build() reads `ctx.series.get(POPULATION.id)` and throws if that is not
- * yet set. Median income (Task 7) and house prices (Task 8) have no such ordering requirement —
- * each only needs `ctx.municipalities`, already established by population — so their position
- * among the other non-population entries is arbitrary. Starts empty; `ensureRegistered` fills
- * it in on first use (see the comment on the imports above for why that can't happen at
- * module-load time). */
+ * yet set. Median income (Task 7), house prices (Task 8) and education (Task 9) have no such
+ * ordering requirement — each only needs `ctx.municipalities`, already established by
+ * population — so their position among the other non-population entries is arbitrary. Starts
+ * empty; `ensureRegistered` fills it in on first use (see the comment on the imports above for
+ * why that can't happen at module-load time). */
 export const REGISTRY: IndicatorDefinition[] = []
 
 let registered = false
@@ -243,6 +259,7 @@ function ensureRegistered(): void {
     migrationDefinition,
     incomeDefinition,
     housingDefinition,
+    educationDefinition,
   )
 }
 

@@ -396,3 +396,106 @@ sales at a mean of 252 tkr (among the lowest). Adjusted to 2025 kronor via `cpi.
 (up from a nominal 252,000 kronor). Solna (`0184`), 1990: 2 sales — below the minCount of 20 —
 so despite SCB publishing a mean price (2,188 tkr) for that cell, it is nulled and marked
 `too-few-cases` rather than shown.
+
+## Share with post-secondary education: a derived share, a required summation, and a table-note finding the brief didn't mention (Task 9, 2026-09-14)
+
+Checked live against TAB3981's real frozen metadata and real frozen data before writing
+`kitchen/src/indicators/education.ts`.
+
+- **TAB3981** ("Befolkning 16–74 år efter region, utbildningsnivå, ålder och kön. År
+  1985-2025"), content code `UF0506A1` = "Antal" (the only ContentsCode this table carries).
+  `Region`: 312 values, exactly **290** four-digit codes, diffed directly against TAB638's own
+  290 — an exact match, no phantom four-digit codes like TAB1212/TAB6640's Stor-Stockholm/
+  Göteborg/Malmö. The age dimension is named **`UtbildningsNiva`** (education level), not
+  "Nivå", and carries `Alder`'s `tot16-74` total (added to `registry.ts`'s `TOTAL_CODES`,
+  distinct from `tot16+`, income's age total on a different table — neither subsumes the
+  other). `UtbildningsNiva` has exactly eight values, confirmed against the table's own live
+  labels rather than trusted from the task brief (all eight agreed with the brief):
+
+  | Code | Label (Swedish, verbatim from metadata)   | Meaning                            |
+  | ---- | ----------------------------------------- | ---------------------------------- |
+  | 1    | förgymnasial utbildning kortare än 9 år   | Pre-upper-secondary, under 9 years |
+  | 2    | förgymnasial utbildning, 9 (10) år        | Pre-upper-secondary, 9 or 10 years |
+  | 3    | gymnasial utbildning, högst 2 år          | Upper-secondary, up to 2 years     |
+  | 4    | gymnasial utbildning, 3 år                | Upper-secondary, 3 years           |
+  | 5    | eftergymnasial utbildning, mindre än 3 år | Post-secondary, under 3 years      |
+  | 6    | eftergymnasial utbildning, 3 år eller mer | Post-secondary, 3 years or more    |
+  | 7    | forskarutbildning                         | Postgraduate research              |
+  | US   | uppgift om utbildningsnivå saknas         | Unknown                            |
+
+  `education.ts`'s `validateLevels` checks this exact code/label mapping at selection time
+  (not just once here), so a future SCB relabelling throws instead of silently redefining what
+  "post-secondary" means.
+
+- **`Kon` has exactly two values, `1` and `2`, no total code** — verified live. Summing the two
+  sexes is therefore required, not optional, and `registry.ts`'s `totalOrDeclaredSum` refuses
+  the fetch until it is declared: `TAB3981: ['Kon']` was added to `SUM_SAFE`, safe for the same
+  reason TAB638/TAB1211/TAB1212's sex-sums are safe — TAB3981 carries no CKM/perturbation note
+  (confirmed: its metadata's own `note` array covers two unrelated time-series breaks, 1990 and
+  2000, discussed below — never disclosure-control noise), so the two sexes' counts are exact,
+  disjoint and unperturbed. **Verified the guard actually guards**: with the `SUM_SAFE` entry
+  removed, five `educationSelection` tests fail with `totalOrDeclaredSum`'s own refusal message
+  naming `Kon`; restoring the entry turns them green again. A second mutation test (silently
+  excluding `US` from the denominator inside `buildEducationSeries`) was also run and correctly
+  turned the "unknown level is non-trivial" test red before being reverted — proving that test
+  really exercises the denominator decision rather than passing regardless of it.
+
+- **The definition, stated explicitly**: the numerator is levels 5, 6 and 7 (eftergymnasial
+  under 3 years, eftergymnasial 3 years or more, forskarutbildning). The denominator is **all
+  eight levels, including `US`** — the share is of the whole 16-74 population, not only those
+  with a recorded education. Both choices are in `EDUCATION`'s bilingual `description` and
+  `caveat`, because a reader comparing this to SCB's own published share needs to know which
+  convention is used here; SCB itself sometimes reports the share with `US` excluded from the
+  denominator instead.
+
+- **A finding this task's brief did not mention: TAB3981 carries no CKM/perturbation note, but
+  it DOES carry two genuine time-series-break notes.** SCB's metadata states register quality
+  rose substantially from 1990 (so 1985-1989 should be avoided or read with real caution) and
+  the classification system changed in 2000 (SUN → the ISCED-aligned SUN2000), which raised the
+  reported national education level and makes pre-2000 comparisons less reliable. Neither is a
+  disclosure-control perturbation — no cell is ever marked `perturbed` — but both are real data-
+  quality caveats, recorded in `EDUCATION`'s bilingual `caveat` since they were not otherwise
+  documented anywhere in this task's own brief.
+
+- **Education is confirmed to be a SNAPSHOT, using the plain `existed(m.code, y)` gate — not a
+  flow needing migration/housing's `existed(code, y - 1)` shift.** Checked directly against the
+  real frozen data for all six municipality splits (representative cell: level `1`, sex `1`):
+
+  | Municipality     | `CREATED` | Year before (0) | `CREATED` year (real count) |
+  | ---------------- | --------- | --------------- | --------------------------- |
+  | Gnesta (0461)    | 1991      | 0               | 713                         |
+  | Trosa (0488)     | 1991      | 0               | 620                         |
+  | Bollebygd (1443) | 1994      | 0               | 712                         |
+  | Lekeberg (1814)  | 1994      | 0               | 670                         |
+  | Nykvarn (0140)   | 1998      | 0               | 368                         |
+  | Knivsta (0330)   | 2002      | 0               | 435                         |
+
+  Every one of the six reads its first real (non-zero) count in exactly `CREATED[code]` itself,
+  not `CREATED[code] + 1` — unlike net migration and house prices, which are flows and need the
+  one-year-later shift. This also answers trap 5 directly: **TAB3981 sends literal `0`**, not
+  `null`, for a municipality-year before it existed — matching TAB638 (population), not
+  TAB3554/TAB1169 (income/housing).
+
+- **Real spot-check** (all 290 municipalities, 1985–2025, frozen 2026-09-14): for 2024, Danderyd
+  (`0162`) has the highest post-secondary share of all 290 municipalities at **65.28%**; Lund
+  (`1281`) is also high at **64.90%**; Filipstad (`1782`), a rural municipality, is the real
+  **lowest** of all 290 at **19.29%** (found by scanning every municipality's real 2024 figure,
+  not assumed).
+
+- **National figure versus SCB's own published share**: summing the raw counts across all 290
+  municipalities for 2024 reproduces SCB's own `Region='00'` (Riket) row in the same table
+  **exactly** — 185,649 / 954,024 / 1,254,093 / 1,811,141 / 1,171,076 / 1,850,629 / 91,878 /
+  213,028 for levels 1 through 7 and US respectively, fetched independently and compared
+  cell-for-cell — proving no double-count and no missing municipality. Under this indicator's
+  own convention (US included in the denominator), the national share is **41.34%**; excluding
+  US from the denominator (a convention SCB itself sometimes uses) gives **42.54%** instead —
+  over a full percentage point apart, which is exactly why the convention is stated explicitly
+  rather than left implicit. The two figures agree with each other (same source data, same
+  numerator) and disagree with each other by exactly the denominator convention, not by any
+  data error.
+
+- **What in this task's brief turned out to be wrong**: nothing in the verified-facts table,
+  the eight level codes/labels, the `Kon`/`Alder` dimension facts, or the phantom-region-code
+  check. The one thing the brief did not mention (not "wrong", but missing) is the two
+  time-series-break notes (1990, 2000) TAB3981's own metadata carries — added to the caveat
+  here since they materially affect how early years in this series should be read.

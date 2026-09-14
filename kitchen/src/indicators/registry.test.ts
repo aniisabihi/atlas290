@@ -171,6 +171,31 @@ const housingMetaSv = {
     },
   },
 }
+const educationMetaSv = {
+  id: ['Region', 'Alder', 'UtbildningsNiva', 'Kon', 'ContentsCode', 'Tid'],
+  dimension: {
+    Region: { category: { index: ['0180'] } },
+    Alder: { category: { index: ['tot16-74'] } },
+    UtbildningsNiva: {
+      category: {
+        index: ['1', '2', '3', '4', '5', '6', '7', 'US'],
+        label: {
+          '1': 'förgymnasial utbildning kortare än 9 år',
+          '2': 'förgymnasial utbildning, 9 (10) år',
+          '3': 'gymnasial utbildning, högst 2 år',
+          '4': 'gymnasial utbildning, 3 år',
+          '5': 'eftergymnasial utbildning, mindre än 3 år',
+          '6': 'eftergymnasial utbildning, 3 år eller mer',
+          '7': 'forskarutbildning',
+          US: 'uppgift om utbildningsnivå saknas',
+        },
+      },
+    },
+    Kon: { category: { index: ['1', '2'] } },
+    ContentsCode: { category: { index: ['UF0506A1'], label: { UF0506A1: 'Antal' } } },
+    Tid: { category: { index: ['2024'] } },
+  },
+}
 // CPI's fetchCpi (unlike every other indicator here) reads its own year list straight off the
 // table's metadata rather than a hardcoded range (cpi.ts has no Region dimension to iterate
 // over), so this fake's Tid list must cover every year EITHER income.ts's INCOME_YEARS (1999-
@@ -219,6 +244,7 @@ function fakeFetchImpl() {
     if (u.includes('/TAB3554/metadata') && u.includes('lang=sv')) return json(incomeMetaSv)
     if (u.includes('/TAB4352/metadata') && u.includes('lang=sv')) return json(cpiMetaSv)
     if (u.includes('/TAB1169/metadata') && u.includes('lang=sv')) return json(housingMetaSv)
+    if (u.includes('/TAB3981/metadata') && u.includes('lang=sv')) return json(educationMetaSv)
     throw new Error(`unexpected request: ${init?.method ?? 'GET'} ${u}`)
   })
 }
