@@ -1,0 +1,57 @@
+name: CI
+
+# Every pull request, and every push to main. Free for public repositories on standard runners,
+# with no minute limit — checked against GitHub's billing documentation, not assumed.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A second push to the same branch cancels the first: nobody needs the results of a commit that
+# has already been replaced.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Typecheck, lint, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Before setup-node, so that its `cache: yarn` can find the Yarn 4 this project pins in
+      # package.json's packageManager field. The runner image ships a Node that can run corepack.
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      # --immutable fails if yarn.lock would change, so a pull request cannot quietly install
+      # something other than what was reviewed.
+      - run: yarn install --immutable
+
+      - run: yarn typecheck
+      - run: yarn lint
+      - run: yarn test
+      - run: yarn build
+
+      # The kitchen's central promise: publishing twice from the same frozen SCB responses gives
+      # byte-identical output. Checked by hand at the end of three plans; checked here from now
+      # on. `publish` refuses to reach the network itself, so this also proves it stayed offline.
+      - name: The pantry rebuilds byte-identically
+        run: |
+          yarn kitchen publish
+          if [ -n "$(git status --porcelain public/pantry/)" ]; then
+            echo "::error::Publishing from the committed frozen data changed the pantry."
+            echo "Determinism is a requirement, not an aspiration. The diff:"
+            git --no-pager diff --stat public/pantry/
+            git --no-pager diff public/pantry/ | head -100
+            exit 1
+          fi
+          echo "Pantry reproduced byte for byte."
