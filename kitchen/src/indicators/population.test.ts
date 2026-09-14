@@ -397,6 +397,18 @@ describe('breaks', () => {
     )
     expect(() => withBreaks(POPULATION, nullSeries)).toThrow(/population/)
   })
+
+  // The empty-input guard used to live only in withBreaks; quantileBreaks itself still
+  // returned classes-1 zero-valued breaks if called directly with no values. Plan 2's
+  // partial-coverage indicators make an all-null series real, so the guard belongs on
+  // quantileBreaks itself, not one level up on its only current caller.
+  it('quantileBreaks itself throws on an empty value list, not just its withBreaks caller', () => {
+    expect(() => quantileBreaks([], 7)).toThrow()
+  })
+
+  it('quantileBreaks names the indicator it was asked for when given one', () => {
+    expect(() => quantileBreaks([], 7, 'population')).toThrow(/population/)
+  })
 })
 
 // Review finding 2: CKM_FROM (first year SCB perturbs) and LATEST_YEAR (newest published
@@ -436,5 +448,23 @@ describe('CKM_FROM vs LATEST_YEAR (review finding 2)', () => {
     expect(name(1)).toBe('perturbed')
     expect(name(2)).toBe('perturbed')
     expect(LATEST_YEAR).toBeGreaterThanOrEqual(CKM_FROM)
+  })
+
+  // NOTE: the task-1 brief's own literal test for this used the module-level `oldChunk`/
+  // `newChunk` fixtures with years [2002, 2003, 2025], but those fixtures only carry data for
+  // 2001/2002 (old) and 2025 (new) — there is no 2003 cell at all. That version fails with
+  // 'not-yet-published' vs 'perturbed' regardless of perturbedFrom, i.e. it never goes green
+  // even once the parameter exists (defect, reported in task-1-report.md). Using synthetic
+  // single-year chunks (chunkFor, already defined above) instead gives real data for 2003 so
+  // the test genuinely exercises the new parameter rather than the fixture gap.
+  it('marks perturbed from the perturbation year, not from the latest published year', () => {
+    const uppsala = [{ code: '0380', name: { sv: 'Uppsala', en: 'Uppsala' }, county: '03' }]
+    const years = [2002, 2003, 2025]
+    const chunks = years.map((y, i) => chunkFor(y, 100_000 + i))
+    const series = buildPopulationSeries(uppsala, chunks, [], years, 2003)
+    const status = (j: number) => OBSERVATION_STATUS[series.status[0]![j]!]
+    expect(status(0)).toBe('present') // 2002, before the perturbation year
+    expect(status(1)).toBe('perturbed') // 2003, the perturbation year itself
+    expect(status(2)).toBe('perturbed') // 2025, after it
   })
 })

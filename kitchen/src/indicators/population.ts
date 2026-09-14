@@ -214,6 +214,7 @@ export function buildPopulationSeries(
   oldChunks: FrozenData[],
   newChunks: FrozenData[],
   years: number[],
+  perturbedFrom: number = CKM_FROM,
 ): IndicatorSeries {
   const totals = new Map([...sumByRegionYear(oldChunks), ...sumByRegionYear(newChunks)])
   const rows = municipalities.map((m) =>
@@ -225,7 +226,7 @@ export function buildPopulationSeries(
       if (v === null) {
         return { v: null, s: statusCode('not-yet-published') }
       }
-      return { v, s: y >= CKM_FROM ? statusCode('perturbed') : statusCode('present') }
+      return { v, s: y >= perturbedFrom ? statusCode('perturbed') : statusCode('present') }
     }),
   )
   return {
@@ -236,7 +237,22 @@ export function buildPopulationSeries(
   }
 }
 
-export function quantileBreaks(nums: number[], classes: number): number[] {
+/**
+ * Unreachable for population today (every municipality reports a value every year), but
+ * Plan 2 adds indicators with genuinely partial coverage. An empty `nums` would otherwise
+ * fall through the `?? 0` fallback below and return `classes - 1` zero breaks that validate
+ * cleanly against the schema while producing a meaningless colour scale — so this throws,
+ * naming the indicator, rather than hand back a scale nobody can read. The guard lives here
+ * (not only in withBreaks) because quantileBreaks is exported and can be called directly.
+ */
+export function quantileBreaks(
+  nums: number[],
+  classes: number,
+  indicatorId = 'quantileBreaks',
+): number[] {
+  if (nums.length === 0) {
+    throw new Error(`${indicatorId}: cannot compute colour breaks — every value is null`)
+  }
   const sorted = [...nums].sort((a, b) => a - b)
   const at = (p: number) => {
     const pos = p * (sorted.length - 1)
@@ -248,19 +264,12 @@ export function quantileBreaks(nums: number[], classes: number): number[] {
   return Array.from({ length: classes - 1 }, (_, i) => at((i + 1) / classes))
 }
 
-/**
- * Unreachable for population today (every municipality reports a value every year), but
- * Plan 2 adds indicators with genuinely partial coverage. An all-null series would otherwise
- * fall through quantileBreaks' `?? 0` fallback and publish `classes - 1` zero breaks that
- * validate cleanly against the schema while producing a meaningless colour scale — so this
- * must throw, naming the indicator, rather than publish a scale nobody can read.
- */
 export function withBreaks(indicator: Indicator, series: IndicatorSeries, classes = 7): Indicator {
   const all = series.values.flat().filter((v): v is number => v !== null)
-  if (all.length === 0) {
-    throw new Error(`${indicator.id}: cannot compute colour breaks — every value is null`)
+  return {
+    ...indicator,
+    scale: { ...indicator.scale, breaks: quantileBreaks(all, classes, indicator.id) },
   }
-  return { ...indicator, scale: { ...indicator.scale, breaks: quantileBreaks(all, classes) } }
 }
 
 export const YEARS = Array.from({ length: LATEST_YEAR - 1968 + 1 }, (_, i) => 1968 + i)
