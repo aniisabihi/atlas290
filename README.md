@@ -1,5 +1,7 @@
 # Sweden Data Explorer
 
+[![CI](https://github.com/aniisabihi/sweden-data-explorer/actions/workflows/ci.yml/badge.svg)](https://github.com/aniisabihi/sweden-data-explorer/actions/workflows/ci.yml)
+
 An interactive atlas of Sweden's 290 municipalities built entirely from Statistics Sweden (SCB) open data. Static site, no server, no runtime API, no tracking.
 
 Ten measures from 1968 to 2026: a choropleth you can drive with a mouse, a keyboard or a search
@@ -24,7 +26,11 @@ yarn typecheck   # site and kitchen, as separate projects
 yarn lint        # oxlint and Prettier
 yarn build       # production build into dist/
 yarn kitchen publish   # rebuild the pantry from frozen SCB responses, offline
+yarn e2e               # browser tests in Chromium, Firefox and WebKit
+yarn budget            # Lighthouse against the built site, with a budget
 ```
+
+Accessibility, including what has _not_ been checked: [docs/accessibility.md](docs/accessibility.md).
 
 ## Deploying it
 

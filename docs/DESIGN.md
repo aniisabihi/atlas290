@@ -1,7 +1,7 @@
 # Sweden Data Explorer — design
 
 Date: 2026-09-10, revised 2026-09-13 after design review, revised 2026-09-14 after Plans 2 and 3.
-Status: Plans 1 to 4 are implemented. The kitchen fetches, freezes, checks and publishes all
+Status: **the first slice is complete** — all five plans are implemented. The kitchen fetches, freezes, checks and publishes all
 ten indicators for 290 municipalities, with map geometry, keyboard adjacency and the bubble
 layout; the published pantry is 1.04 MB, 275 kB gzipped, and rebuilds byte-identically from
 frozen source. The site now reads it: Swedish and English at their own paths, the whole view in
@@ -10,10 +10,13 @@ diacritic-folding search, arrow-key navigation over the map, and a debounced liv
 profile with ten small histories and, for money, what the figure was at the time; an explicit
 compare puts a second beside it with no verdict; a sortable table is the twin of every view; the
 bubble cartogram is a view anyone can switch to and the default on a phone; and five
-hand-written facts each link into the view that proves them. Still to come: CI, the
-accessibility audit and deployment (Plan 5). The cartogram morph, the automatic facts engine,
-similar-municipality search, profile prose and pre-rendered pages remain increments beyond the
-first slice.
+hand-written facts each link into the view that proves them. Continuous integration runs 745 unit tests, 99 browser tests
+across Chromium, Firefox and WebKit, an axe scan of eight page states and a measured performance
+budget on every pull request; a monthly job refreshes from SCB and opens a pull request; and the
+deploy runs only when all of that is green. What has not been done is written down in
+[accessibility.md](accessibility.md) — chiefly that no screen-reader pass has been run. The
+cartogram morph, the automatic facts engine, similar-municipality search, profile prose and
+pre-rendered pages remain increments beyond the first slice.
 Research behind every factual claim: [docs/research/](research/README.md).
 
 ## 1. What we are building
