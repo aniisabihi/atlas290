@@ -234,6 +234,12 @@ import { housingDefinition } from './housing'
 // buildAll. Like income and housing, education has no ordering dependency on any other
 // REGISTRY entry beyond needing ctx.municipalities, which population alone establishes.
 import { educationDefinition } from './education'
+// Same deferred-read reasoning as every import above: the binding is always safe to import, but
+// ensureRegistered is what actually reads populationChangeDefinition, and only from inside
+// buildAll. Like migration, population change reads ANOTHER definition's finished series
+// (population's, via ctx.series) inside its own build() — a second reason it must be registered
+// strictly after populationDefinition below, same as migrationDefinition.
+import { populationChangeDefinition } from './derived'
 
 /** Every indicator the pantry publishes, in build order. Population must stay first: it is
  * the only definition that derives `ctx.municipalities`, and every other definition depends
@@ -243,9 +249,11 @@ import { educationDefinition } from './education'
  * run — because its build() reads `ctx.series.get(POPULATION.id)` and throws if that is not
  * yet set. Median income (Task 7), house prices (Task 8) and education (Task 9) have no such
  * ordering requirement — each only needs `ctx.municipalities`, already established by
- * population — so their position among the other non-population entries is arbitrary. Starts
- * empty; `ensureRegistered` fills it in on first use (see the comment on the imports above for
- * why that can't happen at module-load time). */
+ * population — so their position among the other non-population entries is arbitrary.
+ * Population change (Task 10) has the same ordering requirement as migration, for the same
+ * reason: its build() also reads `ctx.series.get(POPULATION.id)` and throws if population has
+ * not run yet. Starts empty; `ensureRegistered` fills it in on first use (see the comment on the
+ * imports above for why that can't happen at module-load time). */
 export const REGISTRY: IndicatorDefinition[] = []
 
 let registered = false
@@ -260,6 +268,7 @@ function ensureRegistered(): void {
     incomeDefinition,
     housingDefinition,
     educationDefinition,
+    populationChangeDefinition,
   )
 }
 
