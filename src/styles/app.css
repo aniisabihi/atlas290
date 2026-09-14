@@ -542,3 +542,30 @@ button {
   color: var(--accent-text);
   border-color: var(--accent);
 }
+
+/*
+ * The bottom sheet. Below the layout breakpoint the profile arrives from the bottom of the screen
+ * rather than as a column beside a map there is no room for.
+ *
+ * Still not modal: nothing behind it is inert, and Tab leaves it the way it arrived.
+ */
+.profile--sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  max-height: 70vh;
+  overflow-y: auto;
+  border-radius: var(--radius) var(--radius) 0 0;
+  border-bottom: 0;
+  box-shadow: 0 -4px 20px rgb(0 0 0 / 18%);
+  margin-top: 0;
+}
+
+.profile--sheet .profile-header {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  padding-bottom: 0.5rem;
+}

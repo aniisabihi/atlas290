@@ -6,6 +6,7 @@ import { t } from '../i18n/strings'
 import { titleFor } from '../state/title'
 import { metaFrom } from '../state/url'
 import { useAppState } from '../state/useAppState'
+import { useMediaQuery } from '../state/useMediaQuery'
 import { useReducedMotion } from '../state/useReducedMotion'
 import { AboutIndicator } from './AboutIndicator'
 import { EmptyYear } from './EmptyYear'
@@ -27,6 +28,9 @@ import { YearSlider } from './YearSlider'
  * the address bar is whether the year is playing and where the keyboard happens to be, neither of
  * which anyone would want in a shared link.
  */
+/** Matches the layout breakpoint in app.css, so CSS and behaviour cannot disagree. */
+export const NARROW = '(max-width: 60rem)'
+
 export function App({
   data,
   topology,
@@ -63,8 +67,16 @@ export function App({
    */
   const [notice, setNotice] = useState('')
   const mapRef = useRef<MapHandle>(null)
-  // Unstated in the URL means "whatever suits this screen"; Task 9 makes that depend on width.
-  const view = state.view ?? 'map'
+  /**
+   * Below this width the bubbles are the default: they give equal tap targets and waste no width
+   * on a country three times taller than it is wide, and the panel becomes a sheet.
+   *
+   * It is a default, not an override. `?v=map` on a phone shows the map — whatever is in the URL
+   * always wins, because the URL is the memory and a screen size is not a decision the visitor
+   * made.
+   */
+  const narrow = useMediaQuery(NARROW)
+  const view = state.view ?? (narrow ? 'cartogram' : 'map')
   const announcement =
     notice ||
     (state.selected
@@ -267,6 +279,7 @@ export function App({
 
       {state.selected && (
         <ProfilePanel
+          asSheet={narrow}
           lk={lk}
           code={state.selected}
           year={state.year}

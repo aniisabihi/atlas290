@@ -22,12 +22,15 @@ export function ProfilePanel({
   year,
   lang,
   onClose,
+  asSheet = false,
 }: {
   lk: Lookup
   code: string
   year: number
   lang: Lang
   onClose: () => void
+  /** On a narrow screen the panel arrives as a bottom sheet rather than a column. */
+  asSheet?: boolean
 }) {
   const strings = t(lang)
   const heading = useRef<HTMLHeadingElement>(null)
@@ -43,7 +46,18 @@ export function ProfilePanel({
   if (!municipality) return null
 
   return (
-    <section className="profile panel" aria-labelledby="profile-heading">
+    <section
+      className={asSheet ? 'profile panel profile--sheet' : 'profile panel'}
+      aria-labelledby="profile-heading"
+      // Escape closes it, like any dismissible surface. It is still not modal: focus is not
+      // trapped, and the view behind stays reachable with Tab.
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          event.stopPropagation()
+          onClose()
+        }
+      }}
+    >
       <div className="profile-header">
         {/*
          * tabIndex -1 so focus can be moved here programmatically without adding a tab stop that

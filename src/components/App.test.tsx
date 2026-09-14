@@ -137,6 +137,37 @@ describe('App', () => {
     expect(screen.queryByRole('group', { name: /map of sweden/i })).toBeNull()
   })
 
+  it('defaults to the bubbles on a narrow screen, and to the map on a wide one', async () => {
+    const { stubMediaQuery } = await import('../test-setup')
+    const { NARROW } = await import('./App')
+    stubMediaQuery(NARROW)
+    open('/en/?y=2024')
+    expect(screen.getByRole('group', { name: /bubble chart/i })).toBeTruthy()
+  })
+
+  it('lets the URL override that default, because a screen size is not a decision', async () => {
+    const { stubMediaQuery } = await import('../test-setup')
+    const { NARROW } = await import('./App')
+    stubMediaQuery(NARROW)
+    open('/en/?y=2024&v=map')
+    expect(screen.getByRole('group', { name: /map of sweden/i })).toBeTruthy()
+  })
+
+  it('shows the profile as a sheet on a narrow screen', async () => {
+    const { stubMediaQuery } = await import('../test-setup')
+    const { NARROW } = await import('./App')
+    stubMediaQuery(NARROW)
+    const { container } = open('/en/?y=2024&m=0180')
+    expect(container.querySelector('.profile--sheet')).not.toBeNull()
+  })
+
+  it('closes the profile with Escape, and gives focus back', async () => {
+    open('/en/?y=2024&m=0180')
+    await userEvent.keyboard('{Escape}')
+    expect(window.location.search).toBe('?y=2024')
+    expect(document.activeElement?.getAttribute('aria-label')).toMatch(/^Stockholm/)
+  })
+
   it('names the view in the page title', () => {
     open('/en/?i=mean-age&y=2010&m=1280')
     expect(document.title).toBe("Malmö · Mean age 2010 · Sweden's municipalities in data")
