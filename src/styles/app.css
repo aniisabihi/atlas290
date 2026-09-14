@@ -67,3 +67,49 @@ main {
 .legend-note {
   color: #444;
 }
+
+.year-slider {
+  max-width: 40rem;
+  margin: 1rem auto;
+}
+
+.year-controls {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.year-slider input[type='range'] {
+  width: 100%;
+}
+
+.year-ticks {
+  display: flex;
+  gap: 1px;
+}
+
+.year-ticks span {
+  flex: 1;
+  height: 6px;
+  background: #2171b5;
+}
+
+.year-ticks span[data-covered='false'] {
+  background: #e0e0e0;
+}
+
+.empty-year {
+  max-width: 40rem;
+  margin: 1rem auto;
+  padding: 1rem;
+  border: 1px solid #ccc;
+}
+
+/*
+ * Colours ease between years only when the visitor has not asked for less movement. The map sets
+ * data-animate itself rather than relying on a media query alone, because the difference is
+ * behavioural: with reduced motion the year steps rather than sliding.
+ */
+.map[data-animate='true'] path {
+  transition: fill 250ms ease;
+}

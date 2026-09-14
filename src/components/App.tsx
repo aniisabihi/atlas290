@@ -4,7 +4,11 @@ import { lookup } from '../data/select'
 import { t } from '../i18n/strings'
 import { metaFrom } from '../state/url'
 import { useAppState } from '../state/useAppState'
+import { useReducedMotion } from '../state/useReducedMotion'
+import { useState } from 'react'
+import { EmptyYear } from './EmptyYear'
 import { Legend } from './Legend'
+import { YearSlider } from './YearSlider'
 import { MapView } from './MapView'
 import { NoDataPatterns } from './NoDataPatterns'
 
@@ -28,6 +32,13 @@ export function App({
   const lk = lookup(data)
   const [state, update] = useAppState(meta)
   const strings = t(state.lang)
+  const [playing, setPlaying] = useState(false)
+  const reducedMotion = useReducedMotion()
+  const indicator = lk.indicator(state.indicator)
+  const covered = state.year >= indicator.coverage.from && state.year <= indicator.coverage.to
+
+  /** Any deliberate interaction stops the playback rather than fighting it. */
+  const interrupt = () => setPlaying(false)
 
   return (
     <main>
@@ -35,6 +46,28 @@ export function App({
       <h1>{strings.siteName}</h1>
       <p>{strings.tagline}</p>
       <p id="map-hint">{strings.mapHint}</p>
+      <YearSlider
+        lk={lk}
+        meta={meta}
+        indicatorId={state.indicator}
+        year={state.year}
+        lang={state.lang}
+        playing={playing}
+        onYear={(year, stepping) => update({ year }, { replace: stepping })}
+        onPlayingChange={setPlaying}
+      />
+      {!covered && (
+        <EmptyYear
+          lk={lk}
+          indicatorId={state.indicator}
+          year={state.year}
+          lang={state.lang}
+          onYear={(year) => {
+            interrupt()
+            update({ year })
+          }}
+        />
+      )}
       <MapView
         lk={lk}
         topology={topology}
@@ -43,7 +76,11 @@ export function App({
         year={state.year}
         selected={state.selected}
         lang={state.lang}
-        onSelect={(code) => update({ selected: code === state.selected ? null : code })}
+        animate={!reducedMotion}
+        onSelect={(code) => {
+          interrupt()
+          update({ selected: code === state.selected ? null : code })
+        }}
       />
       <Legend lk={lk} indicatorId={state.indicator} year={state.year} lang={state.lang} />
     </main>

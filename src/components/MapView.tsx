@@ -38,6 +38,7 @@ export function MapView({
   lang,
   onSelect,
   onNoMove,
+  animate = true,
 }: {
   lk: Lookup
   topology: MunicipalityTopology
@@ -49,6 +50,8 @@ export function MapView({
   onSelect: (code: string) => void
   /** Called when a key points somewhere there is nothing, so the live region can say so. */
   onNoMove?: (direction: Direction) => void
+  /** False when the visitor has asked for less movement: colours change instantly. */
+  animate?: boolean
 }) {
   const indicator = lk.indicator(indicatorId)
   const shapes = shapesFor(topology)
@@ -124,6 +127,7 @@ export function MapView({
       aria-label={t(lang).mapLabel}
       aria-describedby="map-hint"
       className="map"
+      data-animate={animate ? 'true' : 'false'}
       onKeyDown={onKeyDown}
     >
       {shapes.map((shape) => {
