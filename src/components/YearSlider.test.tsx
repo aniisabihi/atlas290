@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import rawData from '../../public/pantry/data/indicators.json'
 import { PantryData } from '../../shared/pantry'
 import { lookup } from '../data/select'
