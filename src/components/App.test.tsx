@@ -110,6 +110,33 @@ describe('App', () => {
     expect(screen.queryByRole('button', { name: /close the municipality panel/i })).toBeNull()
   })
 
+  // These two are the tests that were missing when the cartogram was first wired in: the switch
+  // rendered, the import was there, and nothing actually swapped the view.
+  it('shows the map when the URL does not ask for anything else', () => {
+    open('/en/?y=2024')
+    expect(screen.getByRole('group', { name: /map of sweden/i })).toBeTruthy()
+    expect(screen.queryByRole('group', { name: /bubble chart/i })).toBeNull()
+  })
+
+  it('shows the cartogram when the URL asks for it', () => {
+    open('/en/?y=2024&v=cartogram')
+    expect(screen.getByRole('group', { name: /bubble chart/i })).toBeTruthy()
+    expect(screen.queryByRole('group', { name: /map of sweden/i })).toBeNull()
+  })
+
+  it('switches view from the control, and puts it in the URL', async () => {
+    open('/en/?y=2024')
+    await userEvent.click(screen.getByRole('button', { name: 'Bubbles' }))
+    expect(window.location.search).toBe('?y=2024&v=cartogram')
+    expect(screen.getByRole('group', { name: /bubble chart/i })).toBeTruthy()
+  })
+
+  it('shows the table instead of either view when asked', () => {
+    open('/en/?y=2024&t=1')
+    expect(screen.getByRole('table', { name: 'Population, 2024' })).toBeTruthy()
+    expect(screen.queryByRole('group', { name: /map of sweden/i })).toBeNull()
+  })
+
   it('names the view in the page title', () => {
     open('/en/?i=mean-age&y=2010&m=1280')
     expect(document.title).toBe("Malmö · Mean age 2010 · Sweden's municipalities in data")
