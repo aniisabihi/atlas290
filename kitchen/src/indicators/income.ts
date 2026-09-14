@@ -75,6 +75,10 @@ export const INCOME: Indicator = Indicator.parse({
   unit: 'sek',
   priceBasis: 'fixed-latest-year',
   priceBasisYear: CPI_LATEST_YEAR,
+  // SCB publishes median income as thousands of kronor to ONE decimal (184.6 tkr), so the
+  // original lands on a 100 kr step, not a 1,000 kr one. Snapping to 1,000 recovers 797 of
+  // 7,537 cells; snapping to 100 recovers all of them.
+  publishedStep: 100,
   scale: { kind: 'sequential', breaks: [] },
   coverage: { from: INCOME_YEARS[0]!, to: INCOME_YEARS[INCOME_YEARS.length - 1]! },
   caveat: {

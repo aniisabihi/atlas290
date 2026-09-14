@@ -6,7 +6,15 @@ import { metaFrom, type AppState } from '../state/url'
 import { LanguageSwitch } from './LanguageSwitch'
 
 const meta = metaFrom(PantryData.parse(rawData))
-const state: AppState = { lang: 'sv', indicator: 'house-prices', year: 1990, selected: '1280' }
+const state: AppState = {
+  lang: 'sv',
+  indicator: 'house-prices',
+  year: 1990,
+  selected: '1280',
+  compare: null,
+  view: null,
+  table: false,
+}
 
 describe('LanguageSwitch', () => {
   it('is an anchor, so it works without JavaScript and behaves like a page change', () => {

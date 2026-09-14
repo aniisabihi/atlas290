@@ -20,6 +20,7 @@ const sv = {
   switchLanguage: 'Byt språk till engelska',
 
   mapLabel: 'Karta över Sveriges kommuner',
+  cartogramLabel: 'Bubbeldiagram över Sveriges kommuner, storlek efter folkmängd',
   mapHint: 'Använd piltangenterna för att gå mellan grannkommuner. Enter väljer, Escape rensar.',
   noNeighbour: 'Ingen grannkommun åt det hållet.',
 
@@ -57,6 +58,31 @@ const sv = {
 
   rank: (rank: number, outOf: number) => `plats ${rank} av ${outOf}`,
   selectionCleared: 'Ingen kommun vald.',
+  and: 'och',
+  factsHeading: 'Sådant du inte tänkt fråga om',
+  tableCaption: (indicator: string, year: number) => `${indicator}, ${year}`,
+  columnMunicipality: 'Kommun',
+  columnValue: 'Värde',
+  columnRank: 'Plats',
+  sortBy: (column: string) => `Sortera efter ${column}`,
+  compareWith: 'Jämför med…',
+  comparePlaceholder: 'Skriv en annan kommun',
+  stopComparing: 'Sluta jämföra',
+  higherOn: (n: number, outOf: number) => `Högre värde i ${n} av ${outOf} jämförbara mått`,
+  notComparable: (n: number) =>
+    n === 1
+      ? '1 mått går inte att jämföra det här året'
+      : `${n} mått går inte att jämföra det här året`,
+  close: 'Stäng',
+  closeProfile: 'Stäng kommunpanelen',
+  atTheTime: (value: string, year: number) => `${value} i ${year} års penningvärde`,
+  noValueThisYear: 'Inget värde för det här året',
+  cartogramView: 'bubbeldiagram',
+  tableView: 'tabell',
+  showMap: 'Karta',
+  showCartogram: 'Bubblor',
+  showTable: 'Visa tabell',
+  hideTable: 'Visa karta',
   announcement: (name: string, indicator: string, year: number, reading: string) =>
     `${name}, ${indicator} ${year}: ${reading}.`,
 } satisfies Record<string, string | ((...args: never[]) => string)>
@@ -76,6 +102,7 @@ const en: Strings = {
   switchLanguage: 'Switch language to Swedish',
 
   mapLabel: 'Map of Sweden by municipality',
+  cartogramLabel: 'Bubble chart of Sweden by municipality, sized by population',
   mapHint:
     'Use the arrow keys to move between neighbouring municipalities. Enter selects, Escape clears.',
   noNeighbour: 'No neighbouring municipality that way.',
@@ -114,6 +141,31 @@ const en: Strings = {
 
   rank: (rank: number, outOf: number) => `rank ${rank} of ${outOf}`,
   selectionCleared: 'No municipality selected.',
+  and: 'and',
+  factsHeading: 'Things you did not think to ask',
+  tableCaption: (indicator: string, year: number) => `${indicator}, ${year}`,
+  columnMunicipality: 'Municipality',
+  columnValue: 'Value',
+  columnRank: 'Rank',
+  sortBy: (column: string) => `Sort by ${column}`,
+  compareWith: 'Compare with…',
+  comparePlaceholder: 'Type another municipality',
+  stopComparing: 'Stop comparing',
+  higherOn: (n: number, outOf: number) => `Higher on ${n} of ${outOf} comparable measures`,
+  notComparable: (n: number) =>
+    n === 1
+      ? '1 measure cannot be compared this year'
+      : `${n} measures cannot be compared this year`,
+  close: 'Close',
+  closeProfile: 'Close the municipality panel',
+  atTheTime: (value: string, year: number) => `${value} in ${year} kronor`,
+  noValueThisYear: 'No value for this year',
+  cartogramView: 'bubble chart',
+  tableView: 'table',
+  showMap: 'Map',
+  showCartogram: 'Bubbles',
+  showTable: 'Show table',
+  hideTable: 'Show map',
   announcement: (name: string, indicator: string, year: number, reading: string) =>
     `${name}, ${indicator} ${year}: ${reading}.`,
 }

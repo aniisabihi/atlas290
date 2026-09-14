@@ -31,6 +31,9 @@ describe('parseState', () => {
       indicator: 'population',
       year: 2025,
       selected: null,
+      compare: null,
+      view: null,
+      table: false,
     })
   })
 
@@ -40,12 +43,9 @@ describe('parseState', () => {
   })
 
   it('reads a full state', () => {
-    expect(parseState('/en/', '?i=mean-age&y=2010&m=0180', meta)).toEqual({
-      lang: 'en',
-      indicator: 'mean-age',
-      year: 2010,
-      selected: '0180',
-    })
+    expect(parseState('/en/', '?i=mean-age&y=2010&m=0180', meta)).toEqual(
+      state({ lang: 'en', indicator: 'mean-age', year: 2010, selected: '0180' }),
+    )
   })
 
   it.each([
@@ -120,14 +120,27 @@ describe('the round trip', () => {
       for (const indicator of meta.indicators) {
         for (const year of years) {
           for (const selected of selections) {
-            const before: AppState = { lang, indicator, year, selected }
-            expect(parseHref(toUrl(before, meta), meta)).toEqual(before)
-            checked += 1
+            for (const view of [null, 'map', 'cartogram'] as const) {
+              for (const table of [false, true]) {
+                const compare = selected === null ? null : selected === '0180' ? '1280' : '0180'
+                const before: AppState = {
+                  lang,
+                  indicator,
+                  year,
+                  selected,
+                  compare,
+                  view,
+                  table,
+                }
+                expect(parseHref(toUrl(before, meta), meta)).toEqual(before)
+                checked += 1
+              }
+            }
           }
         }
       }
     }
-    expect(checked).toBe(2 * 3 * 4 * 4)
+    expect(checked).toBe(2 * 3 * 4 * 4 * 3 * 2)
   })
 })
 
@@ -152,11 +165,71 @@ describe('metaFrom, against the real published pantry', () => {
       indicator: 'population',
       year: 2025,
       selected: null,
+      compare: null,
+      view: null,
+      table: false,
     })
   })
 
   it('round-trips a real deep link', () => {
     const href = '/en/?i=house-prices&y=1990&m=0184'
     expect(toUrl(parseHref(href, real), real)).toBe(href)
+  })
+})
+
+describe('the state Plan 4 adds', () => {
+  it('needs something to compare against', () => {
+    // ?c without ?m is not half a comparison, it is nothing.
+    expect(parseState('/sv/', '?c=0180', meta).compare).toBeNull()
+  })
+
+  it('refuses to compare a municipality with itself', () => {
+    // It would render a panel of identical columns and a summary of ten ties.
+    expect(parseState('/sv/', '?m=0180&c=0180', meta).compare).toBeNull()
+  })
+
+  it('accepts a real pair', () => {
+    const parsed = parseState('/sv/', '?m=0180&c=1280', meta)
+    expect([parsed.selected, parsed.compare]).toEqual(['0180', '1280'])
+  })
+
+  it('drops a comparison against a municipality that does not exist', () => {
+    expect(parseState('/sv/', '?m=0180&c=9999', meta).compare).toBeNull()
+  })
+
+  it.each(['map', 'cartogram'])('reads ?v=%s', (view) => {
+    expect(parseState('/sv/', `?v=${view}`, meta).view).toBe(view)
+  })
+
+  it('leaves the view unstated when the URL does not name one', () => {
+    // Unstated means "whatever suits this screen". A concrete default would make a plain link
+    // mean "the geographic map", and a phone would then be overriding the URL rather than
+    // filling a gap in it.
+    expect(parseState('/sv/', '', meta).view).toBeNull()
+    expect(parseState('/sv/', '?v=bubbles', meta).view).toBeNull()
+  })
+
+  it('reads the table only from an explicit 1', () => {
+    expect(parseState('/sv/', '?t=1', meta).table).toBe(true)
+    expect(parseState('/sv/', '?t=0', meta).table).toBe(false)
+    expect(parseState('/sv/', '?t=yes', meta).table).toBe(false)
+    expect(parseState('/sv/', '', meta).table).toBe(false)
+  })
+
+  it('keeps a plain map link short', () => {
+    expect(toUrl(defaults, meta)).toBe('/sv/')
+  })
+
+  it('writes the new keys in a fixed order after the old ones', () => {
+    expect(
+      toUrl(
+        state({ selected: '0180', compare: '1280', view: 'cartogram', table: true, year: 2010 }),
+        meta,
+      ),
+    ).toBe('/sv/?y=2010&m=0180&c=1280&v=cartogram&t=1')
+  })
+
+  it('never writes a comparison without its subject', () => {
+    expect(toUrl(state({ selected: null, compare: '1280' }), meta)).toBe('/sv/')
   })
 })

@@ -14,6 +14,7 @@ import { buildTopology, centroids, GEOMETRY_SOURCE } from './geometry/build'
 import { municipalityProps } from './geometry/props'
 import { CKM_FROM, POPULATION } from './indicators/population'
 import { buildAll } from './indicators/registry'
+import { fetchCpi, toPriceIndex } from './indicators/cpi'
 import { selectionKey as computeSelectionKey } from './scb/freeze'
 import type { FrozenData, FrozenMeta } from './scb/freeze'
 
@@ -374,12 +375,21 @@ export async function publish(
       buildBubbles(c, population, bubbleReferenceYear),
     )
 
+    // Read back through the freeze layer, so this is the same already-frozen TAB4352 the two
+    // money indicators used during their own build — no second request, and offline like
+    // everything else at this stage.
+    const { index: cpiIndex } = await fetchCpi({
+      rawDir: opts.rawDir,
+      deps: { fetchImpl: offline },
+    })
+
     const rounded = roundPantryData(indicators, series)
     writePantryFile(join(pantryDir, 'data/indicators.json'), PantryData, {
       schemaVersion: 1,
       municipalities,
       indicators: rounded.indicators,
       series: rounded.series,
+      priceIndex: toPriceIndex(cpiIndex),
     })
     writePantryFile(
       join(pantryDir, 'manifest.json'),

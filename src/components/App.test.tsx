@@ -4,7 +4,8 @@ import userEvent from '@testing-library/user-event'
 import rawData from '../../public/pantry/data/indicators.json'
 import rawTopology from '../../public/pantry/geometry/municipalities.topo.json'
 import rawAdjacency from '../../public/pantry/geometry/adjacency.json'
-import { Adjacency, PantryData } from '../../shared/pantry'
+import rawBubbles from '../../public/pantry/layout/bubbles.json'
+import { Adjacency, Bubbles, PantryData } from '../../shared/pantry'
 import type { MunicipalityTopology } from '../../shared/geometry'
 import { App } from './App'
 import { SETTLE_MS } from './LiveRegion'
@@ -12,6 +13,7 @@ import { SETTLE_MS } from './LiveRegion'
 const data = PantryData.parse(rawData)
 const topology = rawTopology as unknown as MunicipalityTopology
 const adjacency = Adjacency.parse(rawAdjacency)
+const bubbles = Bubbles.parse(rawBubbles)
 
 /**
  * Integration, at the level where the pieces are wired to each other. The unit tests all passed
@@ -21,7 +23,7 @@ const adjacency = Adjacency.parse(rawAdjacency)
  */
 const open = (url: string) => {
   window.history.replaceState(null, '', url)
-  return render(<App data={data} topology={topology} adjacency={adjacency} />)
+  return render(<App data={data} topology={topology} adjacency={adjacency} bubbles={bubbles} />)
 }
 
 const live = () => document.querySelector('[data-live-region]')!
@@ -85,6 +87,97 @@ describe('App', () => {
     open('/en/?y=2024')
     await userEvent.click(screen.getByRole('radio', { name: 'Mean age' }))
     expect(window.location.pathname + window.location.search).toBe('/en/?i=mean-age&y=2024')
+  })
+
+  it('opens a profile for the selected municipality and puts focus on its heading', () => {
+    open('/en/?y=2024&m=0180')
+    const heading = screen.getByRole('heading', { level: 2, name: 'Stockholm' })
+    expect(heading).toBe(document.activeElement)
+    expect(screen.getByText('995,574 residents')).toBeTruthy()
+  })
+
+  it('returns focus to the map shape when the profile is closed', async () => {
+    // Otherwise a keyboard visitor is dropped at the top of the document every time they close
+    // a panel, which is the classic way a non-modal panel goes wrong.
+    open('/en/?y=2024&m=0180')
+    await userEvent.click(screen.getByRole('button', { name: /close the municipality panel/i }))
+    expect(window.location.search).toBe('?y=2024')
+    expect(document.activeElement?.getAttribute('aria-label')).toMatch(/^Stockholm/)
+  })
+
+  it('shows no profile when nothing is selected', () => {
+    open('/en/?y=2024')
+    expect(screen.queryByRole('button', { name: /close the municipality panel/i })).toBeNull()
+  })
+
+  // These two are the tests that were missing when the cartogram was first wired in: the switch
+  // rendered, the import was there, and nothing actually swapped the view.
+  it('shows the map when the URL does not ask for anything else', () => {
+    open('/en/?y=2024')
+    expect(screen.getByRole('group', { name: /map of sweden/i })).toBeTruthy()
+    expect(screen.queryByRole('group', { name: /bubble chart/i })).toBeNull()
+  })
+
+  it('shows the cartogram when the URL asks for it', () => {
+    open('/en/?y=2024&v=cartogram')
+    expect(screen.getByRole('group', { name: /bubble chart/i })).toBeTruthy()
+    expect(screen.queryByRole('group', { name: /map of sweden/i })).toBeNull()
+  })
+
+  it('switches view from the control, and puts it in the URL', async () => {
+    open('/en/?y=2024')
+    await userEvent.click(screen.getByRole('button', { name: 'Bubbles' }))
+    expect(window.location.search).toBe('?y=2024&v=cartogram')
+    expect(screen.getByRole('group', { name: /bubble chart/i })).toBeTruthy()
+  })
+
+  it('shows the table instead of either view when asked', () => {
+    open('/en/?y=2024&t=1')
+    expect(screen.getByRole('table', { name: 'Population, 2024' })).toBeTruthy()
+    expect(screen.queryByRole('group', { name: /map of sweden/i })).toBeNull()
+  })
+
+  it('defaults to the bubbles on a narrow screen, and to the map on a wide one', async () => {
+    const { stubMediaQuery } = await import('../test-setup')
+    const { NARROW } = await import('./App')
+    stubMediaQuery(NARROW)
+    open('/en/?y=2024')
+    expect(screen.getByRole('group', { name: /bubble chart/i })).toBeTruthy()
+  })
+
+  it('lets the URL override that default, because a screen size is not a decision', async () => {
+    const { stubMediaQuery } = await import('../test-setup')
+    const { NARROW } = await import('./App')
+    stubMediaQuery(NARROW)
+    open('/en/?y=2024&v=map')
+    expect(screen.getByRole('group', { name: /map of sweden/i })).toBeTruthy()
+  })
+
+  it('shows the profile as a sheet on a narrow screen', async () => {
+    const { stubMediaQuery } = await import('../test-setup')
+    const { NARROW } = await import('./App')
+    stubMediaQuery(NARROW)
+    const { container } = open('/en/?y=2024&m=0180')
+    expect(container.querySelector('.profile--sheet')).not.toBeNull()
+  })
+
+  it('closes the profile with Escape, and gives focus back', async () => {
+    open('/en/?y=2024&m=0180')
+    await userEvent.keyboard('{Escape}')
+    expect(window.location.search).toBe('?y=2024')
+    expect(document.activeElement?.getAttribute('aria-label')).toMatch(/^Stockholm/)
+  })
+
+  it('names the view in the page title', () => {
+    open('/en/?i=mean-age&y=2010&m=1280')
+    expect(document.title).toBe("Malmö · Mean age 2010 · Sweden's municipalities in data")
+  })
+
+  it('updates the title when the view changes', async () => {
+    open('/en/?y=2024')
+    expect(document.title).toBe("Population 2024 · Sweden's municipalities in data")
+    await userEvent.click(screen.getByRole('radio', { name: 'Mean age' }))
+    expect(document.title).toBe("Mean age 2024 · Sweden's municipalities in data")
   })
 
   it('offers the other language as a link carrying the current view', () => {

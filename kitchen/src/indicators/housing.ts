@@ -106,6 +106,9 @@ export const HOUSING: Indicator = Indicator.parse({
   unit: 'sek',
   priceBasis: 'fixed-latest-year',
   priceBasisYear: CPI_LATEST_YEAR,
+  // SCB publishes mean sale prices as whole thousands of kronor (no decimals in TAB1169's own
+  // values), so the original figure always lands on a 1,000 kr step.
+  publishedStep: 1000,
   scale: { kind: 'sequential', breaks: [] },
   coverage: { from: HOUSING_YEARS[0]!, to: HOUSING_YEARS[HOUSING_YEARS.length - 1]! },
   minCount: HOUSING_MIN_COUNT,
