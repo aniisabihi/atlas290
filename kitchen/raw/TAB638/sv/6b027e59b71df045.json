@@ -1,0 +1,372 @@
+{
+  "kind": "data",
+  "table": "TAB638",
+  "lang": "sv",
+  "url": "https://statistikdatabasen.scb.se/api/v2/tables/TAB638/data?lang=sv&outputFormat=json-stat2",
+  "selection": {
+    "Region": [
+      "0140",
+      "0181"
+    ],
+    "Alder": [
+      "tot"
+    ],
+    "Kon": [
+      "1",
+      "2"
+    ],
+    "Civilstand": [
+      "OG",
+      "G",
+      "SK",
+      "ÄNKL"
+    ],
+    "ContentsCode": [
+      "BE0101N1"
+    ],
+    "Tid": [
+      "1996",
+      "1997",
+      "1998",
+      "1999",
+      "2000",
+      "2001"
+    ]
+  },
+  "fetchedAt": "2026-09-13T21:33:53.451Z",
+  "response": {
+    "version": "2.0",
+    "class": "dataset",
+    "label": "Folkmängd efter region, civilstånd, ålder, kön och år",
+    "source": "SCB",
+    "updated": "2025-02-21T07:00:00Z",
+    "note": [
+      "Fr o m 2007-01-01 överförs Heby kommun från Västmanlands län till Uppsala län. Hebys kommunkod ändras från 1917 till 0331. ",
+      "Folkmängd år 1968–1982 redovisas enligt regional indelning 1983-01-01. Justeringar för att spegla indelningen 1983-01-01 har gjorts med hjälp av församlingsindelning men inte på fastighetsnivå vilket gör att det kan finnas brister i statistiken. Folkmängd år 1983 och framåt redovisas enligt regional indelning den 1 januari efterföljande år. \r\n \r\nFolkökning för år 1968–2009 definieras i denna tabell som skillnaden mellan folkmängden vid årets början och årets slut. Från år 2010 redovisas folkökningen enligt den indelning i administrativa områden som gällde den 1 januari innevarande år.",
+      "Registrerat partnerskap reglerade parförhållanden mellan personer av samma kön och fanns från 1995 till 2009. Registrerade partners räknas som Gifta, Separerade partners som Skilda och Efterlevande partners som Änka/änklingar."
+    ],
+    "role": {
+      "time": [
+        "Tid"
+      ],
+      "metric": [
+        "ContentsCode"
+      ]
+    },
+    "id": [
+      "Region",
+      "Civilstand",
+      "Alder",
+      "Kon",
+      "ContentsCode",
+      "Tid"
+    ],
+    "size": [
+      2,
+      4,
+      1,
+      2,
+      1,
+      6
+    ],
+    "dimension": {
+      "Region": {
+        "label": "region",
+        "note": [
+          "År 1968–1998 redovisas enligt regional indelning 1998-01-01.",
+          "Ny regional indelning fr.o.m. 1999-01-01. Delar av Södertälje kommun (kod 0181) bildar en ny kommun benämnd Nykvarn (kod 0140).",
+          "Ny regional indelning fr.o.m. 1999-01-01. Delar av Södertälje kommun (0181) bildar en ny kommun benämnd Nykvarn (0140)."
+        ],
+        "category": {
+          "index": {
+            "0140": 0,
+            "0181": 1
+          },
+          "label": {
+            "0140": "Nykvarn",
+            "0181": "Södertälje"
+          }
+        },
+        "extension": {
+          "elimination": false,
+          "noteMandatory": {
+            "2": true
+          },
+          "show": "code_value"
+        }
+      },
+      "Civilstand": {
+        "label": "civilstånd",
+        "category": {
+          "index": {
+            "OG": 0,
+            "G": 1,
+            "SK": 2,
+            "ÄNKL": 3
+          },
+          "label": {
+            "OG": "ogifta",
+            "G": "gifta",
+            "SK": "skilda",
+            "ÄNKL": "änkor/änklingar"
+          }
+        },
+        "extension": {
+          "elimination": true,
+          "show": "value"
+        }
+      },
+      "Alder": {
+        "label": "ålder",
+        "category": {
+          "index": {
+            "tot": 0
+          },
+          "label": {
+            "tot": "totalt ålder"
+          }
+        },
+        "extension": {
+          "elimination": true,
+          "eliminationValueCode": "tot",
+          "show": "value"
+        },
+        "link": {
+          "describedby": [
+            {
+              "extension": {
+                "Alder": "Ålder"
+              }
+            }
+          ]
+        }
+      },
+      "Kon": {
+        "label": "kön",
+        "category": {
+          "index": {
+            "1": 0,
+            "2": 1
+          },
+          "label": {
+            "1": "män",
+            "2": "kvinnor"
+          }
+        },
+        "extension": {
+          "elimination": true,
+          "show": "value"
+        },
+        "link": {
+          "describedby": [
+            {
+              "extension": {
+                "Kon": "Kön"
+              }
+            }
+          ]
+        }
+      },
+      "ContentsCode": {
+        "label": "tabellinnehåll",
+        "category": {
+          "index": {
+            "BE0101N1": 0
+          },
+          "label": {
+            "BE0101N1": "Folkmängd"
+          },
+          "unit": {
+            "BE0101N1": {
+              "base": "antal personer",
+              "decimals": 0
+            }
+          }
+        },
+        "extension": {
+          "elimination": false,
+          "refperiod": {
+            "BE0101N1": "31 december respektive år"
+          },
+          "show": "value",
+          "measuringType": {
+            "BE0101N1": "Stock"
+          },
+          "priceType": {
+            "BE0101N1": "NotApplicable"
+          },
+          "adjustment": {
+            "BE0101N1": "None"
+          },
+          "alternativeText": {
+            "BE0101N1": "Folkmängd"
+          }
+        }
+      },
+      "Tid": {
+        "label": "år",
+        "category": {
+          "index": {
+            "1996": 0,
+            "1997": 1,
+            "1998": 2,
+            "1999": 3,
+            "2000": 4,
+            "2001": 5
+          },
+          "label": {
+            "1996": "1996",
+            "1997": "1997",
+            "1998": "1998",
+            "1999": "1999",
+            "2000": "2000",
+            "2001": "2001"
+          }
+        },
+        "extension": {
+          "elimination": false,
+          "show": "code"
+        }
+      }
+    },
+    "extension": {
+      "noteMandatory": {
+        "0": true,
+        "1": true,
+        "2": true
+      },
+      "px": {
+        "infofile": "BE0101",
+        "tableid": "TAB638",
+        "decimals": 0,
+        "official-statistics": true,
+        "aggregallowed": true,
+        "copyright": false,
+        "language": "sv",
+        "contents": "Folkmängd",
+        "descriptiondefault": false,
+        "heading": [
+          "ContentsCode",
+          "Tid"
+        ],
+        "stub": [
+          "Region",
+          "Civilstand",
+          "Alder",
+          "Kon"
+        ],
+        "matrix": "TAB638",
+        "subject-code": "BE",
+        "subject-area": "Befolkning"
+      },
+      "discontinued": null,
+      "contact": [
+        {
+          "name": "Statistikservice",
+          "organization": "SCB",
+          "phone": "010-479 50 00",
+          "mail": "information@scb.se",
+          "raw": " Statistikservice, SCB# +46 010-479 50 00#information@scb.se"
+        }
+      ]
+    },
+    "value": [
+      0,
+      0,
+      2103,
+      2174,
+      2241,
+      2253,
+      0,
+      0,
+      1845,
+      1905,
+      1952,
+      1938,
+      0,
+      0,
+      1502,
+      1506,
+      1523,
+      1532,
+      0,
+      0,
+      1506,
+      1506,
+      1521,
+      1530,
+      0,
+      0,
+      255,
+      268,
+      280,
+      298,
+      0,
+      0,
+      253,
+      259,
+      270,
+      278,
+      0,
+      0,
+      48,
+      54,
+      54,
+      54,
+      0,
+      0,
+      212,
+      204,
+      211,
+      207,
+      22707,
+      22855,
+      20997,
+      21362,
+      21800,
+      22150,
+      19228,
+      19472,
+      17871,
+      18195,
+      18555,
+      18811,
+      14306,
+      14209,
+      12687,
+      12685,
+      12819,
+      12935,
+      14429,
+      14309,
+      12763,
+      12740,
+      12844,
+      12977,
+      3459,
+      3529,
+      3347,
+      3430,
+      3515,
+      3532,
+      4240,
+      4326,
+      4146,
+      4220,
+      4349,
+      4403,
+      820,
+      846,
+      789,
+      787,
+      775,
+      792,
+      3400,
+      3440,
+      3236,
+      3205,
+      3225,
+      3194
+    ]
+  }
+}

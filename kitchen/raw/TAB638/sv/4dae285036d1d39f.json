@@ -1,0 +1,497 @@
+{
+  "kind": "data",
+  "table": "TAB638",
+  "lang": "sv",
+  "url": "https://statistikdatabasen.scb.se/api/v2/tables/TAB638/data?lang=sv&outputFormat=json-stat2",
+  "selection": {
+    "Region": [
+      "1443",
+      "1490",
+      "1814",
+      "1880"
+    ],
+    "Alder": [
+      "tot"
+    ],
+    "Kon": [
+      "1",
+      "2"
+    ],
+    "Civilstand": [
+      "OG",
+      "G",
+      "SK",
+      "ÄNKL"
+    ],
+    "ContentsCode": [
+      "BE0101N1"
+    ],
+    "Tid": [
+      "1992",
+      "1993",
+      "1994",
+      "1995",
+      "1996",
+      "1997"
+    ]
+  },
+  "fetchedAt": "2026-09-13T21:33:51.113Z",
+  "response": {
+    "version": "2.0",
+    "class": "dataset",
+    "label": "Folkmängd efter region, civilstånd, ålder, kön och år",
+    "source": "SCB",
+    "updated": "2025-02-21T07:00:00Z",
+    "note": [
+      "Fr o m 2007-01-01 överförs Heby kommun från Västmanlands län till Uppsala län. Hebys kommunkod ändras från 1917 till 0331. ",
+      "Folkmängd år 1968–1982 redovisas enligt regional indelning 1983-01-01. Justeringar för att spegla indelningen 1983-01-01 har gjorts med hjälp av församlingsindelning men inte på fastighetsnivå vilket gör att det kan finnas brister i statistiken. Folkmängd år 1983 och framåt redovisas enligt regional indelning den 1 januari efterföljande år. \r\n \r\nFolkökning för år 1968–2009 definieras i denna tabell som skillnaden mellan folkmängden vid årets början och årets slut. Från år 2010 redovisas folkökningen enligt den indelning i administrativa områden som gällde den 1 januari innevarande år.",
+      "Registrerat partnerskap reglerade parförhållanden mellan personer av samma kön och fanns från 1995 till 2009. Registrerade partners räknas som Gifta, Separerade partners som Skilda och Efterlevande partners som Änka/änklingar."
+    ],
+    "role": {
+      "time": [
+        "Tid"
+      ],
+      "metric": [
+        "ContentsCode"
+      ]
+    },
+    "id": [
+      "Region",
+      "Civilstand",
+      "Alder",
+      "Kon",
+      "ContentsCode",
+      "Tid"
+    ],
+    "size": [
+      4,
+      4,
+      1,
+      2,
+      1,
+      6
+    ],
+    "dimension": {
+      "Region": {
+        "label": "region",
+        "note": [
+          "År 1968–1998 redovisas enligt regional indelning 1998-01-01."
+        ],
+        "category": {
+          "index": {
+            "1443": 0,
+            "1490": 1,
+            "1814": 2,
+            "1880": 3
+          },
+          "label": {
+            "1443": "Bollebygd",
+            "1490": "Borås",
+            "1814": "Lekeberg",
+            "1880": "Örebro"
+          },
+          "note": {
+            "1443": [
+              "Ny regional indelning fr.o.m. 1995-01-01. Delar av Borås kommun (1583) bildar en ny kommun benämnd Bollebygds kommun (1535)."
+            ],
+            "1490": [
+              "Ny regional indelning fr.o.m. 1995-01-01. Delar av Borås kommun (1583) bildar en ny kommun benämnd Bollebygds kommun (1535)."
+            ],
+            "1814": [
+              "Ny regional indelning fr.o.m. 1995-01-01. Delar av Örebro kommun (1880) bildar en ny kommun benämnd Lekebergs kommun (1814)."
+            ],
+            "1880": [
+              "Ny regional indelning fr.o.m. 1995-01-01. Delar av Örebro kommun (1880) bildar en ny kommun benämnd Lekebergs kommun (1814)."
+            ]
+          }
+        },
+        "extension": {
+          "elimination": false,
+          "categoryNoteMandatory": {
+            "1443": {
+              "0": true
+            },
+            "1490": {
+              "0": true
+            },
+            "1814": {
+              "0": true
+            },
+            "1880": {
+              "0": true
+            }
+          },
+          "show": "code_value"
+        }
+      },
+      "Civilstand": {
+        "label": "civilstånd",
+        "category": {
+          "index": {
+            "OG": 0,
+            "G": 1,
+            "SK": 2,
+            "ÄNKL": 3
+          },
+          "label": {
+            "OG": "ogifta",
+            "G": "gifta",
+            "SK": "skilda",
+            "ÄNKL": "änkor/änklingar"
+          }
+        },
+        "extension": {
+          "elimination": true,
+          "show": "value"
+        }
+      },
+      "Alder": {
+        "label": "ålder",
+        "category": {
+          "index": {
+            "tot": 0
+          },
+          "label": {
+            "tot": "totalt ålder"
+          }
+        },
+        "extension": {
+          "elimination": true,
+          "eliminationValueCode": "tot",
+          "show": "value"
+        },
+        "link": {
+          "describedby": [
+            {
+              "extension": {
+                "Alder": "Ålder"
+              }
+            }
+          ]
+        }
+      },
+      "Kon": {
+        "label": "kön",
+        "category": {
+          "index": {
+            "1": 0,
+            "2": 1
+          },
+          "label": {
+            "1": "män",
+            "2": "kvinnor"
+          }
+        },
+        "extension": {
+          "elimination": true,
+          "show": "value"
+        },
+        "link": {
+          "describedby": [
+            {
+              "extension": {
+                "Kon": "Kön"
+              }
+            }
+          ]
+        }
+      },
+      "ContentsCode": {
+        "label": "tabellinnehåll",
+        "category": {
+          "index": {
+            "BE0101N1": 0
+          },
+          "label": {
+            "BE0101N1": "Folkmängd"
+          },
+          "unit": {
+            "BE0101N1": {
+              "base": "antal personer",
+              "decimals": 0
+            }
+          }
+        },
+        "extension": {
+          "elimination": false,
+          "refperiod": {
+            "BE0101N1": "31 december respektive år"
+          },
+          "show": "value",
+          "measuringType": {
+            "BE0101N1": "Stock"
+          },
+          "priceType": {
+            "BE0101N1": "NotApplicable"
+          },
+          "adjustment": {
+            "BE0101N1": "None"
+          },
+          "alternativeText": {
+            "BE0101N1": "Folkmängd"
+          }
+        }
+      },
+      "Tid": {
+        "label": "år",
+        "category": {
+          "index": {
+            "1992": 0,
+            "1993": 1,
+            "1994": 2,
+            "1995": 3,
+            "1996": 4,
+            "1997": 5
+          },
+          "label": {
+            "1992": "1992",
+            "1993": "1993",
+            "1994": "1994",
+            "1995": "1995",
+            "1996": "1996",
+            "1997": "1997"
+          }
+        },
+        "extension": {
+          "elimination": false,
+          "show": "code"
+        }
+      }
+    },
+    "extension": {
+      "noteMandatory": {
+        "0": true,
+        "1": true,
+        "2": true
+      },
+      "px": {
+        "infofile": "BE0101",
+        "tableid": "TAB638",
+        "decimals": 0,
+        "official-statistics": true,
+        "aggregallowed": true,
+        "copyright": false,
+        "language": "sv",
+        "contents": "Folkmängd",
+        "descriptiondefault": false,
+        "heading": [
+          "ContentsCode",
+          "Tid"
+        ],
+        "stub": [
+          "Region",
+          "Civilstand",
+          "Alder",
+          "Kon"
+        ],
+        "matrix": "TAB638",
+        "subject-code": "BE",
+        "subject-area": "Befolkning"
+      },
+      "discontinued": null,
+      "contact": [
+        {
+          "name": "Statistikservice",
+          "organization": "SCB",
+          "phone": "010-479 50 00",
+          "mail": "information@scb.se",
+          "raw": " Statistikservice, SCB# +46 010-479 50 00#information@scb.se"
+        }
+      ]
+    },
+    "value": [
+      0,
+      0,
+      2046,
+      2037,
+      2037,
+      2026,
+      0,
+      0,
+      1820,
+      1807,
+      1787,
+      1799,
+      0,
+      0,
+      1679,
+      1646,
+      1618,
+      1613,
+      0,
+      0,
+      1681,
+      1651,
+      1622,
+      1624,
+      0,
+      0,
+      207,
+      219,
+      215,
+      235,
+      0,
+      0,
+      239,
+      241,
+      250,
+      268,
+      0,
+      0,
+      83,
+      81,
+      79,
+      72,
+      0,
+      0,
+      283,
+      291,
+      290,
+      287,
+      24880,
+      25180,
+      23516,
+      23770,
+      23921,
+      24095,
+      22267,
+      22574,
+      21130,
+      21322,
+      21433,
+      21594,
+      20406,
+      20248,
+      18465,
+      18170,
+      18028,
+      17804,
+      20523,
+      20394,
+      18626,
+      18314,
+      18156,
+      17925,
+      3237,
+      3334,
+      3276,
+      3388,
+      3478,
+      3555,
+      4350,
+      4481,
+      4414,
+      4532,
+      4660,
+      4761,
+      1360,
+      1362,
+      1260,
+      1240,
+      1230,
+      1193,
+      5817,
+      5794,
+      5436,
+      5403,
+      5340,
+      5287,
+      0,
+      0,
+      1877,
+      1858,
+      1883,
+      1909,
+      0,
+      0,
+      1526,
+      1510,
+      1505,
+      1518,
+      0,
+      0,
+      1421,
+      1397,
+      1381,
+      1380,
+      0,
+      0,
+      1413,
+      1405,
+      1390,
+      1384,
+      0,
+      0,
+      194,
+      208,
+      223,
+      226,
+      0,
+      0,
+      191,
+      203,
+      208,
+      217,
+      0,
+      0,
+      121,
+      124,
+      118,
+      118,
+      0,
+      0,
+      360,
+      349,
+      347,
+      337,
+      30097,
+      30797,
+      29589,
+      30081,
+      30604,
+      31232,
+      28009,
+      28543,
+      27614,
+      28123,
+      28658,
+      29205,
+      23553,
+      23303,
+      21846,
+      21714,
+      21588,
+      21428,
+      23727,
+      23526,
+      22114,
+      21963,
+      21858,
+      21696,
+      4075,
+      4205,
+      4161,
+      4334,
+      4479,
+      4576,
+      5421,
+      5561,
+      5554,
+      5781,
+      5923,
+      6070,
+      1693,
+      1675,
+      1553,
+      1524,
+      1539,
+      1495,
+      6613,
+      6554,
+      6175,
+      6115,
+      6125,
+      6053
+    ]
+  }
+}

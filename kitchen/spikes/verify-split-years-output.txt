@@ -1,0 +1,15 @@
+group [0461,0480,0488] x years [1989,1990,1991,1992,1993,1994]: 144 cells
+group [1443,1490,1814,1880] x years [1992,1993,1994,1995,1996,1997]: 192 cells
+group [0140,0181] x years [1996,1997,1998,1999,2000,2001]: 96 cells
+group [0330,0380] x years [2000,2001,2002,2003,2004,2005]: 96 cells
+Total cells fetched across all groups: 528
+
+code  name        parent      lastZero  firstReal  R15 says firstReal  parentDrop(lastZero->firstReal)
+0461  Gnesta      Nyköping    1990      1991       1991                    -18154  MATCH
+0488  Trosa       Nyköping    1990      1991       1991                    -18154  MATCH
+1443  Bollebygd   Borås       1993      1994       1994                    -7244  MATCH
+1814  Lekeberg    Örebro      1993      1994       1994                    -5558  MATCH
+0140  Nykvarn     Södertälje  1997      1998       1998                    -7150  MATCH
+0330  Knivsta     Uppsala     2001      2002       2002                    -11437  MATCH
+
+ALL SIX MATCH ruling R15.

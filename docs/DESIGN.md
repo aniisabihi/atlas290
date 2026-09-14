@@ -1,6 +1,8 @@
 # Sweden Data Explorer — design
 
-Date: 2026-09-10, revised 2026-09-13 after design review. Status: agreed, not yet implemented.
+Date: 2026-09-10, revised 2026-09-13 after design review. Status: Plan 1 (foundations and the
+first indicator) is implemented and the pantry is committed; the product itself — the map,
+time travel, cartogram morph and facts engine described below — is not yet built.
 Research behind every factual claim: [docs/research/](research/README.md).
 
 ## 1. What we are building
@@ -13,27 +15,27 @@ A visitor lands on a map coloured by population change, with a year slider parke
 
 ## 2. Decisions taken, and why
 
-| Decision | Why |
-| --- | --- |
-| **Vision: map + time travel + cartogram morph + deterministic facts engine** | Time depth to 1968, a shape-changing map and auto-surfaced facts are all absent from the Swedish landscape. The nearest competitor, Kommunatlas, has none of them. |
-| **First slice: the focused map** with search, play, a hand-written facts strip, and the static cartogram as the phone view | Finishable in about six weeks of evenings and weekends, and every later feature plugs into the same core. The play button and facts strip make time lead from day one instead of shipping the competitor's core with fewer indicators. |
-| **SCB is the only data source** | One licence, one API, one client, one municipality-code system. Every number traces to one place. Costs us crime, schools, nature and weather data. |
-| **Bilingual, Swedish and English, from day one** | SCB provides indicator names in both languages, and retrofitting a second language touches every screen. |
-| **All data fetched and transformed at build time; the site is static** | Guarantees zero cost by construction and makes the site immune to SCB being slow, changed or rate-limited. |
-| **First view: population change, slider at 1968** | The first drag is the moment the site earns its keep. The empty panel shows three hand-picked deep links instead of nothing. |
-| **Colour scales are fixed across all years, computed in the kitchen** | The slider must tell the truth about change. Per-year recolouring would show relative position shuffling, not real change. |
-| **Money is inflation-adjusted to current kronor by default** | Income runs from 1999 and house prices from 1981. Nominal kronor across four decades mostly show inflation. SCB's consumer price index is another CC0 table. Nominal stays visible in the profile and table. |
-| **Phones are first-class, and see the cartogram by default** | The kitchen already computes the bubble layout. Bubbles give equal tap targets, waste no width on a country three times taller than wide, and fix the visual lie. Only the animated morph is deferred. |
-| **Search box plus an explicit compare button** | Sundbyberg, Solna and Burlöv are pixels on a national map. Search is also the keyboard and screen-reader entry point. "Compare with…" gives touch and keyboard the same path and makes the URL unambiguous. |
-| **Links carry a correct title and description now; pre-rendered pages later** | A pasted link should say what it shows. Static pages per municipality are a later increment. The URL grammar is final in the first slice so nothing shared ever breaks. |
-| **Origin and background indicators are out of scope** | SCB publishes population by country of birth per municipality, and an agenda-driven site already puts exactly that on a time slider. Net migration means total, not split by origin. Revisit only with explicit framing rules and a decision record. |
-| **The site loads nothing but its own files** | No analytics, no tracking, self-hosted fonts, enforced by a content security policy and stated on the site. Cloudflare's own request counts tell us if anyone came. |
-| **MIT code, CC0 data files, no coats of arms** | Code anyone can learn from, data matching SCB's terms, a notices page for libraries and fonts. Municipal arms carry per-file licences and Swedish insignia law. |
-| **Public repository from the first commit** | GitHub Actions is free only for public repositories, and this is a portfolio. There are no secrets to protect. |
-| **SVG with D3, no map tiles** | 290 shapes is small. SVG gives keyboard focus, screen-reader semantics and shape morphing almost free, at roughly 27 KB of library code instead of 283 KB for MapLibre. |
-| **Vite, React, TypeScript** | Matches the rest of your work and there is no server to justify anything heavier. |
-| **Hosted on Cloudflare Pages** | Free, its own clean address, better compression for data files. Vercel's free plan is restricted to non-commercial personal use, which a hiring portfolio sits awkwardly against. |
-| **No AI anywhere in the product** | Every free hosted model tier is trial-sized or purchase-gated, and in-browser models cost visitors gigabyte downloads. The facts engine is plain statistics, which is also more defensible engineering. |
+| Decision                                                                                                                   | Why                                                                                                                                                                                                                                                  |
+| -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Vision: map + time travel + cartogram morph + deterministic facts engine**                                               | Time depth to 1968, a shape-changing map and auto-surfaced facts are all absent from the Swedish landscape. The nearest competitor, Kommunatlas, has none of them.                                                                                   |
+| **First slice: the focused map** with search, play, a hand-written facts strip, and the static cartogram as the phone view | Finishable in about six weeks of evenings and weekends, and every later feature plugs into the same core. The play button and facts strip make time lead from day one instead of shipping the competitor's core with fewer indicators.               |
+| **SCB is the only data source**                                                                                            | One licence, one API, one client, one municipality-code system. Every number traces to one place. Costs us crime, schools, nature and weather data.                                                                                                  |
+| **Bilingual, Swedish and English, from day one**                                                                           | SCB provides indicator names in both languages, and retrofitting a second language touches every screen.                                                                                                                                             |
+| **All data fetched and transformed at build time; the site is static**                                                     | Guarantees zero cost by construction and makes the site immune to SCB being slow, changed or rate-limited.                                                                                                                                           |
+| **First view: population change, slider at 1968**                                                                          | The first drag is the moment the site earns its keep. The empty panel shows three hand-picked deep links instead of nothing.                                                                                                                         |
+| **Colour scales are fixed across all years, computed in the kitchen**                                                      | The slider must tell the truth about change. Per-year recolouring would show relative position shuffling, not real change.                                                                                                                           |
+| **Money is inflation-adjusted to current kronor by default**                                                               | Income runs from 1999 and house prices from 1981. Nominal kronor across four decades mostly show inflation. SCB's consumer price index is another CC0 table. Nominal stays visible in the profile and table.                                         |
+| **Phones are first-class, and see the cartogram by default**                                                               | The kitchen already computes the bubble layout. Bubbles give equal tap targets, waste no width on a country three times taller than wide, and fix the visual lie. Only the animated morph is deferred.                                               |
+| **Search box plus an explicit compare button**                                                                             | Sundbyberg, Solna and Burlöv are pixels on a national map. Search is also the keyboard and screen-reader entry point. "Compare with…" gives touch and keyboard the same path and makes the URL unambiguous.                                          |
+| **Links carry a correct title and description now; pre-rendered pages later**                                              | A pasted link should say what it shows. Static pages per municipality are a later increment. The URL grammar is final in the first slice so nothing shared ever breaks.                                                                              |
+| **Origin and background indicators are out of scope**                                                                      | SCB publishes population by country of birth per municipality, and an agenda-driven site already puts exactly that on a time slider. Net migration means total, not split by origin. Revisit only with explicit framing rules and a decision record. |
+| **The site loads nothing but its own files**                                                                               | No analytics, no tracking, self-hosted fonts, enforced by a content security policy and stated on the site. Cloudflare's own request counts tell us if anyone came.                                                                                  |
+| **MIT code, CC0 data files, no coats of arms**                                                                             | Code anyone can learn from, data matching SCB's terms, a notices page for libraries and fonts. Municipal arms carry per-file licences and Swedish insignia law.                                                                                      |
+| **Public repository from the first commit**                                                                                | GitHub Actions is free only for public repositories, and this is a portfolio. There are no secrets to protect.                                                                                                                                       |
+| **SVG with D3, no map tiles**                                                                                              | 290 shapes is small. SVG gives keyboard focus, screen-reader semantics and shape morphing almost free, at roughly 27 KB of library code instead of 283 KB for MapLibre.                                                                              |
+| **Vite, React, TypeScript**                                                                                                | Matches the rest of your work and there is no server to justify anything heavier.                                                                                                                                                                    |
+| **Hosted on Cloudflare Pages**                                                                                             | Free, its own clean address, better compression for data files. Vercel's free plan is restricted to non-commercial personal use, which a hiring portfolio sits awkwardly against.                                                                    |
+| **No AI anywhere in the product**                                                                                          | Every free hosted model tier is trial-sized or purchase-gated, and in-browser models cost visitors gigabyte downloads. The facts engine is plain statistics, which is also more defensible engineering.                                              |
 
 ## 3. Architecture
 
@@ -62,7 +64,7 @@ Each stage is separately runnable and separately testable.
 
 ### Geometry
 
-Municipality and county boundaries come from SCB's own CC0 shapefile: 290 municipalities, roughly 9,700 points, 168 KB, already generalised for thematic maps and already free of sea area. It is reprojected to web coordinates, simplified with shape retention so no municipality can vanish, stripped of the smallest skerries, and quantised into TopoJSON. Sweden's shape is reproduced with a transverse Mercator projection centred on 15 degrees east, which matches the national grid.
+Municipality and county boundaries come from SCB's own CC0 shapefile: 290 municipalities, roughly 9,700 points, 168 KB, already generalised for thematic maps and already free of sea area. The pipeline reprojects it to WGS84, runs mapshaper's `-clean` with an explicit `gap-width=1.5km` to remove digitisation slivers, and quantises the result into TopoJSON at `1e5`. There is no simplification step and no filtering of small islands: SCB's file already arrives generalised for thematic maps, at 9,748 vertices for the whole country (see [boundary-geodata.md](research/reports/boundary-geodata.md)), so there is nothing left worth stripping — adding a simplify or filter-islands pass here would only remove real shape at no size benefit. Sweden's shape is reproduced with a transverse Mercator projection centred on 15 degrees east, which matches the national grid.
 
 Lantmäteriet's authoritative boundaries are the documented upgrade path if we ever need exact geometry or historical boundaries. They are also CC0, but need a free account, arrive at cadastral precision, and include sea out to the territorial limit, so they must be clipped.
 
@@ -94,18 +96,18 @@ There is no "higher is better" flag. Comparison says "higher on 7 of 10", never 
 
 Ten to open with, all verified as available per municipality from SCB:
 
-| Indicator | From | Coverage |
-| --- | --- | --- |
-| Population | Population by age and sex | 1968 onwards |
-| Population change, per cent | Derived | 1968 onwards |
-| Median age, interpolated | Derived from single-year ages | 1968 onwards |
-| Share aged 65 and over | Derived from age distribution | 1968 onwards |
-| Net migration per 1,000 residents | Migration by region | 1997 onwards |
-| Median earned income, inflation-adjusted | Total earned income plus consumer price index | 1999 onwards |
-| Share with post-secondary education | Education level | 1985 onwards |
+| Indicator                                                   | From                                           | Coverage     |
+| ----------------------------------------------------------- | ---------------------------------------------- | ------------ |
+| Population                                                  | Population by age and sex                      | 1968 onwards |
+| Population change, per cent                                 | Derived                                        | 1968 onwards |
+| Median age, interpolated                                    | Derived from single-year ages                  | 1968 onwards |
+| Share aged 65 and over                                      | Derived from age distribution                  | 1968 onwards |
+| Net migration per 1,000 residents                           | Migration by region                            | 1997 onwards |
+| Median earned income, inflation-adjusted                    | Total earned income plus consumer price index  | 1999 onwards |
+| Share with post-secondary education                         | Education level                                | 1985 onwards |
 | Mean price of sold single-family houses, inflation-adjusted | Property sale prices plus consumer price index | 1981 onwards |
-| Municipal tax rate | Municipal tax rates | 2000 onwards |
-| Population density | Population, area and density | 1991 onwards |
+| Municipal tax rate                                          | Municipal tax rates                            | 2000 onwards |
+| Population density                                          | Population, area and density                   | 1991 onwards |
 
 Each gets a one-page specification before any code: exact table, codes, derivation, and both descriptions. The list is deliberately open beyond these.
 
@@ -123,13 +125,13 @@ Designed in, not retrofitted. Target: WCAG 2.2 AA, plus a manual screen-reader p
 
 ## 6. Testing
 
-| Layer | Covers |
-| --- | --- |
-| Unit | Kitchen maths, code-history fixes, inflation adjustment, statistics, facts templates, URL parsing |
-| Snapshot | Pipeline output, so a data change is always a visible diff |
-| Component | Individual views |
-| Browser | Clicking, searching, dragging the year, play, morphing, keyboard navigation |
-| Automated accessibility | Runs in CI and fails the build on violations |
+| Layer                   | Covers                                                                                            |
+| ----------------------- | ------------------------------------------------------------------------------------------------- |
+| Unit                    | Kitchen maths, code-history fixes, inflation adjustment, statistics, facts templates, URL parsing |
+| Snapshot                | Pipeline output, so a data change is always a visible diff                                        |
+| Component               | Individual views                                                                                  |
+| Browser                 | Clicking, searching, dragging the year, play, morphing, keyboard navigation                       |
+| Automated accessibility | Runs in CI and fails the build on violations                                                      |
 
 The code lives on GitHub, CI runs on GitHub Actions, which is free for public repositories, and Cloudflare Pages deploys automatically from the same repository. A scheduled monthly job re-runs the kitchen and opens a pull request when SCB publishes new figures. It must commit something to stay alive, because GitHub disables scheduled jobs after 60 days without repository activity.
 
@@ -155,12 +157,12 @@ The code lives on GitHub, CI runs on GitHub Actions, which is free for public re
 
 All four were researched and are genuinely free. We still said no, to keep one licence, one client and one failure mode.
 
-| Data | Would come from | Why not |
-| --- | --- | --- |
-| Schools | Skolverket open APIs, CC0 | Published per school, not per municipality, so we would be inventing the aggregation and implying a league table |
-| Crime | Brå, "Anmälda brott i kommunerna", free with no conditions | Spreadsheets rather than an API, so the fetch step is clumsier for little gain |
-| Weather | SMHI open data, CC BY 4.0 | Measured at stations, not municipalities. Sunshine is recorded at roughly twenty stations nationally, so a sunniest-municipality map would be mostly guesswork |
-| Nature | Naturvårdsverket, Skogsstyrelsen, SGU, CC0 | Arrives as map polygons, so any metric means real GIS work intersecting shapes with our boundaries |
+| Data    | Would come from                                            | Why not                                                                                                                                                        |
+| ------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Schools | Skolverket open APIs, CC0                                  | Published per school, not per municipality, so we would be inventing the aggregation and implying a league table                                               |
+| Crime   | Brå, "Anmälda brott i kommunerna", free with no conditions | Spreadsheets rather than an API, so the fetch step is clumsier for little gain                                                                                 |
+| Weather | SMHI open data, CC BY 4.0                                  | Measured at stations, not municipalities. Sunshine is recorded at roughly twenty stations nationally, so a sunniest-municipality map would be mostly guesswork |
+| Nature  | Naturvårdsverket, Skogsstyrelsen, SGU, CC0                 | Arrives as map polygons, so any metric means real GIS work intersecting shapes with our boundaries                                                             |
 
 Adding any of them is cheap architecturally, because a source is just another fetch-and-fix module producing the same municipality, year and value. The cost is not code. It is one more licence to honour, one more set of terms to track, and one more upstream change that can break a build. Naturvårdsverket's CC0 status is also unconfirmed at source and would need checking first.
 
@@ -175,5 +177,3 @@ Deliberately undecided until we prototype or reach them:
 - Indicators beyond the first ten.
 - Visual design language.
 - Project name, with one hard constraint: it must not suggest affiliation with SCB.
-- Whether SCB perturbs an aggregated age-group cell once or sums already-perturbed single-year cells. Resolve in the first fetch spike.
-- Whether pre-split municipalities return empty cells or parent-inclusive values. Resolve in the first fetch spike.

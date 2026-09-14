@@ -1,0 +1,31 @@
+{
+  "geometry": {
+    "date": "2026-02-25",
+    "filename": "shape_svenska_260225.zip",
+    "url": "https://www.scb.se/contentassets/3443fea3fa6640f7a57ea15d9a372d33/shape_svenska_260225.zip"
+  },
+  "license": "CC0-1.0",
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "cells": 290,
+      "contentCode": "000007ME",
+      "fetchedAt": "2026-09-13T21:55:40.958Z",
+      "lang": "sv",
+      "selectionKey": "ac392dca4f25fab2",
+      "sha256": "0769a87b70a383fcc8ad6a0fa37b49e33391aff215fd85acd8bdffa1043743fb",
+      "table": "TAB5557",
+      "url": "https://statistikdatabasen.scb.se/api/v2/tables/TAB5557/data?lang=sv&outputFormat=json-stat2"
+    },
+    {
+      "cells": 132240,
+      "contentCode": "BE0101N1",
+      "fetchedAt": "2026-09-13T21:55:39.052Z",
+      "lang": "sv",
+      "selectionKey": "e42412948dec763d",
+      "sha256": "b2cddeb5681180e5143c7d6494a0752e215f8a08d5f727e3fa872eefcf9161f9",
+      "table": "TAB638",
+      "url": "https://statistikdatabasen.scb.se/api/v2/tables/TAB638/data?lang=sv&outputFormat=json-stat2"
+    }
+  ]
+}
