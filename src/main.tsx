@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client'
-import { loadPantry } from './pantry'
+import { loadPantry } from './data/pantry'
 import { RenderCheck } from './RenderCheck'
 
 const root = createRoot(document.getElementById('root')!)

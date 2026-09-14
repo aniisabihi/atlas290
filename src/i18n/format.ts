@@ -59,7 +59,22 @@ export function formatWithUnit(value: number | null, indicator: Indicator, lang:
   return lang === 'sv' ? `${base} (${year} års penningvärde)` : `${base} (in ${year} kronor)`
 }
 
-const STATUS: Record<ObservationStatus, Record<Lang, string>> = {
+/**
+ * A site-only seventh state, deliberately not in the pantry's own status enum.
+ *
+ * The pantry stores a status byte per published cell. A year an indicator never covered has no
+ * cell at all — mean age has no 1970 column, not a 1970 column marked missing — so the site has
+ * to name that case itself. Calling it 'not-yet-published' would imply SCB intends to publish
+ * 1970 mean age one day, which it does not.
+ */
+export const OUTSIDE_COVERAGE = 'outside-coverage'
+export type CellStatus = ObservationStatus | typeof OUTSIDE_COVERAGE
+
+const STATUS: Record<CellStatus, Record<Lang, string>> = {
+  [OUTSIDE_COVERAGE]: {
+    sv: 'måttet publiceras inte för det här året',
+    en: 'this measure is not published for this year',
+  },
   present: { sv: 'publicerat värde', en: 'published value' },
   'not-yet-published': {
     sv: 'inte publicerat för det här året',
@@ -80,6 +95,6 @@ const STATUS: Record<ObservationStatus, Record<Lang, string>> = {
   },
 }
 
-export function statusPhrase(status: ObservationStatus, lang: Lang): string {
+export function statusPhrase(status: CellStatus, lang: Lang): string {
   return STATUS[status][lang]
 }

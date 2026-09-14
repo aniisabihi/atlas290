@@ -1,5 +1,5 @@
-import { PantryData } from '../shared/pantry'
-import type { MunicipalityTopology } from '../shared/geometry'
+import { PantryData } from '../../shared/pantry'
+import type { MunicipalityTopology } from '../../shared/geometry'
 
 /**
  * Loads the two pantry files the render check needs, straight from the public/pantry
