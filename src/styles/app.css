@@ -569,3 +569,17 @@ button {
   background: var(--surface);
   padding-bottom: 0.5rem;
 }
+
+.facts ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.facts li + li {
+  margin-top: 0.5rem;
+}
+
+.facts a {
+  color: var(--accent);
+}

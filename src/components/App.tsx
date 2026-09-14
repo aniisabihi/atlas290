@@ -18,6 +18,7 @@ import { Cartogram } from './Cartogram'
 import { MapView, type MapHandle } from './MapView'
 import { ComparePanel } from './ComparePanel'
 import { DataTable } from './DataTable'
+import { FactsStrip } from './FactsStrip'
 import { ProfilePanel } from './ProfilePanel'
 import { NoDataPatterns } from './NoDataPatterns'
 import { SearchBox } from './SearchBox'
@@ -149,6 +150,8 @@ export function App({
           <div className="panel">
             <AboutIndicator lk={lk} indicatorId={state.indicator} lang={state.lang} />
           </div>
+
+          <FactsStrip lang={state.lang} />
         </div>
 
         <div className="map-column">
