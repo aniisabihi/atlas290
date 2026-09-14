@@ -157,6 +157,10 @@ export function MapView({
   )
 
   const selectedShape = selected ? shapes.find((s) => s.code === selected) : undefined
+  // The keyboard's position, drawn separately from the selection. Without this the arrow keys
+  // move focus invisibly — which is indistinguishable from them not working at all.
+  const focusedShape =
+    focused && focused !== selected ? shapes.find((s) => s.code === focused) : undefined
 
   return (
     <svg
@@ -192,7 +196,9 @@ export function MapView({
             tabIndex={shape.code === focusCode ? 0 : -1}
             fill={fillFor(indicator, value, status)}
             stroke="#ffffff"
-            strokeWidth={0.6}
+            strokeWidth={0.75}
+            vectorEffect="non-scaling-stroke"
+
             onClick={() => {
               setFocused(shape.code)
               onSelect(shape.code)
@@ -204,9 +210,43 @@ export function MapView({
         // Drawn last and outside the loop: a neighbour rendered after the selection would paint
         // over its ring. Two tones, so one of them always clears 3:1 against whatever class
         // colour sits underneath (see src/map/colour.ts).
-        <g data-selection-ring="" pointerEvents="none">
-          <path d={selectedShape.d} fill="none" stroke={FOCUS_RING.halo} strokeWidth={5} />
-          <path d={selectedShape.d} fill="none" stroke={FOCUS_RING.core} strokeWidth={2.5} />
+        <g data-selection-ring="" pointerEvents="none" vectorEffect="non-scaling-stroke">
+          <path
+            d={selectedShape.d}
+            fill="none"
+            stroke={FOCUS_RING.halo}
+            strokeWidth={6}
+            vectorEffect="non-scaling-stroke"
+          />
+          <path
+            d={selectedShape.d}
+            fill="none"
+            stroke={FOCUS_RING.core}
+            strokeWidth={3}
+            vectorEffect="non-scaling-stroke"
+          />
+        </g>
+      )}
+      {focusedShape && (
+        // Where the keyboard is, as opposed to what is selected. Dashed, so the two rings are
+        // told apart without relying on colour, and drawn after the selection ring so walking
+        // past the selected municipality never hides the cursor.
+        <g data-focus-ring="" pointerEvents="none">
+          <path
+            d={focusedShape.d}
+            fill="none"
+            stroke={FOCUS_RING.halo}
+            strokeWidth={6}
+            vectorEffect="non-scaling-stroke"
+          />
+          <path
+            d={focusedShape.d}
+            fill="none"
+            stroke={FOCUS_RING.core}
+            strokeWidth={3}
+            strokeDasharray="5 4"
+            vectorEffect="non-scaling-stroke"
+          />
         </g>
       )}
     </svg>

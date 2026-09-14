@@ -194,3 +194,70 @@ describe('MapView keyboard navigation', () => {
     expect(document.activeElement?.getAttribute('aria-label')).toMatch(/^Övertorneå/)
   })
 })
+
+describe('MapView focus is visible', () => {
+  /**
+   * The defect these cover: the arrow keys moved focus correctly and the map drew nothing, so
+   * from the outside keyboard navigation was indistinguishable from broken. A focus ring that
+   * only the accessibility tree can see is not a focus ring.
+   */
+  it('draws a ring where the keyboard is, not only where the selection is', async () => {
+    const { container } = draw({ selected: '0180' })
+    screen
+      .getAllByRole('button')
+      .find((b) => b.getAttribute('tabindex') === '0')!
+      .focus()
+    expect(container.querySelector('[data-focus-ring]')).toBeNull()
+    await userEvent.keyboard('{ArrowUp}')
+    expect(container.querySelector('[data-focus-ring]')).not.toBeNull()
+  })
+
+  it('keeps the focus ring visible on top of the selection ring', async () => {
+    const { container } = draw({ selected: '0180' })
+    screen
+      .getAllByRole('button')
+      .find((b) => b.getAttribute('tabindex') === '0')!
+      .focus()
+    await userEvent.keyboard('{ArrowUp}')
+    const svg = container.querySelector('svg')!
+    expect(svg.lastElementChild?.hasAttribute('data-focus-ring')).toBe(true)
+  })
+
+  it('shows one ring, not two, when the keyboard is on the selection', async () => {
+    const { container } = draw({ selected: '0180' })
+    screen
+      .getAllByRole('button')
+      .find((b) => b.getAttribute('tabindex') === '0')!
+      .focus()
+    await userEvent.keyboard('{ArrowUp}{ArrowDown}')
+    expect(container.querySelector('[data-selection-ring]')).not.toBeNull()
+    expect(container.querySelector('[data-focus-ring]')).toBeNull()
+  })
+
+  it('tells the two rings apart without relying on colour', () => {
+    const { container } = draw({ selected: '0180' })
+    const selection = container.querySelector('[data-selection-ring] path:last-of-type')
+    expect(selection?.getAttribute('stroke-dasharray')).toBeNull()
+  })
+})
+
+describe('strokes are measured in screen pixels, not map units', () => {
+  /**
+   * The render frame is 1000 x 2000 and the map displays around 200 px wide, so a stroke given
+   * in user units is drawn at roughly a fifth of its nominal width. A 0.6-unit boundary came out
+   * at 0.12 px — invisible — which is why the first version of the map had no visible borders at
+   * all and a focus ring barely one pixel wide.
+   */
+  it('gives every stroked element a non-scaling stroke', () => {
+    const { container } = draw({ selected: '0180' })
+    // Pattern contents are excluded: they live in their own userSpaceOnUse tile and are drawn
+    // at the tile's scale by design, not the map's.
+    const stroked = [
+      ...container.querySelectorAll('svg > path[stroke], svg > g > path[stroke]'),
+    ].filter((p) => p.getAttribute('stroke') !== 'none')
+    expect(stroked.length).toBeGreaterThan(290)
+    for (const path of stroked) {
+      expect(path.getAttribute('vector-effect')).toBe('non-scaling-stroke')
+    }
+  })
+})

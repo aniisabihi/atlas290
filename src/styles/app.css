@@ -24,6 +24,13 @@ main {
   margin: 0 auto;
 }
 
+/*
+ * The map draws its own focus ring as an SVG overlay (see MapView), because a browser outline on
+ * a path is clipped by neighbouring shapes and cannot meet contrast on both a near-white and a
+ * near-black fill. The overlay is drawn unconditionally for the focused municipality, so this
+ * rule never leaves focus invisible — removing an outline without replacing it is exactly the
+ * bug that made arrow-key navigation look broken.
+ */
 .map path:focus-visible {
   outline: none;
 }
