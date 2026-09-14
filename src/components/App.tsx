@@ -1,6 +1,6 @@
 import type { MunicipalityTopology } from '../../shared/geometry'
 import type { Adjacency, PantryData } from '../../shared/pantry'
-import { lookup } from '../data/select'
+import { lookup, observationSentence } from '../data/select'
 import { t } from '../i18n/strings'
 import { metaFrom } from '../state/url'
 import { useAppState } from '../state/useAppState'
@@ -10,6 +10,7 @@ import { AboutIndicator } from './AboutIndicator'
 import { EmptyYear } from './EmptyYear'
 import { IndicatorPicker } from './IndicatorPicker'
 import { Legend } from './Legend'
+import { LiveRegion } from './LiveRegion'
 import { YearSlider } from './YearSlider'
 import { MapView } from './MapView'
 import { SearchBox } from './SearchBox'
@@ -43,6 +44,18 @@ export function App({
   /** Any deliberate interaction stops the playback rather than fighting it. */
   const interrupt = () => setPlaying(false)
 
+  /**
+   * A one-off message that takes precedence over the usual sentence — currently only "no
+   * neighbour that way", which has to be said at the moment the key is pressed rather than
+   * inferred from the state, because nothing about the state changed.
+   */
+  const [notice, setNotice] = useState('')
+  const announcement =
+    notice ||
+    (state.selected
+      ? observationSentence(lk, state.indicator, state.selected, state.year, state.lang)
+      : strings.selectionCleared)
+
   return (
     <main>
       <NoDataPatterns />
@@ -53,12 +66,12 @@ export function App({
         lk={lk}
         selected={state.indicator}
         lang={state.lang}
-        onChange={(indicator) => {
+        onChange={(chosen) => {
           interrupt()
           // The year is deliberately kept. If the new indicator does not cover it, EmptyYear
           // explains and offers a jump; silently moving the year would hide the fact that the
           // ten indicators do not cover the same span.
-          update({ indicator })
+          update({ indicator: chosen })
         }}
       />
       <SearchBox
@@ -76,7 +89,10 @@ export function App({
         year={state.year}
         lang={state.lang}
         playing={playing}
-        onYear={(year, stepping) => update({ year }, { replace: stepping })}
+        onYear={(year, stepping) => {
+          setNotice('')
+          update({ year }, { replace: stepping })
+        }}
         onPlayingChange={setPlaying}
       />
       {!covered && (
@@ -100,13 +116,16 @@ export function App({
         selected={state.selected}
         lang={state.lang}
         animate={!reducedMotion}
+        onNoMove={() => setNotice(strings.noNeighbour)}
         onSelect={(code) => {
           interrupt()
+          setNotice('')
           update({ selected: code === state.selected ? null : code })
         }}
       />
       <Legend lk={lk} indicatorId={state.indicator} year={state.year} lang={state.lang} />
       <AboutIndicator lk={lk} indicatorId={state.indicator} lang={state.lang} />
+      <LiveRegion message={announcement} silent={playing} />
     </main>
   )
 }

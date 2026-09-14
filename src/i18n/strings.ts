@@ -57,6 +57,8 @@ const sv = {
 
   rank: (rank: number, outOf: number) => `plats ${rank} av ${outOf}`,
   selectionCleared: 'Ingen kommun vald.',
+  announcement: (name: string, indicator: string, year: number, reading: string) =>
+    `${name}, ${indicator} ${year}: ${reading}.`,
 } satisfies Record<string, string | ((...args: never[]) => string)>
 
 // Deliberately NOT `as const`: that would make every Swedish value its own string-literal type,
@@ -112,6 +114,8 @@ const en: Strings = {
 
   rank: (rank: number, outOf: number) => `rank ${rank} of ${outOf}`,
   selectionCleared: 'No municipality selected.',
+  announcement: (name: string, indicator: string, year: number, reading: string) =>
+    `${name}, ${indicator} ${year}: ${reading}.`,
 }
 
 const TABLES: Record<Lang, Strings> = { sv, en }

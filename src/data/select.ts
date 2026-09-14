@@ -1,6 +1,8 @@
 import type { Indicator, IndicatorSeries, Municipality, PantryData } from '../../shared/pantry'
 import { OBSERVATION_STATUS } from '../../shared/pantry'
-import { OUTSIDE_COVERAGE, type CellStatus } from '../i18n/format'
+import { formatWithUnit, statusPhrase, OUTSIDE_COVERAGE, type CellStatus } from '../i18n/format'
+import { t } from '../i18n/strings'
+import type { Lang } from '../state/url'
 
 /**
  * The only place that knows the pantry's columnar layout. Every component reads through these,
@@ -161,4 +163,34 @@ export function statusesIn(lk: Lookup, indicatorId: string, year: number): Set<C
     found.add(observationAt(lk, indicatorId, m.code, year).status)
   }
   return found
+}
+
+/**
+ * One sentence describing a municipality's reading, used by the live region and by Plan 4's
+ * table twin. Written once here so the spoken version and the printed version cannot drift
+ * apart, which is the way an accessible alternative usually rots.
+ */
+export function observationSentence(
+  lk: Lookup,
+  indicatorId: string,
+  code: string,
+  year: number,
+  lang: Lang,
+): string {
+  const indicator = lk.indicator(indicatorId)
+  const municipality = lk.municipality(code)
+  if (!municipality) throw new Error(`no municipality "${code}" in the pantry`)
+  const { value, status } = observationAt(lk, indicatorId, code, year)
+  const strings = t(lang)
+
+  const reading =
+    value === null
+      ? statusPhrase(status, lang)
+      : status === 'present'
+        ? formatWithUnit(value, indicator, lang)
+        : `${formatWithUnit(value, indicator, lang)} — ${statusPhrase(status, lang)}`
+
+  const rank = value === null ? null : rankOf(lk, indicatorId, year, code)
+  const withRank = rank ? `${reading}, ${strings.rank(rank.rank, rank.outOf)}` : reading
+  return strings.announcement(municipality.name[lang], indicator.name[lang], year, withRank)
 }

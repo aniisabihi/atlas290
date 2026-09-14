@@ -191,3 +191,16 @@ main {
 .about-indicator ul {
   margin-top: 0.2rem;
 }
+
+/*
+ * Visible to a screen reader, invisible to everyone else. Not `display: none`, which would take
+ * it out of the accessibility tree entirely and make the whole thing silent.
+ */
+.live-region {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
