@@ -51,14 +51,14 @@ export function values(meta: TableMeta, code: string): string[] {
 /**
  * Recognised total codes per dimension, across every table any indicator resolves. Not
  * table-specific: a code here is used wherever a table's dimension happens to offer it.
- * Task 5 adds `'1+2'` for `Kon` (density, tax); Task 7 adds `Inkomstklass`'s `TOT` and
- * `Alder`'s `tot16+` (income); Task 9 adds `Alder`'s `tot16-74` (education). Extending this
- * list is additive and safe: a total code that happens not to exist in a given table's
- * value list is simply never matched there.
+ * Task 5 adds `'1+2'` for `Kon` (TAB628's density, selected instead of summing the two sexes —
+ * ruling R1); Task 7 adds `Inkomstklass`'s `TOT` and `Alder`'s `tot16+` (income); Task 9 adds
+ * `Alder`'s `tot16-74` (education). Extending this list is additive and safe: a total code that
+ * happens not to exist in a given table's value list is simply never matched there.
  */
 export const TOTAL_CODES: Record<string, string[]> = {
   Alder: ['tot', 'TotSA', 'TOT1'],
-  Kon: ['TotSa'],
+  Kon: ['TotSa', '1+2'],
   Civilstand: ['SC'],
 }
 
@@ -185,18 +185,26 @@ export function withBreaks(indicator: Indicator, series: IndicatorSeries, classe
 // from inside `buildAll`'s function body — i.e. only once application code actually invokes
 // it, by which point loading of every module in the program has unconditionally finished.
 import { populationDefinition, YEARS } from './population'
+// Same deferred-read reasoning as the population import above applies to every later indicator
+// module: the binding itself is always safe to import, but ensureRegistered is what actually
+// reads taxDefinition/densityDefinition, and it only runs from inside buildAll — never at
+// either module's own top level.
+import { taxDefinition } from './tax'
+import { densityDefinition } from './density'
 
 /** Every indicator the pantry publishes, in build order. Population must stay first: it is
  * the only definition that derives `ctx.municipalities`, and every other definition depends
- * on that having already happened. Starts empty; `ensureRegistered` fills it in on first use
- * (see the comment on the import above for why that can't happen at module-load time). */
+ * on that having already happened. Tax rate and density (Task 5) come next; order between them
+ * does not matter, since neither derives municipalities or reads another's series. Starts
+ * empty; `ensureRegistered` fills it in on first use (see the comment on the imports above for
+ * why that can't happen at module-load time). */
 export const REGISTRY: IndicatorDefinition[] = []
 
 let registered = false
 function ensureRegistered(): void {
   if (registered) return
   registered = true
-  REGISTRY.push(populationDefinition)
+  REGISTRY.push(populationDefinition, taxDefinition, densityDefinition)
 }
 
 /**
@@ -227,10 +235,12 @@ export async function buildAll(
   if (!defs) ensureRegistered()
   const list = defs ?? REGISTRY
 
-  // YEARS is population's own constant (1968..LATEST_YEAR). It is the only definition in
-  // REGISTRY today, so it is also the pantry's full year range for now; a later task that
-  // adds an indicator with a genuinely different range (tax rate runs a year further, Plan
-  // 2 Task 5) is what will need to generalise this beyond "borrow population's".
+  // YEARS is population's own constant (1968..LATEST_YEAR), kept here as ctx.years only
+  // because population's build() reads it from ctx rather than closing over its own module
+  // constant. It is NOT a shared year range for every indicator: tax rate (2000-2026) and
+  // density (1991-2025) each define and use their own year constants instead of this one
+  // (Task 5) — reusing ctx.years for either would silently mis-cover its series with nothing
+  // failing, since a missing fetched year just reads as an ordinary "not yet published" cell.
   const ctx: BuildContext = {
     municipalities: [],
     years: YEARS,

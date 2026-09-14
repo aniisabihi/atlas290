@@ -3,13 +3,44 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { Indicator, IndicatorSeries, Municipality } from '../../../shared/pantry'
-import { buildAll, REGISTRY, type BuildContext, type IndicatorDefinition } from './registry'
+import type { TableMeta } from '../scb/client'
+import {
+  buildAll,
+  REGISTRY,
+  totalOrDeclaredSum,
+  type BuildContext,
+  type IndicatorDefinition,
+} from './registry'
+
+/** Minimal fake TableMeta, mirroring population.test.ts's fakeMeta helper. */
+function fakeMeta(id: string, values: Record<string, string[]>): TableMeta {
+  return {
+    id,
+    label: id,
+    variables: Object.entries(values).map(([code, codes]) => ({
+      code,
+      label: code,
+      values: codes.map((c) => ({ code: c, label: c })),
+    })),
+  }
+}
+
+describe('totalOrDeclaredSum: the 1+2 sex total (ruling R1, Task 5)', () => {
+  it("selects the '1+2' Kon total instead of falling through to summing '1' and '2'", () => {
+    // TAB628 is not in SUM_SAFE for Kon, so if '1+2' were not recognised as a total code this
+    // would throw rather than silently sum — proving the result really is the selected total,
+    // not a same-shaped coincidence of a summing fallback.
+    const meta = fakeMeta('TAB628', { Kon: ['1', '2', '1+2'] })
+    expect(totalOrDeclaredSum(meta, 'Kon')).toEqual(['1+2'])
+  })
+})
 
 /**
  * Minimal fake SCB backend covering exactly what the real REGISTRY (population, for now)
- * needs: TAB638 (sv+en metadata, data) and TAB5557 (sv metadata, data), for one municipality.
- * Adapted from population.test.ts's fetchPopulation fake — this proves buildAll() drives the
- * real registered definition(s) end to end, not a stand-in.
+ * needs: TAB638 (sv+en metadata, data), TAB5557 (sv metadata, data), TAB2017 (tax rate) and
+ * TAB628 (density) — sv metadata only for the latter two, since neither derives municipality
+ * names — for one municipality. Adapted from population.test.ts's fetchPopulation fake — this
+ * proves buildAll() drives every real registered definition end to end, not a stand-in.
  */
 const oldMetaSv = {
   id: ['Region', 'Civilstand', 'Alder', 'Kon', 'ContentsCode', 'Tid'],
@@ -41,6 +72,33 @@ const newMetaSv = {
     Tid: { category: { index: ['2025'] } },
   },
 }
+const taxMetaSv = {
+  id: ['Region', 'ContentsCode', 'Tid'],
+  dimension: {
+    Region: { category: { index: ['0180'] } },
+    ContentsCode: {
+      category: { index: ['OE0101D1'], label: { OE0101D1: 'Skattesats, total kommunal' } },
+    },
+    Tid: { category: { index: ['2024'] } },
+  },
+}
+const densityMetaSv = {
+  id: ['Region', 'Kon', 'ContentsCode', 'Tid'],
+  dimension: {
+    Region: { category: { index: ['0180'] } },
+    Kon: { category: { index: ['1+2'] } },
+    ContentsCode: {
+      category: {
+        index: ['BE0101U1', 'BE0101U3'],
+        label: {
+          BE0101U1: 'Invånare per kvadratkilometer',
+          BE0101U3: 'Landareal i kvadratkilometer',
+        },
+      },
+    },
+    Tid: { category: { index: ['2024'] } },
+  },
+}
 
 function fakeFetchImpl() {
   return vi.fn(async (url: string | URL, init?: RequestInit) => {
@@ -66,6 +124,8 @@ function fakeFetchImpl() {
     if (u.includes('/TAB638/metadata') && u.includes('lang=sv')) return json(oldMetaSv)
     if (u.includes('/TAB638/metadata') && u.includes('lang=en')) return json(oldMetaEn)
     if (u.includes('/TAB5557/metadata') && u.includes('lang=sv')) return json(newMetaSv)
+    if (u.includes('/TAB2017/metadata') && u.includes('lang=sv')) return json(taxMetaSv)
+    if (u.includes('/TAB628/metadata') && u.includes('lang=sv')) return json(densityMetaSv)
     throw new Error(`unexpected request: ${init?.method ?? 'GET'} ${u}`)
   })
 }
