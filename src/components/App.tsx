@@ -15,6 +15,7 @@ import { Legend } from './Legend'
 import { LiveRegion } from './LiveRegion'
 import { MapView, type MapHandle } from './MapView'
 import { ComparePanel } from './ComparePanel'
+import { DataTable } from './DataTable'
 import { ProfilePanel } from './ProfilePanel'
 import { NoDataPatterns } from './NoDataPatterns'
 import { SearchBox } from './SearchBox'
@@ -150,26 +151,54 @@ export function App({
               }}
             />
           )}
-          <div className="map-frame" id="map">
-            <MapView
-              ref={mapRef}
+          <div className="view-switch">
+            <button
+              type="button"
+              aria-pressed={state.table}
+              onClick={() => {
+                interrupt()
+                update({ table: !state.table })
+              }}
+            >
+              {state.table ? strings.hideTable : strings.showTable}
+            </button>
+          </div>
+
+          {state.table ? (
+            <DataTable
               lk={lk}
-              topology={topology}
-              adjacency={adjacency}
               indicatorId={state.indicator}
               year={state.year}
               selected={state.selected}
               lang={state.lang}
-              animate={!reducedMotion}
-              onNoMove={() => setNotice(strings.noNeighbour)}
-              onMoved={() => setNotice('')}
               onSelect={(code) => {
                 interrupt()
                 setNotice('')
-                update({ selected: code === state.selected ? null : code })
+                update({ selected: code })
               }}
             />
-          </div>
+          ) : (
+            <div className="map-frame" id="map">
+              <MapView
+                ref={mapRef}
+                lk={lk}
+                topology={topology}
+                adjacency={adjacency}
+                indicatorId={state.indicator}
+                year={state.year}
+                selected={state.selected}
+                lang={state.lang}
+                animate={!reducedMotion}
+                onNoMove={() => setNotice(strings.noNeighbour)}
+                onMoved={() => setNotice('')}
+                onSelect={(code) => {
+                  interrupt()
+                  setNotice('')
+                  update({ selected: code === state.selected ? null : code })
+                }}
+              />
+            </div>
+          )}
         </div>
       </div>
 

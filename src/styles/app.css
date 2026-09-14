@@ -473,3 +473,51 @@ button {
   color: var(--text-muted);
   margin: 0.5rem 0 0;
 }
+
+.view-switch {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table caption {
+  text-align: left;
+  font-weight: 600;
+  padding-bottom: 0.5rem;
+}
+
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: 0.25rem 0.5rem;
+  border-top: 1px solid var(--border);
+  font-weight: 400;
+}
+
+.data-table td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.data-table thead button {
+  border: 0;
+  background: none;
+  padding: 0.25rem 0;
+  font-weight: 600;
+}
+
+.data-table tbody th button {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--accent);
+}
+
+.data-table tr[aria-current='true'] {
+  outline: 2px solid var(--focus-core);
+}
