@@ -364,3 +364,18 @@ button {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+.sparkline {
+  display: block;
+}
+
+.sparkline [data-segment] {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.sparkline [data-cursor] {
+  stroke: var(--text-muted);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
