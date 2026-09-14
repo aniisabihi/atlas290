@@ -620,3 +620,13 @@ button {
 .notices a {
   color: var(--accent);
 }
+
+/*
+ * A table may scroll sideways inside its own box; the page may not. WCAG 2.2 SC 1.4.10 allows
+ * exactly this exception for content that genuinely needs a second dimension, and three columns
+ * of formatted numbers at 320 px is that content.
+ */
+.table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
