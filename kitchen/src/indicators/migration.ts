@@ -63,8 +63,8 @@ export const MIGRATION: Indicator = Indicator.parse({
   scale: { kind: 'diverging', reference: 'zero', breaks: [] },
   coverage: { from: MIGRATION_YEARS[0]!, to: MIGRATION_YEARS[MIGRATION_YEARS.length - 1]! },
   caveat: {
-    sv: 'Publicerat som en kvot (flyttningsöverskott per 1 000 invånare), inte en summa, eftersom den absoluta summan i stort sett bara återger folkmängden. Byggd av tre tabeller (1968–1996, 1997–2024, 2025). Omkring 49 kommuner som bildades vid länssammanslagningarna 1998 (Skåne, Västra Götaland) saknar underlag för 1968–1996: den äldsta tabellen använder fortfarande de kommunkoder som gällde före sammanslagningen, och dessa matchar inte dagens 290 koder. Från 2025 är värdena CKM-störda, liksom befolkningen.',
-    en: "Published as a rate (net migration per 1,000 residents), not a count, because the raw count would largely just reproduce the population map. Built from three tables (1968–1996, 1997–2024, 2025). About 49 municipalities created by the 1998 county mergers (Skåne, Västra Götaland) have no data for 1968–1996: the oldest table still uses the municipality codes that predate the merger, which do not match today's 290 codes. From 2025 the values are CKM-perturbed, like population.",
+    sv: 'Publicerat som en kvot (flyttningsöverskott per 1 000 invånare), inte en summa, eftersom den absoluta summan i stort sett bara återger folkmängden. Byggd av tre tabeller (1968–1996, 1997–2024, 2025). 50 av dagens kommuner saknar underlag för 1968–1996: den äldsta tabellen publicerar dem under de kommunkoder som gällde då, och dessa matchar inte dagens 290 koder. 47 av dem omnumrerades vid länssammanslagningarna 1998 (13 i Skåne, 34 i Västra Götaland); de tre övriga är Mullsjö och Habo, som bytte län 1998, och Heby, som bytte län 2007. Från 2025 är värdena CKM-störda, liksom befolkningen.',
+    en: "Published as a rate (net migration per 1,000 residents), not a count, because the raw count would largely just reproduce the population map. Built from three tables (1968–1996, 1997–2024, 2025). 50 of today's municipalities have no data for 1968–1996: the oldest table publishes them under the codes in force at the time, which do not match today's 290. 47 were renumbered by the 1998 county mergers (13 in Skåne, 34 in Västra Götaland); the other three are Mullsjö and Habo, which changed county in 1998, and Heby, which changed county in 2007. From 2025 the values are CKM-perturbed, like population.",
   },
   sensitivity: 'none',
   sources: [
@@ -90,16 +90,19 @@ export const MIGRATION: Indicator = Indicator.parse({
  * 1. TAB1212 and TAB6640 each carry three extra four-digit codes that are NOT municipalities —
  *    `0010` Stor-Stockholm, `0020` Stor-Göteborg, `0030` Stor-Malmö (the plan's own trap 1,
  *    verified to also apply to TAB6640, which the plan did not separately check).
- * 2. TAB1211 (1968-1996) predates the 1998 county mergers that renumbered every municipality in
- *    what is now Skåne and Västra Götaland, and was never retroactively republished under
- *    current codes the way TAB638 (population) was — confirmed by diffing its Region list
- *    against the known 290: 49 current codes are simply absent from TAB1211's own list, while
- *    49 different (old) codes appear instead (e.g. Borås as `1583`, matching the code
- *    kitchen/src/municipalities.ts already records for Bollebygd's parent). Requesting a known
- *    current code TAB1211 does not offer would fail the request outright; intersecting against
- *    what the table actually offers means those 49 municipalities simply read
- *    'not-yet-published' for 1968-1996 rather than the build crashing or fabricating a value —
- *    an honest gap, not a silent one, recorded in MIGRATION's caveat above.
+ * 2. TAB1211 (1968-1996) still uses the municipality codes of its own era and was never
+ *    retroactively republished under current ones the way TAB638 (population) was. Diffed
+ *    against the known 290: 52 of today's codes are absent from TAB1211's Region list. Two of
+ *    those — Nykvarn (1998) and Knivsta (2002) — did not exist during 1968-1996 at all, so
+ *    their absence is correct rather than a gap. The remaining 50 existed throughout but are
+ *    unreachable under today's code: 47 were renumbered by the 1998 county mergers (13 in
+ *    Skåne, 34 in Västra Götaland), and three changed county separately — Mullsjö `1622` and
+ *    Habo `1623` in 1998, Heby `1917` in 2007. Each figure here was counted from the frozen
+ *    metadata and each old code read off TAB1211's own labels, not recalled: Borås appears as
+ *    `1583`, Bollebygd as `1535`. Requesting a current code TAB1211 does not offer would fail
+ *    the request outright; intersecting against what the table actually offers means those 50
+ *    read 'not-yet-published' for 1968-1996 rather than the build crashing or fabricating a
+ *    value — an honest gap, not a silent one, recorded in MIGRATION's caveat above.
  */
 export function migrationSelection(
   meta: TableMeta,

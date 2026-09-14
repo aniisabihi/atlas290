@@ -118,7 +118,7 @@ in 1998 rather than 1968. Share aged 65 and over is unaffected — it needs only
 
 Each gets a one-page specification before any code: exact table, codes, derivation, and both descriptions. The list is deliberately open beyond these.
 
-**Correction, Task 6 (2026-09-14):** this section previously said net migration ran "1997 onwards". That was wrong — checked against live SCB metadata while building the indicator, it is stitched from three tables (TAB1211 1968–1996, TAB1212 1997–2024, TAB6640 2025) and genuinely covers 1968 onwards, matching the verified-facts table in `docs/plans/2026-09-14-02-the-ten-indicators.md`. One real caveat survives: about 49 municipalities renumbered by the 1998 county mergers (Skåne, Västra Götaland) have no 1968–1996 data, because the oldest table was never republished under current codes. See `kitchen/src/indicators/migration.ts` and `docs/kitchen.md` for detail.
+**Correction, Task 6 (2026-09-14):** this section previously said net migration ran "1997 onwards". That was wrong — checked against live SCB metadata while building the indicator, it is stitched from three tables (TAB1211 1968–1996, TAB1212 1997–2024, TAB6640 2025) and genuinely covers 1968 onwards, matching the verified-facts table in `docs/plans/2026-09-14-02-the-ten-indicators.md`. One real caveat survives: 50 of today's municipalities have no 1968–1996 data, because the oldest table was never republished under current codes — 47 renumbered by the 1998 county mergers (Skåne, Västra Götaland), plus Mullsjö, Habo and Heby, which changed county separately. See `kitchen/src/indicators/migration.ts` and `docs/kitchen.md` for detail.
 
 ## 5. Accessibility
 

@@ -216,15 +216,23 @@ Checked live against SCB metadata before writing `kitchen/src/indicators/migrati
   extra four-digit "region" codes alongside the 290 real municipalities. A blind `/^\d{4}$/` filter
   would include all three; `migrationSelection` instead joins the table's own Region list against
   the known municipality codes.
-- **A new gap, not in the plan's trap list: TAB1211 predates the 1998 county mergers** (Skåne;
-  Västra Götaland) and was never retroactively republished under current municipality codes the
-  way TAB638 (population) was. Diffed against the known 290: 49 current codes are simply absent
-  from TAB1211's own Region list, while 49 different (old) codes appear in their place — e.g.
-  Borås as `1583`, Östra Göinge (now `1256`) as `1121`, matching the renumbering
-  `kitchen/src/municipalities.ts` already documents for Bollebygd. These 49 municipalities have no
-  1968–1996 net-migration data under their current code; `migrationSelection`'s known-code join
-  means they simply read `not-yet-published` for that span rather than the build fetching a
-  nonexistent code or fabricating a value. Flagged in `MIGRATION`'s bilingual caveat.
+- **A new gap, not in the plan's trap list: TAB1211 still uses the municipality codes of its own
+  era** and was never retroactively republished under current ones the way TAB638 (population)
+  was. Diffed against the known 290: **52** of today's codes are absent from TAB1211's Region
+  list. Two of them, Nykvarn (created 1998) and Knivsta (2002), did not exist during 1968–1996 at
+  all, so their absence is correct rather than a gap. The other **50** existed throughout the
+  period but cannot be reached under today's code: 47 were renumbered by the 1998 county mergers
+  (13 in Skåne, 34 in Västra Götaland), and three changed county separately — Mullsjö `1622` and
+  Habo `1623` in 1998, Heby `1917` in 2007. The old codes were read off TAB1211's own labels
+  rather than recalled: Borås appears as `1583`, Bollebygd as `1535`, matching the renumbering
+  `kitchen/src/municipalities.ts` already documents. `migrationSelection`'s known-code join means
+  those 50 read `not-yet-published` for that span rather than the build fetching a nonexistent
+  code or fabricating a value. Flagged in `MIGRATION`'s bilingual caveat.
+
+  The first version of this note said 49 and attributed all of them to the Skåne and Västra
+  Götaland mergers. Both were wrong, found by recounting from the frozen metadata: the number is
+  50, and three of the fifty have nothing to do with those two mergers.
+
 - **A second new gap: migration's "existed" boundary runs one calendar year LATER than
   population's own `CREATED` map**, because net migration is a flow measured during calendar year
   Y using the boundary that actually applied that year, while population's `CREATED` encodes
