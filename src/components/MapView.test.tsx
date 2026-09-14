@@ -3,7 +3,8 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import rawData from '../../public/pantry/data/indicators.json'
 import rawTopology from '../../public/pantry/geometry/municipalities.topo.json'
-import { PantryData } from '../../shared/pantry'
+import rawAdjacency from '../../public/pantry/geometry/adjacency.json'
+import { Adjacency, PantryData } from '../../shared/pantry'
 import type { MunicipalityTopology } from '../../shared/geometry'
 import { lookup } from '../data/select'
 import { NO_VALUE_FILLS, paletteFor } from '../map/colour'
@@ -11,6 +12,7 @@ import { MapView } from './MapView'
 
 const lk = lookup(PantryData.parse(rawData))
 const topology = rawTopology as unknown as MunicipalityTopology
+const adjacency = Adjacency.parse(rawAdjacency)
 
 const draw = (over: Partial<Parameters<typeof MapView>[0]> = {}) => {
   const onSelect = vi.fn()
@@ -18,6 +20,7 @@ const draw = (over: Partial<Parameters<typeof MapView>[0]> = {}) => {
     <MapView
       lk={lk}
       topology={topology}
+      adjacency={adjacency}
       indicatorId="population"
       year={2024}
       selected={null}
@@ -127,5 +130,67 @@ describe('MapView', () => {
   it('has an accessible name for the map as a whole', () => {
     draw()
     expect(screen.getByRole('group', { name: /map of sweden/i })).toBeTruthy()
+  })
+})
+
+describe('MapView keyboard navigation', () => {
+  const enterMap = async (over: Parameters<typeof draw>[0] = {}) => {
+    const rendered = draw(over)
+    const start = screen.getAllByRole('button').find((b) => b.getAttribute('tabindex') === '0')!
+    start.focus()
+    return { ...rendered, start }
+  }
+
+  it('moves focus to the neighbour in the direction pressed', async () => {
+    await enterMap({ selected: '0180' })
+    await userEvent.keyboard('{ArrowUp}')
+    // Stockholm's four keys reach Solna, Huddinge, Ekerö and Lidingö; Up is Solna.
+    expect(document.activeElement?.getAttribute('aria-label')).toMatch(/^Solna/)
+  })
+
+  it('carries the tab stop along with the focus', async () => {
+    await enterMap({ selected: '0180' })
+    await userEvent.keyboard('{ArrowRight}')
+    const zero = screen.getAllByRole('button').filter((b) => b.getAttribute('tabindex') === '0')
+    expect(zero).toHaveLength(1)
+    expect(zero[0]!.getAttribute('aria-label')).toMatch(/^Lidingö/)
+  })
+
+  it('moving focus does not change the selection', async () => {
+    const { onSelect } = await enterMap({ selected: '0180' })
+    await userEvent.keyboard('{ArrowUp}{ArrowDown}{ArrowLeft}')
+    expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  it('stays put and says so when nothing lies that way', async () => {
+    const onNoMove = vi.fn()
+    // Kiruna is the northernmost municipality; there is nothing above it.
+    await enterMap({ selected: '2584', onNoMove })
+    await userEvent.keyboard('{ArrowUp}')
+    expect(onNoMove).toHaveBeenCalledWith('up')
+    expect(document.activeElement?.getAttribute('aria-label')).toMatch(/^Kiruna/)
+  })
+
+  it('selects with Enter and with Space', async () => {
+    const { onSelect } = await enterMap({ selected: '0180' })
+    await userEvent.keyboard('{ArrowUp}{Enter}')
+    expect(onSelect).toHaveBeenLastCalledWith('0184')
+    await userEvent.keyboard(' ')
+    expect(onSelect).toHaveBeenLastCalledWith('0184')
+  })
+
+  it('clears the selection with Escape', async () => {
+    const { onSelect } = await enterMap({ selected: '1280' })
+    await userEvent.keyboard('{Escape}')
+    expect(onSelect).toHaveBeenCalledWith('1280')
+  })
+
+  it('jumps to the first and last municipality by name with Home and End', async () => {
+    await enterMap({ selected: '0180' })
+    await userEvent.keyboard('{Home}')
+    // Swedish collation, where å, ä and ö sort after z.
+    expect(document.activeElement?.getAttribute('aria-label')).toMatch(/^Ale/)
+    await userEvent.keyboard('{End}')
+    expect(document.activeElement?.getAttribute('aria-label')).toMatch(/^Övertorneå/)
   })
 })

@@ -1,5 +1,5 @@
 import type { MunicipalityTopology } from '../../shared/geometry'
-import type { PantryData } from '../../shared/pantry'
+import type { Adjacency, PantryData } from '../../shared/pantry'
 import { lookup } from '../data/select'
 import { t } from '../i18n/strings'
 import { metaFrom } from '../state/url'
@@ -13,7 +13,15 @@ import { MapView } from './MapView'
  * search, the legend and the live region — each one reading the same state and reporting back
  * through the same `update`.
  */
-export function App({ data, topology }: { data: PantryData; topology: MunicipalityTopology }) {
+export function App({
+  data,
+  topology,
+  adjacency,
+}: {
+  data: PantryData
+  topology: MunicipalityTopology
+  adjacency: Adjacency
+}) {
   const meta = metaFrom(data)
   const lk = lookup(data)
   const [state, update] = useAppState(meta)
@@ -23,9 +31,11 @@ export function App({ data, topology }: { data: PantryData; topology: Municipali
     <main>
       <h1>{strings.siteName}</h1>
       <p>{strings.tagline}</p>
+      <p id="map-hint">{strings.mapHint}</p>
       <MapView
         lk={lk}
         topology={topology}
+        adjacency={adjacency}
         indicatorId={state.indicator}
         year={state.year}
         selected={state.selected}

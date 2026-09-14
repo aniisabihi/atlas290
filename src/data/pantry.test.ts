@@ -9,6 +9,8 @@ const validData = {
   series: [],
 }
 
+const validAdjacency = { schemaVersion: 1, neighbours: {}, synthetic: [] }
+
 const validTopology = {
   type: 'Topology',
   objects: {
@@ -26,11 +28,15 @@ function notOkResponse(): Response {
   return { ok: false, json: () => Promise.resolve(undefined) } as Response
 }
 
-/** Routes the data-file fetch and the topology-file fetch to different stub responses. */
-function stubFetch(dataRes: Response, topoRes: Response) {
+/** Routes each of the three pantry fetches to its own stub response. */
+function stubFetch(dataRes: Response, topoRes: Response, adjRes = okResponse(validAdjacency)) {
   vi.stubGlobal(
     'fetch',
-    vi.fn((url: string) => Promise.resolve(url.includes('indicators') ? dataRes : topoRes)),
+    vi.fn((url: string) =>
+      Promise.resolve(
+        url.includes('indicators') ? dataRes : url.includes('adjacency') ? adjRes : topoRes,
+      ),
+    ),
   )
 }
 
@@ -39,8 +45,15 @@ afterEach(() => {
 })
 
 describe('loadPantry', () => {
-  it('throws the pantry-files-missing message when either response is not ok', async () => {
-    stubFetch(notOkResponse(), notOkResponse())
+  it.each([
+    ['the data file', () => stubFetch(notOkResponse(), okResponse(validTopology))],
+    ['the topology', () => stubFetch(okResponse(validData), notOkResponse())],
+    [
+      'the adjacency graph',
+      () => stubFetch(okResponse(validData), okResponse(validTopology), notOkResponse()),
+    ],
+  ])('throws the pantry-files-missing message when %s is not ok', async (_label, stub) => {
+    stub()
     await expect(loadPantry()).rejects.toThrow('pantry files missing')
   })
 
@@ -64,8 +77,23 @@ describe('loadPantry', () => {
     await expect(loadPantry()).rejects.toThrow('has no objects.municipalities.geometries array')
   })
 
-  it('resolves with the validated data and the topology on the happy path', async () => {
+  it('validates the adjacency graph rather than trusting it', async () => {
+    stubFetch(
+      okResponse(validData),
+      okResponse(validTopology),
+      okResponse({ schemaVersion: 1, neighbours: { '180': ['0184'] }, synthetic: [] }),
+    )
+    // A three-digit key is not a municipality code, and arrow-key navigation reading it would
+    // silently find no neighbours rather than failing.
+    await expect(loadPantry()).rejects.toThrow(/four digits/)
+  })
+
+  it('resolves with the validated data, the topology and the adjacency graph', async () => {
     stubFetch(okResponse(validData), okResponse(validTopology))
-    await expect(loadPantry()).resolves.toEqual({ data: validData, topology: validTopology })
+    await expect(loadPantry()).resolves.toEqual({
+      data: validData,
+      topology: validTopology,
+      adjacency: validAdjacency,
+    })
   })
 })
