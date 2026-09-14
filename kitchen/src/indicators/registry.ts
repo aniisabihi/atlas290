@@ -212,6 +212,12 @@ import { migrationDefinition } from './migration'
 // that call is not routed through ctx.cpi yet) — so it has no ordering dependency on any other
 // REGISTRY entry beyond needing ctx.municipalities, which population alone establishes.
 import { incomeDefinition } from './income'
+// Same deferred-read reasoning as every import above: the binding is always safe to import,
+// but ensureRegistered is what actually reads housingDefinition, and only from inside buildAll.
+// Like income, housing calls cpi.ts's fetchCpi directly inside its own build() rather than
+// through ctx.cpi (Task 13 wires that slot), so it has no ordering dependency on any other
+// REGISTRY entry beyond needing ctx.municipalities, which population alone establishes.
+import { housingDefinition } from './housing'
 
 /** Every indicator the pantry publishes, in build order. Population must stay first: it is
  * the only definition that derives `ctx.municipalities`, and every other definition depends
@@ -219,10 +225,11 @@ import { incomeDefinition } from './income'
  * does not matter, since neither derives municipalities or reads another's series. Net
  * migration (Task 6) must come after population specifically — not merely after it happens to
  * run — because its build() reads `ctx.series.get(POPULATION.id)` and throws if that is not
- * yet set. Median income (Task 7) has no such ordering requirement — it only needs
- * `ctx.municipalities`, already established by population — so its position among the other
- * non-population entries is arbitrary. Starts empty; `ensureRegistered` fills it in on first
- * use (see the comment on the imports above for why that can't happen at module-load time). */
+ * yet set. Median income (Task 7) and house prices (Task 8) have no such ordering requirement —
+ * each only needs `ctx.municipalities`, already established by population — so their position
+ * among the other non-population entries is arbitrary. Starts empty; `ensureRegistered` fills
+ * it in on first use (see the comment on the imports above for why that can't happen at
+ * module-load time). */
 export const REGISTRY: IndicatorDefinition[] = []
 
 let registered = false
@@ -235,6 +242,7 @@ function ensureRegistered(): void {
     densityDefinition,
     migrationDefinition,
     incomeDefinition,
+    housingDefinition,
   )
 }
 

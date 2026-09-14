@@ -303,3 +303,96 @@ Checked live against TAB3554's real frozen metadata before writing `kitchen/src/
   (up from a nominal 209,600 kronor) and Högsby's becomes 227,694.65 kronor (up from a nominal
   140,600 kronor) — both roughly 62% higher than nominal, matching the real CPI ratio
   417.98 / 258.1.
+
+## House prices: the minimum-count rule, and a flow-not-snapshot finding the brief didn't call out (Task 8, 2026-09-14)
+
+Checked live against TAB1169's real frozen metadata and real frozen data before writing
+`kitchen/src/indicators/housing.ts`.
+
+- **TAB1169** ("Försålda småhus efter region (kommun, län, riket) och fastighetstyp. År
+  1981-2025"). `Region`: 312 values, exactly **290** four-digit codes, all of them real current
+  municipality codes — diffed directly against TAB638's own 290, no phantom four-digit codes
+  like TAB1212/TAB6640's Stor-Stockholm/Göteborg/Malmö (the plan's trap 5, checked and found not
+  to apply here, the same way it did not apply to TAB3554 in Task 7). `Fastighetstyp` has
+  exactly two values: `220` labelled **"permanentbostad (ej tomträtt)"** and `221` labelled
+  **"fritidshus"** — the brief's assignment (220 = permanent, 221 = holiday) was correct,
+  confirmed against the table's own metadata labels rather than trusted blind, and
+  `housing.ts` resolves `220` by that label at run time rather than hardcoding it.
+  `ContentsCode` carries four codes; this indicator uses two, resolved by label:
+  `BO0501C1` = "Antal" (sale count) and `BO0501C2` = "Köpeskilling, medelvärde i tkr" (mean
+  price). TAB1169 carries no CKM/perturbation note — no cell is ever `perturbed`.
+- **TAB1169 sends literal `null` for a municipality-year before the municipality existed, not
+  literal `0`** — like TAB3554 (Task 7), unlike TAB638. Confirmed directly: Knivsta (`0330`)
+  reads `null` for every year 1981–2002 inclusive, and a real count from 2003.
+- **A finding this task's own brief did not call out: house sales are a FLOW, not a snapshot,
+  and need the same one-calendar-year-later existence shift `migration.ts` uses, not the plain
+  `existed(code, y)` every snapshot indicator (population, tax, density, income) uses.** Checked
+  directly against the real frozen data for all six municipality splits — in every case the
+  first real (non-null) sale count is exactly `CREATED[code] + 1`, one year later than
+  population's own gate:
+
+  | Municipality     | `CREATED` (population's gate) | First real TAB1169 year |
+  | ---------------- | ----------------------------- | ----------------------- |
+  | Gnesta (0461)    | 1991                          | 1992                    |
+  | Trosa (0488)     | 1991                          | 1992                    |
+  | Bollebygd (1443) | 1994                          | 1995                    |
+  | Lekeberg (1814)  | 1994                          | 1995                    |
+  | Nykvarn (0140)   | 1998                          | 1999                    |
+  | Knivsta (0330)   | 2002                          | 2003                    |
+
+  This is the same shift, for the same reason, that `migration.ts` documents for net migration:
+  a year-Y population row already reflects the administrative boundary of 1 January year Y+1
+  (TAB638's own convention), but a year-Y count of sales reflects the boundary that actually
+  applied during year Y itself. `housing.ts`'s `housingExisted(code, y)` is `existed(code, y -
+1)`, exactly mirroring `migration.ts`'s `migrationExisted`. Getting this wrong would have
+  published Knivsta's real 2003 figures one year early, under `did-not-exist`'s complement, as
+  though the municipality's housing market existed in 2002 — an error the spot-check below would
+  not have caught on its own, since 2002 is null either way in the raw data; it was caught by
+  checking every split against `CREATED`, not just one.
+
+- **A handful of nulls unrelated to any split**: `Österåker` (0117), `Salem` (0128), `Essunga`
+  (1445), `Bjurholm` (2403) and `Malå` (2418) each read `null` for exactly 1981 and 1982 — the
+  table's own two earliest years — despite existing throughout. Not a `CREATED`-map municipality
+  and not a boundary change; read as an ordinary `not-yet-published` gap (the fetched cell is
+  simply missing), which is what the existing rule already produces without special-casing it.
+
+### The minimum-count rule
+
+Fetched the real sale count (`BO0501C1`, Fastighetstyp 220) for all 290 municipalities,
+1981–2025: 12,950 published municipality-year cells (the other 100 of 13,050 are the six splits'
+and the 1981–1982 gap's `null`s above). Distribution (tkr price omitted; this is the **count**):
+
+```
+min 2, p1 16, p5 32, p10 45, p25 74, median 125, p75 232, p90 389, p95 526, max 1,610
+```
+
+Candidate thresholds, counted from the real data rather than estimated:
+
+| Threshold | Muni-years suppressed | % of 12,950 | Municipalities with ≥1 suppressed year |
+| --------- | --------------------- | ----------- | -------------------------------------- |
+| 10        | 28                    | 0.22%       | 7 of 290                               |
+| 15        | 99                    | 0.76%       | 12 of 290                              |
+| **20**    | **227**               | **1.75%**   | **22 of 290**                          |
+| 25        | 384                   | 2.97%       | 34 of 290                              |
+| 30        | 555                   | 4.29%       | 47 of 290                              |
+| 50        | 1,608                 | 12.42%      | 95 of 290 (roughly a third of the map) |
+
+10 suppresses almost nothing (0.22%) — not doing its job. 50 suppresses 12.42% of all cells and
+95 of 290 municipalities, close to a third of the map — the "too high" failure mode the task
+brief warned against. **20 was chosen**: a real, non-trivial share (1.75% of cells, 22 of 290
+municipalities), and the municipalities it flags form a recognisable pattern rather than either
+extreme — mostly the sparsely populated inland municipalities of Västerbotten and Norrbotten
+(Dorotea, Bjurholm, Sorsele, Malå, Överkalix, Arjeplog, Åsele, Övertorneå, Pajala, Norsjö) plus
+one urban outlier, **Solna**, whose housing stock is dominated by flats rather than the
+"småhus" (single-family homes) this table counts — Solna is suppressed at every threshold from
+10 upward, including years with a genuine mean price already published on as few as 2 sales
+(1990: 2 sales, mean 2,188 tkr).
+
+Real spot-check (frozen 2026-09-14, all 290 municipalities, 1981–2025): for 1990, Danderyd
+(`0162`) reads 151 sales at a mean of 2,615 tkr (among the highest); Åsele (`2463`) reads 41
+sales at a mean of 252 tkr (among the lowest). Adjusted to 2025 kronor via `cpi.ts`'s
+`toCurrentKronor` (CPI 1990 = 207.8, 2025 = 417.98): Danderyd's 1990 figure becomes
+5,259,950.43 kronor (up from a nominal 2,615,000 kronor) and Åsele's becomes 506,886.24 kronor
+(up from a nominal 252,000 kronor). Solna (`0184`), 1990: 2 sales — below the minCount of 20 —
+so despite SCB publishing a mean price (2,188 tkr) for that cell, it is nulled and marked
+`too-few-cases` rather than shown.

@@ -150,18 +150,39 @@ const incomeMetaSv = {
     Tid: { category: { index: ['2024'] } },
   },
 }
+const housingMetaSv = {
+  id: ['Region', 'Fastighetstyp', 'ContentsCode', 'Tid'],
+  dimension: {
+    Region: { category: { index: ['0180'] } },
+    Fastighetstyp: {
+      category: {
+        index: ['220', '221'],
+        label: { '220': 'permanentbostad (ej tomträtt)', '221': 'fritidshus' },
+      },
+    },
+    ContentsCode: {
+      category: {
+        index: ['BO0501C1', 'BO0501C2'],
+        label: { BO0501C1: 'Antal', BO0501C2: 'Köpeskilling, medelvärde i tkr' },
+      },
+    },
+    Tid: {
+      category: { index: Array.from({ length: 2025 - 1981 + 1 }, (_, i) => String(1981 + i)) },
+    },
+  },
+}
 // CPI's fetchCpi (unlike every other indicator here) reads its own year list straight off the
 // table's metadata rather than a hardcoded range (cpi.ts has no Region dimension to iterate
-// over), so this fake's Tid list must cover every year income.ts's INCOME_YEARS actually
-// requests (1999-2024) — otherwise toCurrentKronor would throw for the years left out, and
-// this fake backend would be failing to exercise the real registry end to end for no reason
-// related to the code under test.
+// over), so this fake's Tid list must cover every year EITHER income.ts's INCOME_YEARS (1999-
+// 2024) OR housing.ts's HOUSING_YEARS (1981-2025) actually requests — otherwise toCurrentKronor
+// would throw for the years left out, and this fake backend would be failing to exercise the
+// real registry end to end for no reason related to the code under test. 1981-2025 covers both.
 const cpiMetaSv = {
   id: ['ContentsCode', 'Tid'],
   dimension: {
     ContentsCode: { category: { index: ['000000KL'], label: { '000000KL': 'Index' } } },
     Tid: {
-      category: { index: Array.from({ length: 2024 - 1999 + 1 }, (_, i) => String(1999 + i)) },
+      category: { index: Array.from({ length: 2025 - 1981 + 1 }, (_, i) => String(1981 + i)) },
     },
   },
 }
@@ -197,6 +218,7 @@ function fakeFetchImpl() {
     if (u.includes('/TAB6640/metadata') && u.includes('lang=sv')) return json(migrationNewMetaSv)
     if (u.includes('/TAB3554/metadata') && u.includes('lang=sv')) return json(incomeMetaSv)
     if (u.includes('/TAB4352/metadata') && u.includes('lang=sv')) return json(cpiMetaSv)
+    if (u.includes('/TAB1169/metadata') && u.includes('lang=sv')) return json(housingMetaSv)
     throw new Error(`unexpected request: ${init?.method ?? 'GET'} ${u}`)
   })
 }
