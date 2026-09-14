@@ -583,3 +583,13 @@ button {
 .facts a {
   color: var(--accent);
 }
+
+/* Present for assistive technology, absent for the eye. Not display:none, which removes it. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

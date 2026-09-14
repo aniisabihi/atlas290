@@ -47,6 +47,11 @@ describe('ComparePanel with a partner', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Stockholm and Malmö' })).toBeTruthy()
   })
 
+  it('gives the table its own name, so it is not just table in a list of tables', () => {
+    draw('1280')
+    expect(screen.getByRole('table', { name: 'Stockholm and Malmö, 2024' })).toBeTruthy()
+  })
+
   it('is a real table with row and column headers', () => {
     draw('1280')
     const table = screen.getByRole('table')

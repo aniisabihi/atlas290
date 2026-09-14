@@ -62,6 +62,13 @@ export function ComparePanel({
       </p>
 
       <table className="compare-table">
+        {/*
+         * A caption rather than relying on the section heading: a screen reader listing the
+         * page's tables should be able to tell this one from the map's twin without leaving it.
+         */}
+        <caption className="visually-hidden">
+          {strings.tableCaption(`${nameOf(selected)} ${strings.and} ${nameOf(compare)}`, year)}
+        </caption>
         <thead>
           <tr>
             <th scope="col">{strings.indicatorLegend}</th>
