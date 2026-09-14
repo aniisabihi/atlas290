@@ -1,5 +1,5 @@
-import { PantryData } from '../shared/pantry'
-import type { MunicipalityTopology } from '../shared/geometry'
+import { Adjacency, PantryData } from '../../shared/pantry'
+import type { MunicipalityTopology } from '../../shared/geometry'
 
 /**
  * Loads the two pantry files the render check needs, straight from the public/pantry
@@ -14,20 +14,26 @@ import type { MunicipalityTopology } from '../shared/geometry'
  * `objects.municipalities.geometries` exists and is an array, and fails loudly, by name,
  * if it does not.
  */
-export async function loadPantry(): Promise<{ data: PantryData; topology: MunicipalityTopology }> {
-  const [dataRes, topoRes] = await Promise.all([
+export async function loadPantry(): Promise<{
+  data: PantryData
+  topology: MunicipalityTopology
+  adjacency: Adjacency
+}> {
+  const [dataRes, topoRes, adjRes] = await Promise.all([
     fetch('/pantry/data/indicators.json'),
     fetch('/pantry/geometry/municipalities.topo.json'),
+    fetch('/pantry/geometry/adjacency.json'),
   ])
-  if (!dataRes.ok || !topoRes.ok) {
+  if (!dataRes.ok || !topoRes.ok || !adjRes.ok) {
     throw new Error('pantry files missing; run yarn kitchen publish')
   }
   const data = PantryData.parse(await dataRes.json())
+  const adjacency = Adjacency.parse(await adjRes.json())
   const topology = (await topoRes.json()) as MunicipalityTopology
   if (!Array.isArray(topology?.objects?.municipalities?.geometries)) {
     throw new Error(
       'public/pantry/geometry/municipalities.topo.json has no objects.municipalities.geometries array; run yarn kitchen publish',
     )
   }
-  return { data, topology }
+  return { data, topology, adjacency }
 }

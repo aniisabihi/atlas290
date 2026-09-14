@@ -1,0 +1,59 @@
+/*
+ * Every colour, space and duration the page uses, in one place.
+ *
+ * Dark mode is a token swap rather than a second stylesheet, and reduced motion sets the one
+ * duration every transition reads — so neither can be half-applied by forgetting a rule.
+ *
+ * The MAP keeps a light ground in both themes, deliberately. The sequential ramp is calibrated
+ * against white, and `src/map/colour.ts` guarantees that every no-data pattern is at least as
+ * light as the lightest class so an absence can never be misread as a low value. Re-tinting the
+ * map for dark mode would break that guarantee and the contrast arithmetic behind the focus ring
+ * with it. So the chrome goes dark and the map stays a light card inside it.
+ */
+
+:root {
+  color-scheme: light;
+
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --text: #16181a;
+  --text-muted: #55585c;
+  --border: #cfd0cd;
+  --accent: #17568f;
+  --accent-text: #ffffff;
+
+  /* The two-tone ring from src/map/colour.ts, so CSS and SVG cannot drift apart. */
+  --focus-core: #111111;
+  --focus-halo: #ffffff;
+
+  --map-ground: #ffffff;
+
+  --space: 1rem;
+  --radius: 6px;
+  --measure: 38rem;
+  --motion: 250ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --bg: #15171a;
+    --surface: #1e2126;
+    --text: #f1f2f4;
+    --text-muted: #b9bfc7;
+    --border: #3a3f47;
+    --accent: #8ab8e8;
+    --accent-text: #0c0e11;
+
+    --focus-core: #ffffff;
+    --focus-halo: #111111;
+  }
+}
+
+/* One duration, read by every transition on the page, so reduced motion is never half-applied. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion: 0ms;
+  }
+}

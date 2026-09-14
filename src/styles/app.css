@@ -1,0 +1,366 @@
+@import './tokens.css';
+
+/*
+ * Hand-written CSS, no framework. The map, the legend and the year strip are bespoke enough that
+ * a utility framework would help least exactly where most of the work is.
+ *
+ * Layout is one grid: controls beside the map on a wide screen, stacked on a narrow one. Nothing
+ * here is sized in pixels that a phone cannot afford.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  line-height: 1.5;
+}
+
+.page {
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: var(--space);
+}
+
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--space);
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: clamp(1.4rem, 1.1rem + 1.4vw, 2rem);
+}
+
+.tagline {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+}
+
+.language-switch {
+  color: var(--accent);
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+}
+
+.skip-link:focus {
+  left: var(--space);
+  top: var(--space);
+  z-index: 10;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface);
+  border: 2px solid var(--focus-core);
+}
+
+/* Controls beside the map when there is room, stacked when there is not. */
+.layout {
+  display: grid;
+  gap: calc(var(--space) * 1.5);
+  grid-template-columns: minmax(0, 1fr);
+  margin-top: var(--space);
+}
+
+@media (min-width: 60rem) {
+  .layout {
+    grid-template-columns: minmax(20rem, 26rem) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .map-column {
+    position: sticky;
+    top: var(--space);
+  }
+}
+
+.controls > * + * {
+  margin-top: var(--space);
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space);
+}
+
+h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+}
+
+h3 {
+  margin: 0.75rem 0 0.2rem;
+  font-size: 0.95rem;
+}
+
+/* ---------------------------------------------------------------- the map */
+
+/*
+ * Sweden is twice as tall as it is wide, so the map's width follows from whatever height it is
+ * given. The frame hugs it rather than stretching to the column, which keeps the light card the
+ * shape of its contents instead of a wide band with a thin country down the middle.
+ */
+.map-frame {
+  background: var(--map-ground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+/*
+ * The render frame is 1000 x 2000, matching Sweden's north-south extent, so an unconstrained map
+ * is twice as tall as the page is wide. Height-constrained with automatic width instead.
+ */
+.map {
+  display: block;
+  height: min(82vh, 1000px);
+  width: auto;
+  max-width: 100%;
+}
+
+/* On a narrow screen the height has to come from the width instead, or the map runs off-screen. */
+@media (max-width: 60rem) {
+  .map {
+    width: min(100%, 22rem);
+    height: auto;
+  }
+}
+
+/*
+ * The map draws its own focus ring as an SVG overlay (see MapView): a browser outline on a path
+ * is clipped by neighbouring shapes and cannot meet contrast on both a near-white and a
+ * near-black fill. The overlay is drawn unconditionally for the focused municipality, so this
+ * never leaves focus invisible — removing an outline without replacing it is exactly the bug that
+ * made arrow-key navigation look broken.
+ */
+.map path:focus-visible {
+  outline: none;
+}
+
+.map[data-animate='true'] path {
+  transition: fill var(--motion) ease;
+}
+
+/* ------------------------------------------------------------- the legend */
+
+.legend ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.9rem;
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.legend-swatch {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border);
+  flex: none;
+}
+
+.legend-absences {
+  margin-top: 0.6rem !important;
+}
+
+.legend-unit,
+.legend-note,
+.search-count {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0 0 0.5rem;
+}
+
+.legend-zero {
+  color: var(--text-muted);
+}
+
+/* --------------------------------------------------------------- the year */
+
+.year-controls {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.year-controls output {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.year-slider input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.year-ticks {
+  display: flex;
+  gap: 1px;
+  margin-top: 0.2rem;
+}
+
+.year-ticks span {
+  flex: 1;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 1px;
+}
+
+.year-ticks span[data-covered='false'] {
+  background: var(--border);
+}
+
+.empty-year {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space);
+  background: var(--surface);
+}
+
+/* ------------------------------------------------------------- the search */
+
+.search {
+  position: relative;
+}
+
+.search label,
+.indicator-picker legend {
+  font-weight: 600;
+}
+
+.search input {
+  width: 100%;
+  padding: 0.5rem;
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.search ul {
+  list-style: none;
+  margin: 0.2rem 0 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  position: absolute;
+  width: 100%;
+  z-index: 3;
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.search li {
+  padding: 0.4rem 0.5rem;
+  cursor: pointer;
+}
+
+.search li[aria-selected='true'] {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+/* ---------------------------------------------------------- the indicator */
+
+.indicator-picker {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 1rem;
+  margin: 0;
+}
+
+.indicator-picker label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 400;
+}
+
+.indicator-picker input {
+  accent-color: var(--accent);
+}
+
+.about-indicator summary {
+  cursor: pointer;
+}
+
+/* The heading is inside the summary for the outline's sake; it should not look like a block. */
+.about-indicator summary h2 {
+  display: inline;
+  font-size: 1rem;
+}
+
+.about-indicator p,
+.about-indicator ul {
+  margin-top: 0.2rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+button {
+  font: inherit;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: inherit;
+  cursor: pointer;
+}
+
+/*
+ * One focus style for everything that is not the map, using the same two tones the map's ring
+ * uses. The halo is what keeps it visible on a dark surface and the core on a light one.
+ */
+:focus-visible {
+  outline: 2px solid var(--focus-core);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--focus-halo);
+}
+
+/*
+ * Visible to a screen reader, invisible to everyone else. Not `display: none`, which would take
+ * it out of the accessibility tree entirely and make the whole thing silent.
+ */
+.live-region {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

@@ -1,0 +1,96 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import rawData from '../../public/pantry/data/indicators.json'
+import rawTopology from '../../public/pantry/geometry/municipalities.topo.json'
+import rawAdjacency from '../../public/pantry/geometry/adjacency.json'
+import { Adjacency, PantryData } from '../../shared/pantry'
+import type { MunicipalityTopology } from '../../shared/geometry'
+import { App } from './App'
+import { SETTLE_MS } from './LiveRegion'
+
+const data = PantryData.parse(rawData)
+const topology = rawTopology as unknown as MunicipalityTopology
+const adjacency = Adjacency.parse(rawAdjacency)
+
+/**
+ * Integration, at the level where the pieces are wired to each other. The unit tests all passed
+ * while the live region kept saying "no neighbouring municipality that way" long after the
+ * visitor had walked somewhere else, because that bug lived in the wiring rather than in any one
+ * component.
+ */
+const open = (url: string) => {
+  window.history.replaceState(null, '', url)
+  return render(<App data={data} topology={topology} adjacency={adjacency} />)
+}
+
+const live = () => document.querySelector('[data-live-region]')!
+const settle = () => act(() => void vi.advanceTimersByTime(SETTLE_MS))
+
+describe('App', () => {
+  beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true }))
+  afterEach(() => {
+    vi.useRealTimers()
+    window.history.replaceState(null, '', '/')
+  })
+
+  it('renders the whole view from the URL alone', () => {
+    open('/en/?i=house-prices&y=1990&m=0184')
+    expect(screen.getByRole('radio', { name: 'House prices', checked: true })).toBeTruthy()
+    expect((screen.getByRole('slider') as HTMLInputElement).value).toBe('1990')
+    expect(screen.getByRole('button', { current: true }).getAttribute('aria-label')).toMatch(
+      /^Solna/,
+    )
+  })
+
+  it('announces the selected municipality once things settle', () => {
+    open('/en/?y=2024&m=0180')
+    settle()
+    expect(live().textContent).toBe('Stockholm, Population 2024: 995,574 residents, rank 1 of 290.')
+  })
+
+  it('says there is nothing that way when a key points at open sea', async () => {
+    open('/en/?y=2024&m=2584')
+    const kiruna = screen.getByRole('button', { current: true })
+    kiruna.focus()
+    await userEvent.keyboard('{ArrowUp}')
+    settle()
+    expect(live().textContent).toMatch(/no neighbouring municipality that way/i)
+  })
+
+  it('stops saying it as soon as a key does move', async () => {
+    // The regression this file exists for. One failed press used to leave the live region stuck
+    // on "nothing that way" for the rest of the session.
+    open('/en/?y=2024&m=2584')
+    screen.getByRole('button', { current: true }).focus()
+    await userEvent.keyboard('{ArrowUp}')
+    settle()
+    expect(live().textContent).toMatch(/no neighbouring municipality that way/i)
+
+    await userEvent.keyboard('{ArrowDown}')
+    settle()
+    expect(live().textContent).not.toMatch(/no neighbouring municipality/i)
+    expect(live().textContent).toMatch(/^Kiruna/)
+  })
+
+  it('keeps the year when the indicator changes, and explains the empty map', async () => {
+    open('/en/?y=1970')
+    await userEvent.click(screen.getByRole('radio', { name: 'Mean age' }))
+    expect((screen.getByRole('slider') as HTMLInputElement).value).toBe('1970')
+    expect(screen.getByText(/Mean age is published for 1998–2025/)).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Go to 1998' })).toBeTruthy()
+  })
+
+  it('puts the whole view in the address bar', async () => {
+    open('/en/?y=2024')
+    await userEvent.click(screen.getByRole('radio', { name: 'Mean age' }))
+    expect(window.location.pathname + window.location.search).toBe('/en/?i=mean-age&y=2024')
+  })
+
+  it('offers the other language as a link carrying the current view', () => {
+    open('/en/?i=mean-age&y=2010&m=1280')
+    expect(screen.getByRole('link', { name: /switch language/i }).getAttribute('href')).toBe(
+      '/sv/?i=mean-age&y=2010&m=1280',
+    )
+  })
+})

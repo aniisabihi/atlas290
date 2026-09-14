@@ -42,29 +42,100 @@ export function statusCode(status: ObservationStatus): number {
 
 export const IndicatorId = z.string().regex(/^[a-z][a-z0-9-]*$/)
 
-export const Indicator = z.object({
-  id: IndicatorId,
-  name: Bilingual,
-  description: Bilingual,
-  unit: z.enum(['count', 'percent', 'years', 'sek', 'per-thousand', 'per-km2']),
-  /** 'fixed-latest-year' means values are inflation-adjusted to the latest year's kronor. */
-  priceBasis: z.enum(['none', 'fixed-latest-year']),
-  /** Neutral scale hint. There is deliberately no "higher is better" flag. */
-  scale: z.object({
-    kind: z.enum(['sequential', 'diverging']),
-    reference: z.enum(['zero', 'national-median']).optional(),
-    /** Fixed class breaks across all years, computed in the kitchen. */
-    breaks: z.array(z.number()),
-  }),
-  coverage: z.object({ from: z.number().int(), to: z.number().int() }),
-  caveat: Bilingual,
-  /** For indicators built from events (house sales): below this count the cell is 'too-few-cases'. */
-  minCount: z.number().int().positive().optional(),
-  sensitivity: z.enum(['none', 'sensitive']),
-  sources: z.array(z.object({ table: z.string(), contentCode: z.string(), note: z.string() })),
-  /** Plain-language statement of how the value was computed from the sources. */
-  derivation: z.string(),
-})
+/**
+ * Follow-up to Task 13 (docs/plans/2026-09-14-02-the-ten-indicators.md): the published pantry
+ * was carrying full float precision on every derived indicator — `share-65-plus` publishing
+ * `4.7196549599507085`, sixteen significant figures for a percentage derived from integer
+ * population counts SCB deliberately perturbs from 2025 onward. That asserts a precision the
+ * source data does not have, on top of costing real bytes for digits nobody can act on.
+ *
+ * Decimal places a value published under each `Indicator.unit` may honestly carry. Derived
+ * from the unit — the schema's own enum, already the one place `check.ts` and the render code
+ * trust — rather than a per-indicator table someone maintaining a tenth or eleventh indicator
+ * could get wrong or forget to add to entirely.
+ *
+ *   count:        0 — people are counted, not measured; a fractional person is not a value.
+ *   sek:          0 — whole kronor; a house price or income to four decimal places is absurd,
+ *                 and every money figure here is already stored as an integer number of kronor
+ *                 before this rounding step even runs (income.ts/housing.ts multiply their
+ *                 source tkr figures by 1,000).
+ *   percent:      2 — matches what SCB itself publishes for tax-rate, the one percent-unit
+ *                 indicator whose value is NOT derived by this project (selected directly off
+ *                 TAB2017): Stockholm's 2024 rate is 30.36, two decimals, verified against the
+ *                 real fetched table rather than assumed. 1 decimal would collapse that to
+ *                 30.4, silently discarding a real, correctly-published SCB digit — the
+ *                 specific trap this task's own brief calls out by name. The other three
+ *                 percent indicators (post-secondary-education, population-change,
+ *                 share-65-plus) are computed here by division and so have no SCB-published
+ *                 precision of their own to match; they take the same 2 decimals as their
+ *                 sibling percent-unit indicator instead of a separately invented figure.
+ *   per-thousand: 2 — net-migration-rate has no SCB-published precision to match either (SCB
+ *                 publishes the raw migration count, not the per-1,000 rate; this project
+ *                 computes the rate from that count and population) — 2 decimals matches its
+ *                 nearest sibling ratio unit, percent, for the same reason.
+ *   per-km2:      1 — SCB's own TAB628 density table publishes exactly one decimal (confirmed
+ *                 against the real fetched data: Stockholm 2024 is 5289.4, not 5289.42 or
+ *                 5289).
+ *   years:        1 — SCB's own TAB637 mean-age table publishes exactly one decimal (confirmed
+ *                 against the real fetched data: Borgholm 2025 is 53.3).
+ */
+export const UNIT_DECIMALS: Record<Indicator['unit'], number> = {
+  count: 0,
+  sek: 0,
+  percent: 2,
+  'per-thousand': 2,
+  'per-km2': 1,
+  years: 1,
+}
+
+export const Indicator = z
+  .object({
+    id: IndicatorId,
+    name: Bilingual,
+    description: Bilingual,
+    unit: z.enum(['count', 'percent', 'years', 'sek', 'per-thousand', 'per-km2']),
+    /** 'fixed-latest-year' means values are inflation-adjusted to the latest year's kronor. */
+    priceBasis: z.enum(['none', 'fixed-latest-year']),
+    /**
+     * WHICH year's kronor, when `priceBasis` is 'fixed-latest-year'. Stored rather than derived,
+     * because it cannot be derived correctly: the base is the last year of SCB's consumer price
+     * index (2025), which is not the same as the indicator's own last year. Median income stops
+     * at 2024 but is expressed in 2025 kronor, so a site inferring the basis from `coverage.to`
+     * would tell visitors "2024 kronor" — off by a year's inflation, and a false statement about
+     * money presented as a fact.
+     */
+    priceBasisYear: z.number().int().optional(),
+    /** Neutral scale hint. There is deliberately no "higher is better" flag. */
+    scale: z.object({
+      kind: z.enum(['sequential', 'diverging']),
+      reference: z.enum(['zero', 'national-median']).optional(),
+      /** Fixed class breaks across all years, computed in the kitchen. */
+      breaks: z.array(z.number()),
+    }),
+    coverage: z.object({ from: z.number().int(), to: z.number().int() }),
+    caveat: Bilingual,
+    /** For indicators built from events (house sales): below this count the cell is 'too-few-cases'. */
+    minCount: z.number().int().positive().optional(),
+    sensitivity: z.enum(['none', 'sensitive']),
+    sources: z.array(z.object({ table: z.string(), contentCode: z.string(), note: z.string() })),
+    /** Plain-language statement of how the value was computed from the sources. */
+    derivation: z.string(),
+  })
+  .superRefine((i, ctx) => {
+    const adjusted = i.priceBasis === 'fixed-latest-year'
+    if (adjusted && i.priceBasisYear === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `${i.id}: priceBasis is 'fixed-latest-year' but no priceBasisYear says which year`,
+      })
+    }
+    if (!adjusted && i.priceBasisYear !== undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `${i.id}: priceBasisYear is set but priceBasis is '${i.priceBasis}', so nothing was adjusted`,
+      })
+    }
+  })
 export type Indicator = z.infer<typeof Indicator>
 
 /**

@@ -3,10 +3,57 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Sweden Data Explorer</title>
+    <title>Sveriges kommuner i data / Sweden's municipalities in data</title>
+    <meta name="description" content="Välj språk. Choose a language." />
+    <!-- vite-ignore keeps Vite from treating these as asset paths to resolve: "/sv/" is a
+         directory, and without it the production build fails with EISDIR. Vite strips the
+         attribute from the output. -->
+    <link rel="alternate" hreflang="sv" href="/sv/" vite-ignore />
+    <link rel="alternate" hreflang="en" href="/en/" vite-ignore />
+    <style>
+      body {
+        font:
+          1rem/1.5 system-ui,
+          sans-serif;
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-content: center;
+        gap: 1rem;
+        text-align: center;
+      }
+      a {
+        font-size: 1.25rem;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <p>Välj språk · Choose a language</p>
+    <p>
+      <a href="/sv/" hreflang="sv" lang="sv">Svenska</a> ·
+      <a href="/en/" hreflang="en" lang="en">English</a>
+    </p>
+    <script>
+      // Sends a visitor straight to their own language, carrying any shared state with them.
+      // navigator.languages is ORDERED by preference, so walk it and take the first entry that
+      // is one of ours — ["en-GB", "sv-SE"] means English, even though Swedish is in the list.
+      // Anyone who reads neither gets English, the wider audience; Swedish is one link away.
+      // `replace` rather than an assignment, so the back button leaves the site instead of
+      // bouncing off this page forever. Without JavaScript the two links above still work.
+      var lang = 'en'
+      var prefs = navigator.languages || [navigator.language || 'en']
+      for (var i = 0; i < prefs.length; i++) {
+        var tag = String(prefs[i]).toLowerCase()
+        if (tag.indexOf('sv') === 0) {
+          lang = 'sv'
+          break
+        }
+        if (tag.indexOf('en') === 0) {
+          lang = 'en'
+          break
+        }
+      }
+      location.replace('/' + lang + '/' + location.search + location.hash)
+    </script>
   </body>
 </html>

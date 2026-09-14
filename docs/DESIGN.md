@@ -1,11 +1,15 @@
 # Sweden Data Explorer — design
 
-Date: 2026-09-10, revised 2026-09-13 after design review, revised 2026-09-14 after Plan 2.
-Status: Plans 1 and 2 are implemented. The kitchen fetches, freezes, checks and publishes all
+Date: 2026-09-10, revised 2026-09-13 after design review, revised 2026-09-14 after Plans 2 and 3.
+Status: Plans 1, 2 and 3 are implemented. The kitchen fetches, freezes, checks and publishes all
 ten indicators for 290 municipalities, with map geometry, keyboard adjacency and the bubble
 layout; the published pantry is 1.04 MB, 275 kB gzipped, and rebuilds byte-identically from
-frozen source. The product itself — the map, time travel, cartogram morph and facts engine
-described below — is not yet built; that is Plan 3 onward.
+frozen source. The site now reads it: Swedish and English at their own paths, the whole view in
+the URL, the choropleth with a legend that admits what is missing, a year slider with play,
+diacritic-folding search, arrow-key navigation over the map, and a debounced live region. Still
+to come: the profile panel, comparison, the facts strip and the table twin (Plan 4), then CI,
+the accessibility audit and deployment (Plan 5). The cartogram morph remains an increment
+beyond the first slice.
 Research behind every factual claim: [docs/research/](research/README.md).
 
 ## 1. What we are building
@@ -131,9 +135,18 @@ Designed in, not retrofitted. Target: WCAG 2.2 AA, plus a manual screen-reader p
 - Arrow keys move focus between geographically neighbouring municipalities, using the adjacency graph built in the kitchen, with curated edges so islands are never dead ends.
 - A live region announces name, value, status and rank as focus or year changes, anchored to the selected municipality.
 - Every view has a plain sortable table twin, reachable as a URL view, plus a one-sentence kitchen-generated summary of the current map state.
-- Colour classes stay distinguishable for colour blindness, every class is also carried in the table and the announcement, and adjacent classes keep at least 3:1 contrast.
+- Colour classes stay distinguishable for colour blindness, every class is also carried in the table and the announcement, and:
+  - class colours come from a ColorBrewer scheme, and sequential ramps have **monotonic lightness**, so their order survives greyscale, a monochrome print, and any degree of colour vision deficiency;
+  - the focus and selection indicator is two-tone, and **at least one of its two tones meets 3:1 against every class fill and every no-data fill** (WCAG 2.2 SC 1.4.11);
+  - the four statuses that carry no value — did not exist, not yet published, too few cases, redrawn boundary — are told apart by **pattern, not colour**, and never by a grey that could pass for a class;
+  - value, class and status are always available as text, so no reading of the map depends on colour at all.
+
 - Reduced motion applies to every transition, not only the morph: the play button steps instead of sliding, the morph becomes a cross-fade.
 - Profile and compare are non-modal panels with a declared focus target on open, close, back, and deep link.
+
+**Correction, Plan 3 Task 6 (2026-09-14):** this bullet previously required "adjacent classes keep at least 3:1 contrast". That is not achievable and the arithmetic is not close. WCAG contrast ratios telescope along a monotonic lightness sequence — the ratio between the first and last class is the product of the ratios between each adjacent pair — and the maximum possible ratio between any two colours is 21:1. Requiring 3:1 between each adjacent pair of `n` classes therefore requires `3^(n-1) <= 21`, capping a scale at **three classes**. Every indicator here has six breaks, so seven. Measured on the real palettes: adjacent pairs of a 7-class Blues ramp span 1.23–1.79:1, and the whole ramp end to end is only 8.27:1. The clause was replaced with the four requirements above, each of which is met and each of which is asserted in `src/map/colour.test.ts`.
+
+A second fact worth stating rather than discovering later: a diverging ramp's two **ends** are nearly identical in lightness — 1.16:1 for RdBu, 1.08:1 for BrBG, 2.13:1 for the PuOr this project uses. Strong in-migration and strong out-migration therefore look alike in greyscale and to someone with no colour vision at all. That is inherent to diverging palettes, not a bad choice of one, and it is why the legend, the announcement and the table twin are load-bearing rather than decorative for the two diverging indicators.
 
 ## 6. Testing
 
