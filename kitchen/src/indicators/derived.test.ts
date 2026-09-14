@@ -1,9 +1,16 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { OBSERVATION_STATUS, type IndicatorSeries } from '../../../shared/pantry'
+import { OBSERVATION_STATUS, type IndicatorSeries, type Municipality } from '../../../shared/pantry'
+import type { TableMeta } from '../scb/client'
 import type { FrozenData } from '../scb/freeze'
 import { buildPopulationSeries } from './population'
-import { buildPopulationChangeSeries } from './derived'
+import {
+  buildMeanAgeSeries,
+  buildPopulationChangeSeries,
+  MEAN_AGE_TABLE,
+  MEAN_AGE_YEARS,
+  meanAgeSelection,
+} from './derived'
 
 const name = (series: IndicatorSeries, i: number, j: number) =>
   OBSERVATION_STATUS[series.status[i]![j]!]
@@ -136,5 +143,164 @@ describe('buildPopulationChangeSeries: synthetic cases the real fixture above do
     const change = buildPopulationChangeSeries([municipalities[0]!], population)
     expect(change.values[0]![1]).toBeCloseTo(1, 10)
     expect(name(change, 0, 1)).toBe('perturbed')
+  })
+})
+
+describe('mean age (Task 11 of docs/plans/2026-09-14-02-the-ten-indicators.md)', () => {
+  const municipalities: Municipality[] = [
+    { code: '0330', name: { sv: 'Knivsta', en: 'Knivsta' }, county: '03' }, // created 2002
+    { code: '0180', name: { sv: 'Stockholm', en: 'Stockholm' }, county: '01' }, // always existed
+  ]
+
+  /** Minimal fake TableMeta mirroring TAB637's real shape: Region, Kon, ContentsCode, Tid. */
+  function fakeMeta(
+    overrides: Record<string, Array<{ code: string; label: string }>> = {},
+  ): TableMeta {
+    const defaults: Record<string, Array<{ code: string; label: string }>> = {
+      Region: [
+        { code: '00', label: 'Riket' },
+        { code: '0330', label: 'Knivsta' },
+        { code: '0180', label: 'Stockholm' },
+      ],
+      Kon: [
+        { code: '1', label: 'män' },
+        { code: '2', label: 'kvinnor' },
+        { code: '1+2', label: 'totalt' },
+      ],
+      ContentsCode: [{ code: 'BE0101G9', label: 'Medelålder' }],
+    }
+    const vars = { ...defaults, ...overrides }
+    return {
+      id: MEAN_AGE_TABLE,
+      label: MEAN_AGE_TABLE,
+      variables: Object.entries(vars).map(([code, values]) => ({ code, label: code, values })),
+    }
+  }
+
+  /** A minimal Region/Kon/ContentsCode/Tid JSON-stat2 chunk, mirroring the real TAB637 shape. */
+  function chunk(region: string[], tid: string[], value: Array<number | null>): FrozenData {
+    return {
+      kind: 'data',
+      table: MEAN_AGE_TABLE,
+      lang: 'sv',
+      url: '',
+      selection: { Region: region, Kon: ['1+2'], ContentsCode: ['BE0101G9'], Tid: tid },
+      fetchedAt: '2026-09-14T10:00:00.000Z',
+      response: {
+        id: ['Region', 'Kon', 'ContentsCode', 'Tid'],
+        size: [region.length, 1, 1, tid.length],
+        dimension: {
+          Region: { category: { index: region } },
+          Kon: { category: { index: ['1+2'] } },
+          ContentsCode: { category: { index: ['BE0101G9'] } },
+          Tid: { category: { index: tid } },
+        },
+        value,
+      },
+    }
+  }
+
+  describe('meanAgeSelection', () => {
+    it("selects the '1+2' Kon total instead of falling through to summing the sexes", () => {
+      const sel = meanAgeSelection(fakeMeta(), ['2024'])
+      expect(sel.Kon).toEqual(['1+2'])
+    })
+
+    it('resolves the mean-age ContentsCode by its Swedish label, not a hardcoded code', () => {
+      const meta = fakeMeta({
+        ContentsCode: [
+          { code: 'ZZZ999', label: 'Something else' },
+          { code: 'BE0101G9', label: 'Medelålder' },
+        ],
+      })
+      const sel = meanAgeSelection(meta, ['2024'])
+      expect(sel.ContentsCode).toEqual(['BE0101G9'])
+    })
+
+    it('selects only 4-digit municipality codes from Region, dropping the national/county rows', () => {
+      const sel = meanAgeSelection(fakeMeta(), ['2024'])
+      expect(sel.Region).toEqual(['0330', '0180'])
+    })
+  })
+
+  describe('buildMeanAgeSeries', () => {
+    it('marks a year before a municipality existed as did-not-exist, discarding the literal 0 TAB637 sends for it (verified live against the real API 2026-09-14: Region 0330 Tid 1998-2001 = 0, not null)', () => {
+      const c = chunk(['0330', '0180'], ['2000', '2002'], [0, 36.1, 40.3, 40.6])
+      const series = buildMeanAgeSeries(municipalities, [c], [2000, 2002])
+      const cellName = (i: number, j: number) => OBSERVATION_STATUS[series.status[i]![j]!]
+      expect(cellName(0, 0)).toBe('did-not-exist')
+      expect(series.values[0]![0]).toBeNull()
+      expect(cellName(0, 1)).toBe('present')
+      expect(series.values[0]![1]).toBe(36.1)
+    })
+
+    it('marks a year outside the fetched range as not-yet-published, not absent', () => {
+      const c = chunk(['0180'], ['2000'], [40.3])
+      const series = buildMeanAgeSeries([municipalities[1]!], [c], [1998, 2000])
+      const cellName = (j: number) => OBSERVATION_STATUS[series.status[0]![j]!]
+      expect(cellName(0)).toBe('not-yet-published')
+      expect(series.values[0]![0]).toBeNull()
+      expect(cellName(1)).toBe('present')
+    })
+
+    it('a municipality that already existed gets its real mean age with status present, never perturbed — TAB637 carries no Cell Key Method note', () => {
+      const c = chunk(['0180'], ['2024', '2025'], [41.2, 41.3])
+      const series = buildMeanAgeSeries([municipalities[1]!], [c], [2024, 2025])
+      const cellName = (j: number) => OBSERVATION_STATUS[series.status[0]![j]!]
+      expect(cellName(0)).toBe('present')
+      expect(cellName(1)).toBe('present')
+      expect(series.values[0]![1]).toBe(41.3)
+    })
+  })
+
+  describe("MEAN_AGE_YEARS: mean age's own year range, distinct from population's and hardcoded rather than imported", () => {
+    it('runs 1998 through 2025', () => {
+      expect(MEAN_AGE_YEARS[0]).toBe(1998)
+      expect(MEAN_AGE_YEARS[MEAN_AGE_YEARS.length - 1]).toBe(2025)
+    })
+  })
+
+  describe('buildMeanAgeSeries with real frozen SCB data (TAB637, all 290 municipalities, 1998-2025)', () => {
+    // kitchen/raw/TAB637/sv/58c16831ff51365b.json: the real production fetch (this task's
+    // Steps 2-6) — all 290 municipalities, Kon=['1+2'], ContentsCode=['BE0101G9'], Tid=1998..2025.
+    // Verified live against the real API on 2026-09-14 (curl, before writing this test): Region
+    // 0330 (Knivsta) sends literal 0 for 1998-2001 and its first real value, 36.1, in 2002 —
+    // exactly matching CREATED['0330'] = 2002 and the snapshot convention this indicator uses.
+    const realChunk = JSON.parse(
+      readFileSync('kitchen/raw/TAB637/sv/58c16831ff51365b.json', 'utf8'),
+    ) as FrozenData
+    const knivsta: Municipality = {
+      code: '0330',
+      name: { sv: 'Knivsta', en: 'Knivsta' },
+      county: '03',
+    }
+    const borgholm: Municipality = {
+      code: '0885',
+      name: { sv: 'Borgholm', en: 'Borgholm' },
+      county: '08',
+    }
+
+    it('reproduces the real 2025 extremes: Borgholm the oldest municipality, Knivsta the youngest (spot-checked against all 290 municipalities on 2026-09-14)', () => {
+      const series = buildMeanAgeSeries([knivsta, borgholm], [realChunk], [2025])
+      expect(series.values[0]).toEqual([37.8])
+      expect(series.values[1]).toEqual([53.3])
+    })
+
+    it("discards SCB's own literal 0 for Knivsta's pre-existence years (1998-2001) as did-not-exist, and reads its real first value (36.1) in 2002 as present — the split-year case this indicator's status rule exists to get right", () => {
+      const series = buildMeanAgeSeries([knivsta], [realChunk], [1998, 1999, 2000, 2001, 2002])
+      const cellName = (j: number) => OBSERVATION_STATUS[series.status[0]![j]!]
+      for (let j = 0; j <= 3; j++) {
+        expect(cellName(j)).toBe('did-not-exist')
+        expect(series.values[0]![j]).toBeNull()
+      }
+      expect(cellName(4)).toBe('present')
+      expect(series.values[0]![4]).toBe(36.1)
+    })
+
+    it('never marks a real cell perturbed — TAB637 carries no Cell Key Method note, unlike population/density', () => {
+      const series = buildMeanAgeSeries([borgholm], [realChunk], [2024, 2025])
+      expect(OBSERVATION_STATUS[series.status[0]![0]!]).toBe('present')
+      expect(OBSERVATION_STATUS[series.status[0]![1]!]).toBe('present')
+    })
   })
 })

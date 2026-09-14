@@ -5,7 +5,24 @@ import {
   statusCode,
 } from '../../../shared/pantry'
 import { isStructuralBreak } from '../breaks'
-import { buildRows, type BuildContext, type IndicatorDefinition } from './registry'
+import { existed } from '../municipalities'
+import { parseMetadata, type Selection, type TableMeta } from '../scb/client'
+import {
+  freezeData,
+  freezeMetadata,
+  type FreezeOpts,
+  type FrozenData,
+  type FrozenMeta,
+} from '../scb/freeze'
+import { toRows } from '../scb/jsonstat'
+import {
+  buildRows,
+  resolveContentCode,
+  totalOrDeclaredSum,
+  values,
+  type BuildContext,
+  type IndicatorDefinition,
+} from './registry'
 // Same deferred-read reasoning every other indicator module documents for its own population.ts
 // import (migration.ts's POPULATION import is the closest parallel: a plain, already-finished
 // `const` read only inside a function body, never at this module's own top level) applies here:
@@ -191,4 +208,171 @@ export async function buildPopulationChange(ctx: BuildContext): Promise<Indicato
 export const populationChangeDefinition: IndicatorDefinition = {
   indicator: POPULATION_CHANGE,
   build: buildPopulationChange,
+}
+
+/**
+ * Mean age (Task 11 of docs/plans/2026-09-14-02-the-ten-indicators.md — the mean-age half only;
+ * share aged 65 and over is deliberately held pending an architect decision on data cost and
+ * NOT built here — see the task brief and `docs/kitchen.md`'s Task 2 spike section).
+ *
+ * The plan originally specified MEDIAN age, interpolated from single-year ages. The Task 2
+ * spike (docs/kitchen.md, "Can median age and share-65+ be built at all?") established SCB does
+ * not publish a municipal median at any resolution — TAB4659 carries a median content code but
+ * its Region dimension has only 22 values (riket + 21 län), zero four-digit municipality codes
+ * — and deriving one from single-year ages would have meant freezing ~130 MB of age-distribution
+ * data for TAB638 alone, for a figure that would still only be an interpolated approximation.
+ * SCB DOES publish mean age per municipality directly: TAB637, "Befolkningens medelålder efter
+ * region och kön. År 1998-2025". Verified live 2026-09-14 against the real API (not recalled
+ * from the spike, which only searched the table index and metadata, not real data): `Region` has
+ * 312 values of which exactly 290 are four-digit codes, and — checked by set difference against
+ * TAB638's own 290 four-digit codes (the municipality-identity authority per
+ * docs/decisions/0001-plan-1-build-decisions.md) — this is EXACTLY the known 290, no phantom
+ * aggregate codes to guard against (unlike TAB1212's Stor-Stockholm/Stor-Göteborg/Stor-Malmö
+ * trap). One content code, `BE0101G9` = "Medelålder"; `Kon` carries the total `'1+2'`. This is
+ * therefore a cheap, direct fetch — no age distribution, no interpolation, no derivation beyond
+ * selecting one cell per municipality and year — unlike population-change above, which has
+ * nothing to fetch at all. It ships under the id/name "mean age" (`medelålder`), not "median
+ * age": the whole point of the correction is that this project is not claiming a median SCB
+ * never published.
+ */
+export const MEAN_AGE_TABLE = 'TAB637'
+
+/**
+ * Mean age's own year range: 1998-2025. Hardcoded here rather than imported from population.ts's
+ * YEARS/LATEST_YEAR — exactly as tax.ts, density.ts and population-change's own module comment
+ * above explain: importing a value out of population.ts at this object literal's own top level
+ * would be a real load-order hazard (this file is reached from inside registry.ts's import
+ * list, itself reached from inside population.ts's own still-unfinished evaluation), not merely
+ * a style choice. 1998 is TAB637's own real first year, verified against its live metadata
+ * (`Tid`: 28 values, 1998..2025) — not population's 1968, which TAB637 simply does not cover.
+ */
+export const MEAN_AGE_YEARS = Array.from({ length: 2025 - 1998 + 1 }, (_, i) => 1998 + i)
+
+/**
+ * Swedish label SCB uses for TAB637's single content code. Resolved by label rather than
+ * hardcoded `BE0101G9`, per docs/decisions/0001-plan-1-build-decisions.md's trap 2 — the same
+ * convention every indicator in this project uses, even though this table happens to carry only
+ * the one ContentsCode.
+ */
+const MEAN_AGE_CONTENT_LABEL = 'Medelålder'
+
+export const MEAN_AGE: Indicator = Indicator.parse({
+  id: 'mean-age',
+  name: { sv: 'Medelålder', en: 'Mean age' },
+  description: {
+    sv: 'Genomsnittlig ålder bland kommunens invånare.',
+    en: "Average age among the municipality's residents.",
+  },
+  unit: 'years',
+  priceBasis: 'none',
+  scale: { kind: 'sequential', breaks: [] },
+  coverage: { from: MEAN_AGE_YEARS[0]!, to: MEAN_AGE_YEARS[MEAN_AGE_YEARS.length - 1]! },
+  caveat: {
+    sv: 'SCB publicerar ingen medianålder per kommun — endast per län och riket. Detta är därför medelåldern, hämtad direkt från SCB, inte en härledd eller interpolerad medianålder. Täcker 1998 och framåt; SCB:s motsvarande tabell för tidigare år saknas.',
+    en: 'SCB does not publish a median age per municipality — only per county and nationally. This is therefore the mean age, fetched directly from SCB, not a derived or interpolated median. Coverage starts in 1998; SCB has no equivalent table for earlier years.',
+  },
+  sensitivity: 'none',
+  sources: [{ table: MEAN_AGE_TABLE, contentCode: 'BE0101G9', note: '1998–2025' }],
+  derivation:
+    'One SCB total cell per municipality and year: the mean-age content code at the "1+2" sex ' +
+    'total, resolved by label — selected directly, never derived from an age distribution, ' +
+    'since SCB already publishes the mean per municipality.',
+})
+
+/**
+ * TAB637's selection: the 4-digit municipality codes, the Kon total ('1+2', same total-code
+ * mechanism density.ts uses — selected, never summed), the mean-age content code resolved by
+ * label, and the requested years.
+ */
+export function meanAgeSelection(meta: TableMeta, years: string[]): Selection {
+  return {
+    Region: values(meta, 'Region').filter((c) => /^\d{4}$/.test(c)),
+    Kon: totalOrDeclaredSum(meta, 'Kon'),
+    ContentsCode: [resolveContentCode(meta, MEAN_AGE_CONTENT_LABEL)],
+    Tid: years,
+  }
+}
+
+/** Maps each fetched region+year cell to its value. TAB637 has exactly one row per key. */
+function meanAgeByRegionYear(chunks: FrozenData[]): Map<string, number | null> {
+  const map = new Map<string, number | null>()
+  for (const chunk of chunks) {
+    for (const r of toRows(chunk.response)) {
+      map.set(`${r.dims.Region}|${r.dims.Tid}`, r.value)
+    }
+  }
+  return map
+}
+
+/**
+ * Builds the columnar mean-age series. Same snapshot status rule as population, tax rate and
+ * density (ruling R16): existed() gates before the value is even looked at, so the literal `0`
+ * TAB637 sends for a municipality's pre-existence years (verified live against the real API
+ * 2026-09-14: Region 0330/Knivsta, Tid 1998-2001 all return `0`, exactly like TAB638 and
+ * TAB3981 — never `null`, unlike TAB3554/TAB1169) is discarded rather than published as a real
+ * mean age of zero. `existed(code, y)`, not `existed(code, y - 1)`: mean age is a snapshot, like
+ * population/tax/density, not a flow like migration/house sales — confirmed against real TAB637
+ * data for both splits that fall inside this indicator's 1998-2025 coverage: Knivsta's first
+ * real (non-zero) cell is 2002, matching `CREATED['0330'] = 2002`; Nykvarn's first real cell is
+ * 1998 itself (`CREATED['0140'] = 1998`), TAB637's own first covered year, so there is no
+ * "before" row inside this table's range to check for Nykvarn specifically, but Nykvarn's 1998
+ * cell already reads as a real value rather than 0, consistent with the same snapshot gate.
+ * TAB637 carries no Cell Key Method perturbation note (checked against its live metadata's own
+ * `note` field, which only states the 1-January-following-year regional-division convention
+ * every snapshot table in this project already documents) — unlike density.ts, which inherits
+ * CKM from being derived off population, mean age is published directly by SCB and never
+ * carries a `perturbed` status.
+ */
+export function buildMeanAgeSeries(
+  municipalities: Municipality[],
+  chunks: FrozenData[],
+  years: number[],
+): IndicatorSeries {
+  const ages = meanAgeByRegionYear(chunks)
+  const cells = buildRows(municipalities, years, (m, y) => {
+    if (!existed(m.code, y)) {
+      return { v: null as number | null, s: statusCode('did-not-exist') }
+    }
+    const v = ages.get(`${m.code}|${y}`) ?? null
+    if (v === null) return { v: null, s: statusCode('not-yet-published') }
+    return { v, s: statusCode('present') }
+  })
+  return {
+    indicator: MEAN_AGE.id,
+    years,
+    values: cells.map((r) => r.map((c) => c.v)),
+    status: cells.map((r) => r.map((c) => c.s)),
+  }
+}
+
+export async function buildMeanAge(ctx: BuildContext): Promise<IndicatorSeries> {
+  const meta = await freezeMetadata(MEAN_AGE_TABLE, 'sv', ctx.freeze)
+  const parsed = parseMetadata(MEAN_AGE_TABLE, meta.response)
+  const years = MEAN_AGE_YEARS.map(String)
+  const chunks = await freezeData(MEAN_AGE_TABLE, meanAgeSelection(parsed, years), 'sv', ctx.freeze)
+  const series = buildMeanAgeSeries(ctx.municipalities, chunks, MEAN_AGE_YEARS)
+  ctx.frozen.push(...chunks, meta)
+  return series
+}
+
+export const meanAgeDefinition: IndicatorDefinition = { indicator: MEAN_AGE, build: buildMeanAge }
+
+/**
+ * Standalone real-fetch entry point, mirroring population.ts's fetchPopulation and tax.ts's
+ * fetchTax — used for the spike/verification run, independent of the shared REGISTRY singleton.
+ * Requires municipalities to already exist (population's own responsibility).
+ */
+export async function fetchMeanAge(
+  municipalities: Municipality[],
+  opts: FreezeOpts = {},
+): Promise<{ series: IndicatorSeries; frozen: Array<FrozenData | FrozenMeta> }> {
+  const ctx: BuildContext = {
+    municipalities,
+    years: MEAN_AGE_YEARS,
+    freeze: opts,
+    frozen: [],
+    series: new Map(),
+  }
+  const series = await buildMeanAge(ctx)
+  return { series, frozen: ctx.frozen }
 }
