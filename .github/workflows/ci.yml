@@ -73,11 +73,15 @@ jobs:
       - name: Resolve the Playwright version
         id: pw
         run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      # The key names the browser SET, not just the Playwright version. This job installs three
+      # engines and the budget job installs one; a shared key meant whichever ran first decided
+      # what the other found, and a cache holding only Chromium made this job skip its install and
+      # then fail to launch Firefox.
       - uses: actions/cache@v4
         id: pw-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-chromium-firefox-webkit
       - name: Install browsers
         run: yarn playwright install --with-deps chromium firefox webkit
         if: steps.pw-cache.outputs.cache-hit != 'true'
@@ -111,11 +115,12 @@ jobs:
       - name: Resolve the Playwright version
         id: pw
         run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      # Chromium only, and the key says so — see the note in the browsers job.
       - uses: actions/cache@v4
         id: pw-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-chromium
       - run: yarn playwright install --with-deps chromium
         if: steps.pw-cache.outputs.cache-hit != 'true'
 
