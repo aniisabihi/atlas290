@@ -6,7 +6,9 @@ import { metaFrom } from '../state/url'
 import { useAppState } from '../state/useAppState'
 import { useReducedMotion } from '../state/useReducedMotion'
 import { useState } from 'react'
+import { AboutIndicator } from './AboutIndicator'
 import { EmptyYear } from './EmptyYear'
+import { IndicatorPicker } from './IndicatorPicker'
 import { Legend } from './Legend'
 import { YearSlider } from './YearSlider'
 import { MapView } from './MapView'
@@ -47,6 +49,18 @@ export function App({
       <h1>{strings.siteName}</h1>
       <p>{strings.tagline}</p>
       <p id="map-hint">{strings.mapHint}</p>
+      <IndicatorPicker
+        lk={lk}
+        selected={state.indicator}
+        lang={state.lang}
+        onChange={(indicator) => {
+          interrupt()
+          // The year is deliberately kept. If the new indicator does not cover it, EmptyYear
+          // explains and offers a jump; silently moving the year would hide the fact that the
+          // ten indicators do not cover the same span.
+          update({ indicator })
+        }}
+      />
       <SearchBox
         municipalities={data.municipalities}
         lang={state.lang}
@@ -92,6 +106,7 @@ export function App({
         }}
       />
       <Legend lk={lk} indicatorId={state.indicator} year={state.year} lang={state.lang} />
+      <AboutIndicator lk={lk} indicatorId={state.indicator} lang={state.lang} />
     </main>
   )
 }
