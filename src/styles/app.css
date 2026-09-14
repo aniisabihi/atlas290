@@ -379,3 +379,68 @@ button {
   stroke-width: 1;
   stroke-dasharray: 2 2;
 }
+
+.profile {
+  margin-top: var(--space);
+}
+
+.profile-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space);
+}
+
+.profile-header h2 {
+  margin: 0;
+}
+
+.profile-rows {
+  list-style: none;
+  margin: var(--space) 0 0;
+  padding: 0;
+}
+
+.profile-row {
+  display: grid;
+  grid-template-columns: 1fr auto 120px;
+  grid-template-areas:
+    'name value chart'
+    'name extra chart';
+  align-items: center;
+  gap: 0 0.75rem;
+  padding: 0.4rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.profile-name {
+  grid-area: name;
+  font-weight: 600;
+}
+
+.profile-value {
+  grid-area: value;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-nominal,
+.profile-rank {
+  grid-area: extra;
+  text-align: right;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.profile-row .sparkline {
+  grid-area: chart;
+}
+
+@media (max-width: 40rem) {
+  .profile-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'name value'
+      'chart extra';
+  }
+}

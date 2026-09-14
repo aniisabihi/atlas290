@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { MunicipalityTopology } from '../../shared/geometry'
 import type { Adjacency, PantryData } from '../../shared/pantry'
 import { lookup, observationSentence } from '../data/select'
@@ -13,7 +13,8 @@ import { IndicatorPicker } from './IndicatorPicker'
 import { LanguageSwitch } from './LanguageSwitch'
 import { Legend } from './Legend'
 import { LiveRegion } from './LiveRegion'
-import { MapView } from './MapView'
+import { MapView, type MapHandle } from './MapView'
+import { ProfilePanel } from './ProfilePanel'
 import { NoDataPatterns } from './NoDataPatterns'
 import { SearchBox } from './SearchBox'
 import { YearSlider } from './YearSlider'
@@ -56,6 +57,7 @@ export function App({
    * inferred from the state, because nothing about the state changed.
    */
   const [notice, setNotice] = useState('')
+  const mapRef = useRef<MapHandle>(null)
   const announcement =
     notice ||
     (state.selected
@@ -149,6 +151,7 @@ export function App({
           )}
           <div className="map-frame" id="map">
             <MapView
+              ref={mapRef}
               lk={lk}
               topology={topology}
               adjacency={adjacency}
@@ -168,6 +171,23 @@ export function App({
           </div>
         </div>
       </div>
+
+      {state.selected && (
+        <ProfilePanel
+          lk={lk}
+          code={state.selected}
+          year={state.year}
+          lang={state.lang}
+          onClose={() => {
+            const closing = state.selected
+            setNotice('')
+            update({ selected: null, compare: null })
+            // Focus goes back to the shape that opened the panel, rather than being dropped at
+            // the top of the document.
+            if (closing) mapRef.current?.focusMunicipality(closing)
+          }}
+        />
+      )}
 
       <LiveRegion message={announcement} silent={playing} />
     </div>

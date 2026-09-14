@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import type { MunicipalityTopology } from '../../shared/geometry'
 import type { Adjacency } from '../../shared/pantry'
 import { observationAt, type Lookup } from '../data/select'
@@ -28,6 +28,13 @@ const ARROWS: Record<string, Direction> = {
  * which Task 8 wires to the adjacency graph.
  */
 
+/**
+ * Lets the page put focus back on a municipality without reaching into the map's DOM. Used when
+ * the profile panel closes: focus has to return to the shape that opened it, or a keyboard
+ * visitor is dropped at the top of the document.
+ */
+export type MapHandle = { focusMunicipality: (code: string) => void }
+
 export function MapView({
   lk,
   topology,
@@ -40,6 +47,7 @@ export function MapView({
   onNoMove,
   onMoved,
   animate = true,
+  ref,
 }: {
   lk: Lookup
   topology: MunicipalityTopology
@@ -59,6 +67,7 @@ export function MapView({
   onMoved?: (code: string) => void
   /** False when the visitor has asked for less movement: colours change instantly. */
   animate?: boolean
+  ref?: React.Ref<MapHandle>
 }) {
   const indicator = lk.indicator(indicatorId)
   const shapes = shapesFor(topology)
@@ -87,6 +96,8 @@ export function MapView({
     setFocused(to)
     paths.current.get(to)?.focus()
   }, [])
+
+  useImperativeHandle(ref, () => ({ focusMunicipality: move }), [move])
 
   const onKeyDown = useCallback(
     (event: React.KeyboardEvent<SVGSVGElement>) => {

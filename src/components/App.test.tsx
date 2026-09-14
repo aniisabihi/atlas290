@@ -87,6 +87,27 @@ describe('App', () => {
     expect(window.location.pathname + window.location.search).toBe('/en/?i=mean-age&y=2024')
   })
 
+  it('opens a profile for the selected municipality and puts focus on its heading', () => {
+    open('/en/?y=2024&m=0180')
+    const heading = screen.getByRole('heading', { level: 2, name: 'Stockholm' })
+    expect(heading).toBe(document.activeElement)
+    expect(screen.getByText('995,574 residents')).toBeTruthy()
+  })
+
+  it('returns focus to the map shape when the profile is closed', async () => {
+    // Otherwise a keyboard visitor is dropped at the top of the document every time they close
+    // a panel, which is the classic way a non-modal panel goes wrong.
+    open('/en/?y=2024&m=0180')
+    await userEvent.click(screen.getByRole('button', { name: /close the municipality panel/i }))
+    expect(window.location.search).toBe('?y=2024')
+    expect(document.activeElement?.getAttribute('aria-label')).toMatch(/^Stockholm/)
+  })
+
+  it('shows no profile when nothing is selected', () => {
+    open('/en/?y=2024')
+    expect(screen.queryByRole('button', { name: /close the municipality panel/i })).toBeNull()
+  })
+
   it('names the view in the page title', () => {
     open('/en/?i=mean-age&y=2010&m=1280')
     expect(document.title).toBe("Malmö · Mean age 2010 · Sweden's municipalities in data")
