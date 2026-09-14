@@ -150,8 +150,6 @@ export function App({
           <div className="panel">
             <AboutIndicator lk={lk} indicatorId={state.indicator} lang={state.lang} />
           </div>
-
-          <FactsStrip lang={state.lang} />
         </div>
 
         <div className="map-column">
@@ -264,6 +262,13 @@ export function App({
           )}
         </div>
       </div>
+
+      {/*
+       * Below the views rather than among the controls. They are somewhere to go next, not a
+       * control, and putting them in the left column meant a keyboard visitor passed five
+       * links before reaching the map.
+       */}
+      <FactsStrip lang={state.lang} />
 
       {state.selected && (
         <ComparePanel
