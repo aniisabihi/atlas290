@@ -29,7 +29,14 @@ export function AboutIndicator({
 
   return (
     <details className="about-indicator">
-      <summary>{strings.aboutHeading}</summary>
+      {/*
+       * A heading inside summary, which HTML allows: without it the h3s below sit under the
+       * legend's h2 rather than under a heading of their own, and a screen reader walking the
+       * page by heading level finds "Published for" nested under "Legend".
+       */}
+      <summary>
+        <h2>{strings.aboutHeading}</h2>
+      </summary>
       <p>{indicator.description[lang]}</p>
 
       <h3>{strings.coverageHeading}</h3>

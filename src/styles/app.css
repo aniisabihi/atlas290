@@ -317,7 +317,12 @@ h3 {
 
 .about-indicator summary {
   cursor: pointer;
-  font-weight: 600;
+}
+
+/* The heading is inside the summary for the outline's sake; it should not look like a block. */
+.about-indicator summary h2 {
+  display: inline;
+  font-size: 1rem;
 }
 
 .about-indicator p,

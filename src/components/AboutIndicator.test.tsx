@@ -63,4 +63,13 @@ describe('AboutIndicator', () => {
     draw('house-prices', 'sv')
     expect(screen.getByText(/Avser permanentbostäder/)).toBeTruthy()
   })
+  it('carries a heading of its own, so its subheadings are not orphans', () => {
+    // Without this the h3s below would sit under the legend's h2, and a screen reader walking
+    // the page by heading level would find "Published for" nested under "Legend".
+    draw('population')
+    expect(screen.getByRole('heading', { level: 2, name: 'About this measure' })).toBeTruthy()
+    for (const name of ['Published for', 'Worth knowing']) {
+      expect(screen.getByRole('heading', { level: 3, name })).toBeTruthy()
+    }
+  })
 })

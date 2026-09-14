@@ -114,7 +114,7 @@ export function App({
             />
           </div>
 
-          <div className="panel legend">
+          <div className="panel">
             <Legend lk={lk} indicatorId={state.indicator} year={state.year} lang={state.lang} />
           </div>
 
@@ -151,6 +151,7 @@ export function App({
               lang={state.lang}
               animate={!reducedMotion}
               onNoMove={() => setNotice(strings.noNeighbour)}
+              onMoved={() => setNotice('')}
               onSelect={(code) => {
                 interrupt()
                 setNotice('')

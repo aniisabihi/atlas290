@@ -38,6 +38,7 @@ export function MapView({
   lang,
   onSelect,
   onNoMove,
+  onMoved,
   animate = true,
 }: {
   lk: Lookup
@@ -50,6 +51,12 @@ export function MapView({
   onSelect: (code: string) => void
   /** Called when a key points somewhere there is nothing, so the live region can say so. */
   onNoMove?: (direction: Direction) => void
+  /**
+   * Called when a key does move. The caller needs this to clear a stale "nothing that way"
+   * message: without it, one failed press leaves the live region saying there is no neighbour
+   * long after the visitor has walked somewhere else.
+   */
+  onMoved?: (code: string) => void
   /** False when the visitor has asked for less movement: colours change instantly. */
   animate?: boolean
 }) {
@@ -89,8 +96,12 @@ export function MapView({
       if (direction) {
         event.preventDefault() // or the page scrolls out from under the map
         const to = step(from, direction, nav)
-        if (to) move(to)
-        else onNoMove?.(direction)
+        if (to) {
+          move(to)
+          onMoved?.(to)
+        } else {
+          onNoMove?.(direction)
+        }
         return
       }
       if (event.key === 'Enter' || event.key === ' ') {
@@ -111,7 +122,7 @@ export function MapView({
         if (target) move(target.code)
       }
     },
-    [focused, selected, shapes, nav, move, onSelect, onNoMove, lk, lang],
+    [focused, selected, shapes, nav, move, onSelect, onNoMove, onMoved, lk, lang],
   )
 
   const selectedShape = selected ? shapes.find((s) => s.code === selected) : undefined

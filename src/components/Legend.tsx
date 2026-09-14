@@ -1,4 +1,4 @@
-import { classOf, statusesIn, type Lookup } from '../data/select'
+import { statusesIn, type Lookup } from '../data/select'
 import {
   formatValue,
   priceBasisYear,
@@ -98,6 +98,3 @@ export function Legend({
     </section>
   )
 }
-
-/** Exported for the map, which owns the one copy of the pattern definitions. */
-export { classOf }
