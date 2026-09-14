@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { MunicipalityTopology } from '../../shared/geometry'
 import type { Adjacency, PantryData } from '../../shared/pantry'
 import { lookup, observationSentence } from '../data/select'
 import { t } from '../i18n/strings'
+import { titleFor } from '../state/title'
 import { metaFrom } from '../state/url'
 import { useAppState } from '../state/useAppState'
 import { useReducedMotion } from '../state/useReducedMotion'
@@ -39,6 +40,12 @@ export function App({
   const reducedMotion = useReducedMotion()
   const indicator = lk.indicator(state.indicator)
   const covered = state.year >= indicator.coverage.from && state.year <= indicator.coverage.to
+
+  // The tab, and what a screen reader announces on arrival. Set from the state rather than
+  // written once in the HTML, so a shared link says where it goes.
+  useEffect(() => {
+    document.title = titleFor(lk, state)
+  }, [lk, state])
 
   /** Any deliberate interaction stops the playback rather than fighting it. */
   const interrupt = () => setPlaying(false)

@@ -87,6 +87,18 @@ describe('App', () => {
     expect(window.location.pathname + window.location.search).toBe('/en/?i=mean-age&y=2024')
   })
 
+  it('names the view in the page title', () => {
+    open('/en/?i=mean-age&y=2010&m=1280')
+    expect(document.title).toBe("Malmö · Mean age 2010 · Sweden's municipalities in data")
+  })
+
+  it('updates the title when the view changes', async () => {
+    open('/en/?y=2024')
+    expect(document.title).toBe("Population 2024 · Sweden's municipalities in data")
+    await userEvent.click(screen.getByRole('radio', { name: 'Mean age' }))
+    expect(document.title).toBe("Mean age 2024 · Sweden's municipalities in data")
+  })
+
   it('offers the other language as a link carrying the current view', () => {
     open('/en/?i=mean-age&y=2010&m=1280')
     expect(screen.getByRole('link', { name: /switch language/i }).getAttribute('href')).toBe(

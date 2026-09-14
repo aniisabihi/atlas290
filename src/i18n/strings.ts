@@ -57,6 +57,13 @@ const sv = {
 
   rank: (rank: number, outOf: number) => `plats ${rank} av ${outOf}`,
   selectionCleared: 'Ingen kommun vald.',
+  and: 'och',
+  cartogramView: 'bubbeldiagram',
+  tableView: 'tabell',
+  showMap: 'Karta',
+  showCartogram: 'Bubblor',
+  showTable: 'Visa tabell',
+  hideTable: 'Visa karta',
   announcement: (name: string, indicator: string, year: number, reading: string) =>
     `${name}, ${indicator} ${year}: ${reading}.`,
 } satisfies Record<string, string | ((...args: never[]) => string)>
@@ -114,6 +121,13 @@ const en: Strings = {
 
   rank: (rank: number, outOf: number) => `rank ${rank} of ${outOf}`,
   selectionCleared: 'No municipality selected.',
+  and: 'and',
+  cartogramView: 'bubble chart',
+  tableView: 'table',
+  showMap: 'Map',
+  showCartogram: 'Bubbles',
+  showTable: 'Show table',
+  hideTable: 'Show map',
   announcement: (name: string, indicator: string, year: number, reading: string) =>
     `${name}, ${indicator} ${year}: ${reading}.`,
 }
