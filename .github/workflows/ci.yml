@@ -123,6 +123,10 @@ jobs:
           key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-chromium
       - run: yarn playwright install --with-deps chromium
         if: steps.pw-cache.outputs.cache-hit != 'true'
+      # A cache hit restores the binary but not the system libraries it links against, and a
+      # runner image is rebuilt regularly. Same reasoning as the browsers job above.
+      - run: yarn playwright install-deps chromium
+        if: steps.pw-cache.outputs.cache-hit == 'true'
 
       - run: yarn build
       - name: Serve the built site and measure it
