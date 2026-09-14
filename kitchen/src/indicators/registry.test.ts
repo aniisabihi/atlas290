@@ -100,6 +100,43 @@ const densityMetaSv = {
   },
 }
 
+const migrationOldMetaSv = {
+  id: ['Region', 'Alder', 'Kon', 'ContentsCode', 'Tid'],
+  dimension: {
+    Region: { category: { index: ['0180'] } },
+    Alder: { category: { index: ['tot'] } },
+    Kon: { category: { index: ['1', '2'] } },
+    ContentsCode: {
+      category: { index: ['BE0101C5'], label: { BE0101C5: 'Flyttningsöverskott' } },
+    },
+    Tid: { category: { index: ['1990'] } },
+  },
+}
+const migrationMidMetaSv = {
+  id: ['Region', 'Alder', 'Kon', 'ContentsCode', 'Tid'],
+  dimension: {
+    Region: { category: { index: ['0180'] } },
+    Alder: { category: { index: ['tot'] } },
+    Kon: { category: { index: ['1', '2'] } },
+    ContentsCode: {
+      category: { index: ['BE0101AZ'], label: { BE0101AZ: 'Flyttningsöverskott' } },
+    },
+    Tid: { category: { index: ['2010'] } },
+  },
+}
+const migrationNewMetaSv = {
+  id: ['Region', 'Alder', 'Kon', 'ContentsCode', 'Tid'],
+  dimension: {
+    Region: { category: { index: ['0180'] } },
+    Alder: { category: { index: ['TOT1'] } },
+    Kon: { category: { index: ['TotSa'] } },
+    ContentsCode: {
+      category: { index: ['00000868'], label: { '00000868': 'Flyttningsöverskott' } },
+    },
+    Tid: { category: { index: ['2025'] } },
+  },
+}
+
 function fakeFetchImpl() {
   return vi.fn(async (url: string | URL, init?: RequestInit) => {
     const u = String(url)
@@ -126,6 +163,9 @@ function fakeFetchImpl() {
     if (u.includes('/TAB5557/metadata') && u.includes('lang=sv')) return json(newMetaSv)
     if (u.includes('/TAB2017/metadata') && u.includes('lang=sv')) return json(taxMetaSv)
     if (u.includes('/TAB628/metadata') && u.includes('lang=sv')) return json(densityMetaSv)
+    if (u.includes('/TAB1211/metadata') && u.includes('lang=sv')) return json(migrationOldMetaSv)
+    if (u.includes('/TAB1212/metadata') && u.includes('lang=sv')) return json(migrationMidMetaSv)
+    if (u.includes('/TAB6640/metadata') && u.includes('lang=sv')) return json(migrationNewMetaSv)
     throw new Error(`unexpected request: ${init?.method ?? 'GET'} ${u}`)
   })
 }

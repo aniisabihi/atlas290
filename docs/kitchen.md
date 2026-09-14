@@ -199,3 +199,46 @@ Checked both candidates' metadata directly:
 Frozen raw responses backing this section live at `kitchen/raw/TAB638/sv/` and
 `kitchen/raw/TAB5557/sv/` (the metadata already frozen by the earlier spike, plus six new data
 chunks). The script is `kitchen/spikes/age-distribution-cost.ts`.
+
+## Net migration: three tables, one real gap, and a fixed brief (Task 6, 2026-09-14)
+
+Checked live against SCB metadata before writing `kitchen/src/indicators/migration.ts`, because
+`docs/DESIGN.md` and the Plan 2 brief's own verified-facts table disagreed on coverage
+("1997 onwards" vs "1968–2025"). The brief's table was right; `docs/DESIGN.md` has been corrected.
+
+- **TAB1211** — "Migration by region, age and sex. Year 1968-1996", content code `BE0101C5` =
+  Flyttningsöverskott. **TAB1212** — "...1997-2024", `BE0101AZ`. **TAB6640** — "...2025",
+  `00000868`, and its own note confirms the same CKM disclosure-control language TAB5557 (2025
+  population) carries: "Från och med referensåret 2025... en liten kontrollerad slumpmässig
+  osäkerhet". All three agree on the Swedish label `Flyttningsöverskott`, per the plan's trap 2.
+- **Trap 1 (the plan's own) also applies to TAB6640, which the plan did not separately check**:
+  both TAB1212 and TAB6640 carry `0010` Stor-Stockholm, `0020` Stor-Göteborg, `0030` Stor-Malmö as
+  extra four-digit "region" codes alongside the 290 real municipalities. A blind `/^\d{4}$/` filter
+  would include all three; `migrationSelection` instead joins the table's own Region list against
+  the known municipality codes.
+- **A new gap, not in the plan's trap list: TAB1211 predates the 1998 county mergers** (Skåne;
+  Västra Götaland) and was never retroactively republished under current municipality codes the
+  way TAB638 (population) was. Diffed against the known 290: 49 current codes are simply absent
+  from TAB1211's own Region list, while 49 different (old) codes appear in their place — e.g.
+  Borås as `1583`, Östra Göinge (now `1256`) as `1121`, matching the renumbering
+  `kitchen/src/municipalities.ts` already documents for Bollebygd. These 49 municipalities have no
+  1968–1996 net-migration data under their current code; `migrationSelection`'s known-code join
+  means they simply read `not-yet-published` for that span rather than the build fetching a
+  nonexistent code or fabricating a value. Flagged in `MIGRATION`'s bilingual caveat.
+- **A second new gap: migration's "existed" boundary runs one calendar year LATER than
+  population's own `CREATED` map**, because net migration is a flow measured during calendar year
+  Y using the boundary that actually applied that year, while population's `CREATED` encodes
+  TAB638's convention that a year-Y population row already reflects 1 January year Y+1's division.
+  Verified live for five of the six splits (the sixth, Bollebygd, is moot — its pre-1998 data lives
+  under the old code excluded by the gap above): Gnesta and Trosa (`CREATED` 1991) read real
+  migration only from 1992; Lekeberg (1994) only from 1995; Nykvarn (1998) only from 1999; Knivsta
+  (2002) only from 2003 — every one exactly `CREATED[code] + 1`. `migration.ts`'s
+  `migrationExisted(code, y)` is `existed(code, y - 1)`, the same gate shifted one year later, so a
+  literal `0` SCB sends for the still-too-early year is discarded as `did-not-exist` rather than
+  published as a real zero.
+- **TAB1211's and TAB1212's `Kon` has no total code** (only `'1'`/`'2'`) — added to `SUM_SAFE` in
+  `registry.ts`, safe because pre-2025 sex-split migration counts are disjoint and unperturbed.
+  TAB6640 carries its own `'TotSa'` total instead and never falls through to the sum.
+
+Real spot-check (frozen 2026-09-14): see the migration.ts commit message for the actual growing-
+and shrinking-municipality figures.

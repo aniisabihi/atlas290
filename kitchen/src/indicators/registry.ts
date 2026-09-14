@@ -72,6 +72,13 @@ export const TOTAL_CODES: Record<string, string[]> = {
  */
 export const SUM_SAFE: Record<string, string[]> = {
   TAB638: ['Kon', 'Civilstand'],
+  // Task 6 (net migration): TAB1211 (1968-1996) and TAB1212 (1997-2024) have no total code for
+  // Kon — only '1' and '2' — so the sex total is summed rather than selected. Safe here for the
+  // same reason TAB638's Kon sum is safe: both years' sex-split net-migration counts are
+  // disjoint and unperturbed (CKM only begins 2025, and TAB6640, the 2025 table, carries its
+  // own 'TotSa' total instead, so it never needs this fallback).
+  TAB1211: ['Kon'],
+  TAB1212: ['Kon'],
 }
 
 /**
@@ -191,20 +198,28 @@ import { populationDefinition, YEARS } from './population'
 // either module's own top level.
 import { taxDefinition } from './tax'
 import { densityDefinition } from './density'
+// Same deferred-read reasoning as population/tax/density above: migration additionally reads
+// ANOTHER definition's finished series (population's, via ctx.series) inside its own build(),
+// which is a second reason it must run only from inside ensureRegistered/buildAll — never at
+// this module's own top level — and a second reason it must be registered strictly after
+// populationDefinition below.
+import { migrationDefinition } from './migration'
 
 /** Every indicator the pantry publishes, in build order. Population must stay first: it is
  * the only definition that derives `ctx.municipalities`, and every other definition depends
  * on that having already happened. Tax rate and density (Task 5) come next; order between them
- * does not matter, since neither derives municipalities or reads another's series. Starts
- * empty; `ensureRegistered` fills it in on first use (see the comment on the imports above for
- * why that can't happen at module-load time). */
+ * does not matter, since neither derives municipalities or reads another's series. Net
+ * migration (Task 6) must come after population specifically — not merely after it happens to
+ * run — because its build() reads `ctx.series.get(POPULATION.id)` and throws if that is not
+ * yet set. Starts empty; `ensureRegistered` fills it in on first use (see the comment on the
+ * imports above for why that can't happen at module-load time). */
 export const REGISTRY: IndicatorDefinition[] = []
 
 let registered = false
 function ensureRegistered(): void {
   if (registered) return
   registered = true
-  REGISTRY.push(populationDefinition, taxDefinition, densityDefinition)
+  REGISTRY.push(populationDefinition, taxDefinition, densityDefinition, migrationDefinition)
 }
 
 /**
