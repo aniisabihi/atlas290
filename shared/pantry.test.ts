@@ -23,8 +23,22 @@ describe('pantry schemas', () => {
       'did-not-exist',
       'perturbed',
       'too-few-cases',
+      'structural-break',
     ])
     expect(statusCode('perturbed')).toBe(3)
+  })
+
+  it('appends structural-break at the end, leaving every previously stored index unchanged', () => {
+    // The whole point of "append only": every status that existed before Plan 2's Task 12
+    // keeps the exact same byte it always had. If this ever fails, something inserted or
+    // reordered instead of appending, and every published series's stored status bytes for
+    // that index would now mean something different than when they were written.
+    expect(statusCode('present')).toBe(0)
+    expect(statusCode('not-yet-published')).toBe(1)
+    expect(statusCode('did-not-exist')).toBe(2)
+    expect(statusCode('perturbed')).toBe(3)
+    expect(statusCode('too-few-cases')).toBe(4)
+    expect(statusCode('structural-break')).toBe(5)
   })
 
   it('requires series rows to match municipality order and years length', () => {

@@ -17,13 +17,23 @@ export const Municipality = z.object({
 })
 export type Municipality = z.infer<typeof Municipality>
 
-/** Order matters: the index is the status byte stored per cell. Append only. */
+/**
+ * Order matters: the index is the status byte stored per cell, persisted in every published
+ * series. Append only — NEVER insert or reorder — inserting would silently relabel every
+ * status byte already on disk for every year and municipality published so far, in every
+ * series that was ever published under the old ordering.
+ */
 export const OBSERVATION_STATUS = [
   'present',
   'not-yet-published',
   'did-not-exist',
   'perturbed',
   'too-few-cases',
+  // Added by kitchen/src/breaks.ts (Plan 2, Task 12's parent-break half): a parent
+  // municipality's cell in a derived CHANGE indicator, in the year a child split off, where
+  // the underlying level genuinely moved only because of a boundary redraw — not because
+  // anyone moved. Appended at the end, per the rule above.
+  'structural-break',
 ] as const
 export type ObservationStatus = (typeof OBSERVATION_STATUS)[number]
 export function statusCode(status: ObservationStatus): number {
