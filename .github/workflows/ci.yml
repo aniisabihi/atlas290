@@ -55,3 +55,43 @@ jobs:
             exit 1
           fi
           echo "Pantry reproduced byte for byte."
+
+  browsers:
+    name: Keyboard and accessibility in three real browsers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - run: yarn install --immutable
+
+      # The browser binaries are hundreds of megabytes and change only with Playwright itself, so
+      # the cache key is its resolved version rather than the lockfile hash.
+      - name: Resolve the Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      - name: Install browsers
+        run: yarn playwright install --with-deps chromium firefox webkit
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+      - name: Install system dependencies for the cached browsers
+        run: yarn playwright install-deps chromium firefox webkit
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+
+      # playwright.config.ts builds the site and serves `dist`, so these run against exactly what
+      # a visitor would get rather than against the dev server.
+      - run: yarn e2e
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
