@@ -75,6 +75,12 @@ export const TOTAL_CODES: Record<string, string[]> = {
  * by a large multiple (as it would for TAB5557's Alder/Kon/Civilstand).
  */
 export const SUM_SAFE: Record<string, string[]> = {
+  // Declared for population.ts's own age-total fetch; reused as-is by derived.ts's share-65+
+  // numerator (Task 11's share-65+ half), which selects a DIFFERENT Alder range (single ages
+  // 65 and over, not the age total) from this same table but needs the identical Kon/Civilstand
+  // summation for the same reason: TAB638 has no total code for either dimension, and the sum
+  // is exact arithmetic — never an approximation — because TAB638 predates the Cell Key Method,
+  // so every constituent cell is real and unperturbed rather than CKM-fuzzed.
   TAB638: ['Kon', 'Civilstand'],
   // Task 6 (net migration): TAB1211 (1968-1996) and TAB1212 (1997-2024) have no total code for
   // Kon — only '1' and '2' — so the sex total is summed rather than selected. Safe here for the
@@ -235,14 +241,14 @@ import { housingDefinition } from './housing'
 // REGISTRY entry beyond needing ctx.municipalities, which population alone establishes.
 import { educationDefinition } from './education'
 // Same deferred-read reasoning as every import above: the binding is always safe to import, but
-// ensureRegistered is what actually reads populationChangeDefinition/meanAgeDefinition, and only
-// from inside buildAll. Like migration, population change reads ANOTHER definition's finished
-// series (population's, via ctx.series) inside its own build() — a second reason it must be
-// registered strictly after populationDefinition below, same as migrationDefinition. Mean age
-// (Task 11's mean-age half; share aged 65 and over is deliberately not built here — see
-// derived.ts's module comment) has no such ordering requirement: it only needs
-// ctx.municipalities, already established by population, exactly like income/housing/education.
-import { meanAgeDefinition, populationChangeDefinition } from './derived'
+// ensureRegistered is what actually reads populationChangeDefinition/meanAgeDefinition/
+// share65PlusDefinition, and only from inside buildAll. Like migration, population change AND
+// share-65+ each read ANOTHER definition's finished series (population's, via ctx.series)
+// inside their own build() — a second reason each must be registered strictly after
+// populationDefinition below, same as migrationDefinition. Mean age (Task 11's mean-age half)
+// has no such ordering requirement: it only needs ctx.municipalities, already established by
+// population, exactly like income/housing/education.
+import { meanAgeDefinition, populationChangeDefinition, share65PlusDefinition } from './derived'
 
 /** Every indicator the pantry publishes, in build order. Population must stay first: it is
  * the only definition that derives `ctx.municipalities`, and every other definition depends
@@ -257,9 +263,11 @@ import { meanAgeDefinition, populationChangeDefinition } from './derived'
  * reason: its build() also reads `ctx.series.get(POPULATION.id)` and throws if population has
  * not run yet. Mean age (Task 11's mean-age half) has no such ordering requirement — a direct
  * TAB637 fetch with nothing read from ctx.series — so, like income/housing/education, its
- * position among the other non-population entries is arbitrary. Starts empty; `ensureRegistered`
- * fills it in on first use (see the comment on the imports above for why that can't happen at
- * module-load time). */
+ * position among the other non-population entries is arbitrary. Share aged 65 and over (Task
+ * 11's other half) DOES have the same ordering requirement as migration/population-change: its
+ * denominator is population's own series, read from ctx.series, so it too must come after
+ * populationDefinition. Starts empty; `ensureRegistered` fills it in on first use (see the
+ * comment on the imports above for why that can't happen at module-load time). */
 export const REGISTRY: IndicatorDefinition[] = []
 
 let registered = false
@@ -276,6 +284,7 @@ function ensureRegistered(): void {
     educationDefinition,
     populationChangeDefinition,
     meanAgeDefinition,
+    share65PlusDefinition,
   )
 }
 
