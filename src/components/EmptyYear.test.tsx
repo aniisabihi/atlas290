@@ -25,9 +25,7 @@ describe('EmptyYear', () => {
     const onYear = vi.fn()
     // Median income stops in 2024 while the axis runs to 2026, so the nearest covered year is
     // behind rather than ahead. Always jumping to the first year would go the wrong way.
-    render(
-      <EmptyYear lk={lk} indicatorId="median-income" year={2026} lang="en" onYear={onYear} />,
-    )
+    render(<EmptyYear lk={lk} indicatorId="median-income" year={2026} lang="en" onYear={onYear} />)
     await userEvent.click(screen.getByRole('button', { name: 'Go to 2024' }))
     expect(onYear).toHaveBeenCalledWith(2024)
   })
