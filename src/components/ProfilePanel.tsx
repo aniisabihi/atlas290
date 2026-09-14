@@ -33,8 +33,11 @@ export function ProfilePanel({
   const heading = useRef<HTMLHeadingElement>(null)
   const municipality = lk.municipality(code)
 
+  // Re-runs when the municipality changes, which is the point: opening a different profile has
+  // to move focus again, not leave it on a heading that now says something else.
   useEffect(() => {
-    heading.current?.focus()
+    const el = heading.current
+    if (el && code) el.focus()
   }, [code])
 
   if (!municipality) return null
