@@ -31,6 +31,32 @@ import { toRows } from '../scb/jsonstat'
  */
 export const CPI_TABLE = 'TAB4352'
 
+/**
+ * The year every money indicator is expressed in: the last year SCB's consumer price index
+ * covers. Declared as a constant because the two money indicators must state it in their
+ * published metadata, and that metadata is built when the module loads, long before any CPI
+ * fetch has happened.
+ *
+ * It is NOT the same as either indicator's own last year — median income stops at 2024 and is
+ * still expressed in 2025 kronor — so nothing downstream may infer it from `coverage.to`.
+ *
+ * `assertCpiLatestYear` re-checks it against the real fetched index on every build, so the day
+ * SCB publishes 2026 the pipeline stops and says so, rather than silently labelling 2026 kronor
+ * as 2025 ones.
+ */
+export const CPI_LATEST_YEAR = 2025
+
+export function assertCpiLatestYear(year: number): number {
+  if (year !== CPI_LATEST_YEAR) {
+    throw new Error(
+      `consumer price index now reaches ${year}, but CPI_LATEST_YEAR still says ` +
+        `${CPI_LATEST_YEAR}. Every money value would be adjusted to ${year} kronor while the ` +
+        `published metadata claimed ${CPI_LATEST_YEAR}. Update CPI_LATEST_YEAR in cpi.ts.`,
+    )
+  }
+  return year
+}
+
 const CPI_CONTENT_LABEL = 'Index'
 
 function variable(meta: TableMeta, code: string) {

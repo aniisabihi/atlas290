@@ -13,7 +13,7 @@ import {
   type FrozenData,
   type FrozenMeta,
 } from '../scb/freeze'
-import { fetchCpi, toCurrentKronor } from './cpi'
+import { assertCpiLatestYear, CPI_LATEST_YEAR, fetchCpi, toCurrentKronor } from './cpi'
 import { toRows } from '../scb/jsonstat'
 import {
   buildRows,
@@ -74,6 +74,7 @@ export const INCOME: Indicator = Indicator.parse({
   },
   unit: 'sek',
   priceBasis: 'fixed-latest-year',
+  priceBasisYear: CPI_LATEST_YEAR,
   scale: { kind: 'sequential', breaks: [] },
   coverage: { from: INCOME_YEARS[0]!, to: INCOME_YEARS[INCOME_YEARS.length - 1]! },
   caveat: {
@@ -151,7 +152,9 @@ function currentKronorTargetYear(cpiIndex: Map<number, number>): number {
         'adjust every value to',
     )
   }
-  return Math.max(...cpiIndex.keys())
+  // Cross-checked against the constant the published metadata declares, so a newly
+  // published CPI year stops the build instead of silently relabelling the money.
+  return assertCpiLatestYear(Math.max(...cpiIndex.keys()))
 }
 
 /**
