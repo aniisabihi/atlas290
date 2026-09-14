@@ -26,6 +26,37 @@ yarn build       # production build into dist/
 yarn kitchen publish   # rebuild the pantry from frozen SCB responses, offline
 ```
 
+## Deploying it
+
+The site is built and deployed by GitHub Actions, and **only when every check has passed** —
+typecheck, lint, the unit tests, the browser tests in three engines, the accessibility scan and
+the performance budget. Cloudflare's own git integration would deploy whatever lands on `main`
+regardless, which means a red build and a live site could coexist.
+
+Two secrets connect the two, and they have to be created by the repository owner. Nothing in this
+repository can or should do it for you — do not paste an API token into an issue, a pull request
+or a chat with an assistant.
+
+1. **Create a Cloudflare account** (the free plan is enough — 500 builds a month, 20,000 files per
+   site and 25 MiB per file, against a site that is a handful of files with a 1.05 MB largest) and
+   a **Pages project** named `sweden-data-explorer`. Choose "Direct Upload" rather than connecting
+   the git repository, because Actions does the building.
+2. **Create an API token** at _My Profile → API Tokens → Create Token → Custom token_ with the
+   minimum this needs:
+   - Permission: **Account → Cloudflare Pages → Edit**
+   - Account Resources: **Include → your account**
+
+   Nothing else. In particular it needs no Zone permissions and no read access to anything.
+
+3. **Copy your Account ID** from the Cloudflare dashboard sidebar.
+4. **Add both as repository secrets** at _Settings → Secrets and variables → Actions → New
+   repository secret_:
+   - `CLOUDFLARE_API_TOKEN`
+   - `CLOUDFLARE_ACCOUNT_ID`
+
+Until those exist the deploy job **skips with a note** rather than failing, so the repository does
+not wear a permanently red badge for a step nobody has asked it to take yet.
+
 ## Documentation
 
 - Design and decisions: [docs/DESIGN.md](docs/DESIGN.md)
