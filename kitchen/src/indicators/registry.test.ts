@@ -165,3 +165,36 @@ describe('buildAll (fake registries: integrity guards)', () => {
     expect(result.indicators.map((i) => i.id)).toEqual(['seed', 'other'])
   })
 })
+
+describe('build order', () => {
+  it('throws naming the indicator when one builds before municipalities exist', async () => {
+    // A definition that publishes rows without ever establishing ctx.municipalities — the
+    // shape of a REGISTRY where population is not first. The row-count check cannot catch
+    // this on its own, because zero rows and zero municipalities agree.
+    const premature: IndicatorDefinition = {
+      indicator: {
+        id: 'premature',
+        name: { sv: 'För tidig', en: 'Premature' },
+        unit: { sv: 'st', en: 'count' },
+        description: { sv: 'test', en: 'test' },
+        priceBasis: 'nominal',
+        scale: 'sequential',
+        sources: [],
+        derivation: { sv: 'test', en: 'test' },
+      } as unknown as Indicator,
+      build: async () =>
+        ({
+          indicatorId: 'premature',
+          years: [2000],
+          values: [],
+          status: [],
+        }) as unknown as IndicatorSeries,
+    }
+    // Assert the ordering guard's own wording, not merely that *something* threw with this
+    // indicator's name in it. Removing the guard still produces a throw — quantileBreaks
+    // refuses an all-null column and names the same indicator — so a loose /premature/
+    // matcher passes either way and cannot fail. Verified by mutation: with the guard
+    // deleted, this expectation fails and the loose one does not.
+    await expect(buildAll({}, [premature])).rejects.toThrow(/population must come first/)
+  })
+})

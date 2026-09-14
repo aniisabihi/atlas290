@@ -53,7 +53,7 @@ export function writePantryFile(path: string, schema: ZodType, value: unknown): 
 
 /**
  * The ContentsCode a frozen chunk's selection actually resolved to (review finding 3):
- * read off the frozen `selection` itself, which `contentsCodeSelection`
+ * read off the frozen `selection` itself, which `resolveContentCode`
  * (kitchen/src/indicators/population.ts) resolved by label at fetch time — never a literal
  * hardcoded here — so the manifest tracks a codelist change the same way the fetch does.
  */

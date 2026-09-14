@@ -221,7 +221,10 @@ export async function buildAll(
   series: IndicatorSeries[]
   frozen: Array<FrozenData | FrozenMeta>
 }> {
-  ensureRegistered()
+  // Only populate the real singleton when we are actually going to use it. Passing `defs`
+  // is the tests' isolated path, and registering as a side effect of it would leave the
+  // global REGISTRY mutated by a test that never meant to touch it.
+  if (!defs) ensureRegistered()
   const list = defs ?? REGISTRY
 
   // YEARS is population's own constant (1968..LATEST_YEAR). It is the only definition in
@@ -247,6 +250,19 @@ export async function buildAll(
     seenIds.add(id)
 
     const series = await def.build(ctx)
+
+    // Population is the only definition that derives ctx.municipalities; everything else
+    // maps onto it. If a definition ran before that happened, the row-count check below
+    // cannot see it — zero rows equals zero municipalities and passes. Until Plan 2's
+    // review this was caught only as a side effect of quantileBreaks refusing empty input,
+    // which is luck rather than a guarantee, so say it outright.
+    if (ctx.municipalities.length === 0) {
+      throw new Error(
+        `${id}: built before any definition had established the municipality list — ` +
+          `population must come first in REGISTRY`,
+      )
+    }
+
     if (series.values.length !== ctx.municipalities.length) {
       throw new Error(
         `${id}: series has ${series.values.length} rows but there are ` +

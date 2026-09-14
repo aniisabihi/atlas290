@@ -156,7 +156,7 @@ export const Manifest = z.object({
       selectionKey: z.string(),
       /**
        * The ContentsCode this selection actually resolved to at fetch time (see
-       * `contentsCodeSelection` in kitchen/src/indicators/population.ts), not a literal
+       * `resolveContentCode` in kitchen/src/indicators/registry.ts), not a literal
        * hardcoded in the indicator definition — so this tracks a codelist change the way the
        * fetch itself does.
        */
