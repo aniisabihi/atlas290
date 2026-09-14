@@ -94,13 +94,23 @@ jobs:
       # data — the exact failure a monthly job exists to prevent. One committed line a month is
       # activity under any reading of the rule.
       - name: Stay alive
+        # `always()` on purpose. If the fetch fails, or the guard stops a lossy refresh, or the
+        # tests go red, the earlier steps end the job — and without this the keep-alive commit
+        # would be skipped too. Sixty days of failing refreshes would then disable the scheduled
+        # workflow, silencing the very job whose failures were the warning.
+        if: always()
         run: |
+          # Anything the failed steps left behind is discarded; a pull request branch, if one was
+          # created, has already been pushed and is unaffected.
+          git reset --hard
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git checkout main
           git pull --ff-only
           mkdir -p docs
-          printf '%s — refresh ran; new data: %s\n' "$(date -u +%Y-%m-%d)" "${{ steps.changed.outputs.yes }}" >> docs/refresh-log.md
+          printf '%s — refresh ran; job result: %s; new data: %s\n' \
+            "$(date -u +%Y-%m-%d)" "${{ job.status }}" "${{ steps.changed.outputs.yes || 'unknown' }}" \
+            >> docs/refresh-log.md
           git add docs/refresh-log.md
           git commit -m "chore: record that the monthly refresh ran
 
