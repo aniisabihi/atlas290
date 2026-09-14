@@ -17,13 +17,23 @@ export const Municipality = z.object({
 })
 export type Municipality = z.infer<typeof Municipality>
 
-/** Order matters: the index is the status byte stored per cell. Append only. */
+/**
+ * Order matters: the index is the status byte stored per cell, persisted in every published
+ * series. Append only — NEVER insert or reorder — inserting would silently relabel every
+ * status byte already on disk for every year and municipality published so far, in every
+ * series that was ever published under the old ordering.
+ */
 export const OBSERVATION_STATUS = [
   'present',
   'not-yet-published',
   'did-not-exist',
   'perturbed',
   'too-few-cases',
+  // Added by kitchen/src/breaks.ts (Plan 2, Task 12's parent-break half): a parent
+  // municipality's cell in a derived CHANGE indicator, in the year a child split off, where
+  // the underlying level genuinely moved only because of a boundary redraw — not because
+  // anyone moved. Appended at the end, per the rule above.
+  'structural-break',
 ] as const
 export type ObservationStatus = (typeof OBSERVATION_STATUS)[number]
 export function statusCode(status: ObservationStatus): number {
@@ -156,7 +166,7 @@ export const Manifest = z.object({
       selectionKey: z.string(),
       /**
        * The ContentsCode this selection actually resolved to at fetch time (see
-       * `contentsCodeSelection` in kitchen/src/indicators/population.ts), not a literal
+       * `resolveContentCode` in kitchen/src/indicators/registry.ts), not a literal
        * hardcoded in the indicator definition — so this tracks a codelist change the way the
        * fetch itself does.
        */
@@ -166,6 +176,28 @@ export const Manifest = z.object({
       sha256: z.string().length(64),
       cells: z.number().int().nonnegative(),
     }),
+  ),
+  /**
+   * Task 13 (docs/plans/2026-09-14-02-the-ten-indicators.md): which of the flat `sources`
+   * chunks above actually back EACH published indicator, keyed by indicator id. Added
+   * additively — `sources` itself is unchanged in shape, this is a second, independent view
+   * over the same provenance data, cross-referenced by table + resolved content code against
+   * each indicator's own declared `Indicator.sources` (table/contentCode pairs, set by that
+   * indicator's own module). Every registered indicator gets an entry, even one with no
+   * declared sources at all (population-change, which fetches nothing) — an empty array,
+   * never an omitted key, so a reader can tell "fetches nothing" apart from "not recorded".
+   * A single declared (table, contentCode) pair can resolve to more than one row here when
+   * SCB's 150,000-cell limit forced the fetch to chunk into several physical requests.
+   */
+  indicatorSources: z.record(
+    IndicatorId,
+    z.array(
+      z.object({
+        table: z.string(),
+        contentCode: z.string(),
+        selectionKey: z.string(),
+      }),
+    ),
   ),
   /**
    * The SCB municipality/county boundary shapefile that every geometry-derived pantry file
