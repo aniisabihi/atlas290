@@ -42,6 +42,7 @@ const sv = {
   searchPlaceholder: 'Skriv ett kommunnamn',
   searchNoResults: 'Ingen kommun matchar.',
   searchResults: (n: number) => `${n} träffar`,
+  searchOne: 'En träff',
 
   aboutHeading: 'Om det här måttet',
   coverageHeading: 'Publiceras för',
@@ -96,6 +97,7 @@ const en: Strings = {
   searchPlaceholder: 'Type a municipality name',
   searchNoResults: 'No municipality matches.',
   searchResults: (n: number) => `${n} matches`,
+  searchOne: 'One match',
 
   aboutHeading: 'About this measure',
   coverageHeading: 'Published for',

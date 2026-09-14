@@ -10,6 +10,7 @@ import { EmptyYear } from './EmptyYear'
 import { Legend } from './Legend'
 import { YearSlider } from './YearSlider'
 import { MapView } from './MapView'
+import { SearchBox } from './SearchBox'
 import { NoDataPatterns } from './NoDataPatterns'
 
 /**
@@ -46,6 +47,14 @@ export function App({
       <h1>{strings.siteName}</h1>
       <p>{strings.tagline}</p>
       <p id="map-hint">{strings.mapHint}</p>
+      <SearchBox
+        municipalities={data.municipalities}
+        lang={state.lang}
+        onSelect={(code) => {
+          interrupt()
+          update({ selected: code })
+        }}
+      />
       <YearSlider
         lk={lk}
         meta={meta}

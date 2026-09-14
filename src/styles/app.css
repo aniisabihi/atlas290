@@ -113,3 +113,46 @@ main {
 .map[data-animate='true'] path {
   transition: fill 250ms ease;
 }
+
+.search {
+  max-width: 40rem;
+  margin: 1rem auto;
+  position: relative;
+}
+
+.search label {
+  display: block;
+  font-weight: 600;
+}
+
+.search input {
+  width: 100%;
+  padding: 0.5rem;
+  font: inherit;
+}
+
+.search ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #ccc;
+  background: #fff;
+  position: absolute;
+  width: 100%;
+  z-index: 2;
+}
+
+.search li {
+  padding: 0.4rem 0.5rem;
+  cursor: pointer;
+}
+
+.search li[aria-selected='true'] {
+  background: #2171b5;
+  color: #fff;
+}
+
+.search-count {
+  color: #444;
+  min-height: 1.5em;
+}
