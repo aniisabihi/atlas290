@@ -14,6 +14,7 @@ import { LanguageSwitch } from './LanguageSwitch'
 import { Legend } from './Legend'
 import { LiveRegion } from './LiveRegion'
 import { MapView, type MapHandle } from './MapView'
+import { ComparePanel } from './ComparePanel'
 import { ProfilePanel } from './ProfilePanel'
 import { NoDataPatterns } from './NoDataPatterns'
 import { SearchBox } from './SearchBox'
@@ -171,6 +172,21 @@ export function App({
           </div>
         </div>
       </div>
+
+      {state.selected && (
+        <ComparePanel
+          lk={lk}
+          selected={state.selected}
+          compare={state.compare}
+          year={state.year}
+          lang={state.lang}
+          onCompare={(compare) => {
+            interrupt()
+            setNotice('')
+            update({ compare })
+          }}
+        />
+      )}
 
       {state.selected && (
         <ProfilePanel

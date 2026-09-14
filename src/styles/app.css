@@ -444,3 +444,32 @@ button {
       'chart extra';
   }
 }
+
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+.compare-table th,
+.compare-table td {
+  text-align: left;
+  padding: 0.3rem 0.5rem;
+  border-top: 1px solid var(--border);
+  font-weight: 400;
+}
+
+.compare-table td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The higher of the two, marked without saying it is the good one. */
+.compare-table td[data-higher='true'] {
+  font-weight: 700;
+}
+
+.compare-summary {
+  color: var(--text-muted);
+  margin: 0.5rem 0 0;
+}

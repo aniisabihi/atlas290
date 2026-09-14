@@ -58,6 +58,14 @@ const sv = {
   rank: (rank: number, outOf: number) => `plats ${rank} av ${outOf}`,
   selectionCleared: 'Ingen kommun vald.',
   and: 'och',
+  compareWith: 'Jämför med…',
+  comparePlaceholder: 'Skriv en annan kommun',
+  stopComparing: 'Sluta jämföra',
+  higherOn: (n: number, outOf: number) => `Högre värde i ${n} av ${outOf} jämförbara mått`,
+  notComparable: (n: number) =>
+    n === 1
+      ? '1 mått går inte att jämföra det här året'
+      : `${n} mått går inte att jämföra det här året`,
   close: 'Stäng',
   closeProfile: 'Stäng kommunpanelen',
   atTheTime: (value: string, year: number) => `${value} i ${year} års penningvärde`,
@@ -126,6 +134,14 @@ const en: Strings = {
   rank: (rank: number, outOf: number) => `rank ${rank} of ${outOf}`,
   selectionCleared: 'No municipality selected.',
   and: 'and',
+  compareWith: 'Compare with…',
+  comparePlaceholder: 'Type another municipality',
+  stopComparing: 'Stop comparing',
+  higherOn: (n: number, outOf: number) => `Higher on ${n} of ${outOf} comparable measures`,
+  notComparable: (n: number) =>
+    n === 1
+      ? '1 measure cannot be compared this year'
+      : `${n} measures cannot be compared this year`,
   close: 'Close',
   closeProfile: 'Close the municipality panel',
   atTheTime: (value: string, year: number) => `${value} in ${year} kronor`,

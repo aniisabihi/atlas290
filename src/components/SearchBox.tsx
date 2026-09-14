@@ -15,12 +15,19 @@ export function SearchBox({
   municipalities,
   lang,
   onSelect,
+  label,
+  placeholder,
 }: {
   municipalities: readonly Municipality[]
   lang: Lang
   onSelect: (code: string) => void
+  /** Overridden by the compare box, which searches the same list for a different reason. */
+  label?: string
+  placeholder?: string
 }) {
   const strings = t(lang)
+  const boxLabel = label ?? strings.searchLabel
+  const boxPlaceholder = placeholder ?? strings.searchPlaceholder
   const listId = useId()
   const optionId = (index: number) => `${listId}-option-${index}`
   const input = useRef<HTMLInputElement>(null)
@@ -39,14 +46,14 @@ export function SearchBox({
 
   return (
     <div className="search">
-      <label htmlFor={`${listId}-input`}>{strings.searchLabel}</label>
+      <label htmlFor={`${listId}-input`}>{boxLabel}</label>
       <input
         id={`${listId}-input`}
         ref={input}
         type="text"
         role="combobox"
         autoComplete="off"
-        placeholder={strings.searchPlaceholder}
+        placeholder={boxPlaceholder}
         aria-expanded={expanded}
         aria-controls={listId}
         aria-autocomplete="list"
@@ -96,7 +103,7 @@ export function SearchBox({
               ? strings.searchOne
               : strings.searchResults(results.length)}
       </div>
-      <ul id={listId} role="listbox" aria-label={strings.searchLabel} hidden={!expanded}>
+      <ul id={listId} role="listbox" aria-label={boxLabel} hidden={!expanded}>
         {results.map((municipality, index) => (
           <li
             key={municipality.code}
