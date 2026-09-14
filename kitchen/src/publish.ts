@@ -7,6 +7,7 @@ import { Adjacency, Bubbles, Manifest, PantryData } from '../../shared/pantry'
 import type { Indicator, IndicatorSeries, Municipality } from '../../shared/pantry'
 import { check } from './check'
 import { cmp } from './cmp'
+import { roundIndicatorBreaks, roundSeriesValues } from './round'
 import { buildAdjacency, curatedEdgePairs, type CuratedEdge } from './geometry/adjacency'
 import { buildBubbles } from './geometry/bubbles'
 import { buildTopology, centroids, GEOMETRY_SOURCE } from './geometry/build'
@@ -17,6 +18,37 @@ import { selectionKey as computeSelectionKey } from './scb/freeze'
 import type { FrozenData, FrozenMeta } from './scb/freeze'
 
 export const DEFAULT_PANTRY_DIR = 'public/pantry'
+
+/**
+ * Follow-up to Task 13: rounds every indicator's own colour-scale breaks, and every value in
+ * its own series, to the decimal precision its declared `unit` carries (`round.ts`) — applied
+ * once, here, immediately before the pantry's numbers are written to `data/indicators.json`.
+ * Never earlier: `buildAll()`'s own output — and `check()`'s validation of it, which runs
+ * before this in `publish()` — keeps full precision, so a derived indicator that reads
+ * another's already-built series (`net-migration-rate` reading population,
+ * `population-change` and `share-65-plus` reading population) computes off the real,
+ * unrounded value. Rounding twice, or rounding mid-build instead of once at the very end,
+ * would let error compound in a way no reader could detect from the published file alone.
+ */
+export function roundPantryData(
+  indicators: Indicator[],
+  series: IndicatorSeries[],
+): { indicators: Indicator[]; series: IndicatorSeries[] } {
+  const unitById = new Map(indicators.map((i) => [i.id, i.unit]))
+  return {
+    indicators: indicators.map(roundIndicatorBreaks),
+    series: series.map((s) => {
+      const unit = unitById.get(s.indicator)
+      if (!unit) {
+        throw new Error(
+          `roundPantryData: series '${s.indicator}' has no matching indicator — cannot tell ` +
+            'what precision to round its values to',
+        )
+      }
+      return roundSeriesValues(s, unit)
+    }),
+  }
+}
 
 /**
  * Ruling R7: the annotated curated-edges.json is read here with plain fs + JSON.parse, never
@@ -41,9 +73,17 @@ function sortKeys(value: unknown): unknown {
   return value
 }
 
-/** Sorted keys, 2-space indent, trailing newline — so a data refresh is a readable diff. */
+/**
+ * Sorted keys, minified (no indentation), trailing newline. Sorted keys stay — determinism
+ * (byte-identical rebuilds) depends on stable key order, not on the file being readable.
+ * Indentation does not: the pretty-printed 2-space form cost more than half of
+ * indicators.json's bytes (measured: 4,962,191 B pretty vs 2.06 MB minified) for a file a
+ * browser downloads, never a document a human reads directly — a diff review reads the
+ * *values* that changed, not this file's own whitespace, and `git diff` still shows which
+ * lines changed either way since this is one file per pantry artifact, not one line per value.
+ */
 export function stableStringify(value: unknown): string {
-  return JSON.stringify(sortKeys(value), null, 2) + '\n'
+  return JSON.stringify(sortKeys(value)) + '\n'
 }
 
 /** Validates against `schema` before writing — a schema failure must be a build failure. */
@@ -334,11 +374,12 @@ export async function publish(
       buildBubbles(c, population, bubbleReferenceYear),
     )
 
+    const rounded = roundPantryData(indicators, series)
     writePantryFile(join(pantryDir, 'data/indicators.json'), PantryData, {
       schemaVersion: 1,
       municipalities,
-      indicators,
-      series,
+      indicators: rounded.indicators,
+      series: rounded.series,
     })
     writePantryFile(
       join(pantryDir, 'manifest.json'),

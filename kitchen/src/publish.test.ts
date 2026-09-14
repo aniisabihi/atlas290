@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { MunicipalityTopology } from '../../shared/geometry'
+import type { Indicator } from '../../shared/pantry'
 import type { buildTopology } from './geometry/build'
 import { POPULATION } from './indicators/population'
 import type { buildAll } from './indicators/registry'
@@ -12,6 +13,7 @@ import {
   buildManifest,
   bubblePopulation,
   publish,
+  roundPantryData,
   stableStringify,
 } from './publish'
 import { selectionKey as computeSelectionKey } from './scb/freeze'
@@ -23,10 +25,71 @@ const fakeGeometrySource = {
 }
 
 describe('stableStringify', () => {
-  it('sorts keys recursively and ends with a newline', () => {
+  // Follow-up to Task 13: the published pantry was pretty-printed (2-space indent), which
+  // alone cost more than half the file's bytes — a build artifact a browser downloads, not a
+  // document a human reads. Minified now: sorted keys still (determinism depends on stable key
+  // order), indentation gone, still ending with a newline (kept because a downstream test —
+  // this same describe block's second test below — expects the file to end that way).
+  it('sorts keys recursively, minifies (no indentation), and ends with a newline', () => {
     expect(stableStringify({ b: 1, a: { d: [3, { z: 1, y: 2 }], c: null } })).toBe(
-      '{\n  "a": {\n    "c": null,\n    "d": [\n      3,\n      {\n        "y": 2,\n        "z": 1\n      }\n    ]\n  },\n  "b": 1\n}\n',
+      '{"a":{"c":null,"d":[3,{"y":2,"z":1}]},"b":1}\n',
     )
+  })
+
+  it('never emits a newline inside the JSON itself — only the one trailing byte proves this is minified, not merely "pretty-printed at width 0"', () => {
+    const out = stableStringify({ b: 1, a: { d: [3, { z: 1, y: 2 }], c: null } })
+    expect(out.slice(0, -1)).not.toContain('\n')
+    expect(out.endsWith('\n')).toBe(true)
+  })
+})
+
+// Follow-up to Task 13: rounding must happen exactly once, at publish() time, matched to each
+// series' OWN indicator's declared unit — never a blanket precision applied to every series
+// regardless of unit, and never left for buildAll()/check() to see (those must keep full
+// precision; round.test.ts covers roundToUnit's own per-unit correctness in isolation).
+describe('roundPantryData (this task)', () => {
+  const indicator = (id: string, unit: 'percent' | 'sek'): Indicator[] => [
+    { ...POPULATION, id, unit, scale: { kind: 'sequential', breaks: [1.005, 2.675] } },
+  ]
+
+  it("rounds a series' values to its OWN matching indicator's unit precision", () => {
+    const result = roundPantryData(indicator('share-65-plus', 'percent'), [
+      {
+        indicator: 'share-65-plus',
+        years: [2025],
+        values: [[40.65499717673631], [null]],
+        status: [[0], [1]],
+      },
+    ])
+    expect(result.series[0]?.values).toEqual([[40.65], [null]])
+  })
+
+  it("rounds two indicators of DIFFERENT units independently, never applying one unit's precision to the other", () => {
+    const result = roundPantryData(
+      [...indicator('share-65-plus', 'percent'), ...indicator('median-income', 'sek')],
+      [
+        { indicator: 'share-65-plus', years: [2025], values: [[40.65499717673631]], status: [[0]] },
+        { indicator: 'median-income', years: [2025], values: [[458_705.740093942]], status: [[0]] },
+      ],
+    )
+    expect(result.series[0]?.values).toEqual([[40.65]])
+    expect(result.series[1]?.values).toEqual([[458_706]])
+  })
+
+  it("rounds an indicator's own colour-scale breaks to its own unit precision (percent: 2 decimals)", () => {
+    const result = roundPantryData(indicator('share-65-plus', 'percent'), [])
+    // 1.005 and 2.675 rounded via toFixed(2): both land on 1.00 and 2.67, not 1.01/2.68 —
+    // because 1.005 and 2.675 are not exactly representable in IEEE 754 double precision (the
+    // true stored values are fractionally below each), and toFixed rounds the double's REAL
+    // value, not the decimal digits a human typed. Verified directly in node before writing
+    // this assertion, not assumed — see round.test.ts's own note on this same trap.
+    expect(result.indicators[0]?.scale.breaks).toEqual([1, 2.67])
+  })
+
+  it("throws, naming the series, if a series' indicator id has no matching indicator to read a unit from", () => {
+    expect(() =>
+      roundPantryData([], [{ indicator: 'ghost', years: [], values: [], status: [] }]),
+    ).toThrow(/ghost/)
   })
 })
 

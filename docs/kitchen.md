@@ -583,3 +583,69 @@ since Plan 2 Task 5) — never re-derived here.
   `ctx.frozen` each definition's OWN `build(ctx)` call pushed, so attribution never depends on
   two indicators happening to share a table or content code. Verified against the real
   published manifest: `population` now lists 2 chunks, `share-65-plus` 51, with zero overlap.
+
+## Rounding and minifying the published pantry (follow-up to Task 13, 2026-09-14)
+
+Task 13's own "real size" measurement above (4,962,191 bytes) was investigated further, since
+it was five times the size the plan said to flag. Almost none of it was data: two causes,
+both measured independently.
+
+- **Pretty-printing.** `stableStringify` (`kitchen/src/publish.ts`) used
+  `JSON.stringify(sortKeys(value), null, 2)` — 2-space indentation on a file a browser
+  downloads, never a document a human reads directly. Minified alone (rounding not yet
+  applied): 2,060,372 bytes, already under half the original. `sortKeys` stays — determinism
+  depends on stable key order, not on the file being readable — only the indent argument was
+  dropped, and the trailing newline was kept (an existing test already depended on it).
+- **Full float precision on every derived value.** `share-65-plus`, `population-change`,
+  `net-migration-rate`, `median-income` and `house-prices` are each computed here by division
+  or multiplication (never selected directly off an SCB content code), so they carried
+  whatever binary floating-point noise the computation happened to produce —
+  `4.7196549599507085` for a percentage derived from integer population counts SCB itself
+  perturbs from 2025 onward. Fixed by `kitchen/src/round.ts`: one decimal-places-per-unit table
+  (`UNIT_DECIMALS`), derived from `Indicator.unit` rather than a per-indicator table, applied
+  once at publish time via `roundToUnit` (`Number(value.toFixed(decimals))` — deliberately not
+  `Math.round(value * 10 ** decimals) / 10 ** decimals`, which can itself be imprecise, e.g.
+  `1.005 * 100 === 100.49999999999999`). Checked against what SCB itself publishes for the two
+  non-derived percent/ratio indicators before choosing 2 decimals for the derived ones: tax-rate
+  (not derived) publishes 2 decimals (Stockholm 2024: 30.36 — confirmed this does NOT collapse
+  to 30.4 under this rounding), density (per-km2) publishes 1, mean-age (years) publishes 1.
+- **Combined measured result**: `data/indicators.json` is now **1,044,886 bytes** (from
+  4,962,191 — a 78.9% reduction), gzipped **275,499 bytes**. `manifest.json` (also minified,
+  unaffected by rounding since it carries no indicator values) is now **26,510 bytes** (from
+  34,363), gzipped 5,301 bytes. `layout/bubbles.json` and `geometry/adjacency.json` also
+  shrank from minification alone (27,256 → 15,045 and 25,438 → 12,446 bytes respectively);
+  `geometry/municipalities.topo.json` is a plain file copy from mapshaper, untouched by
+  `stableStringify`, and is unchanged.
+- **Determinism, reproven after both changes**: `public/pantry/` deleted entirely, published
+  twice from the same frozen `kitchen/raw/`. `data/indicators.json`'s sha256
+  (`8fe687602a283cec0398cc00dc9ec30d6c214d598be73a36ca2321a48e73d333`) and `manifest.json`'s
+  (`badc41fdb2695edc4dde41250527902eb6ba95e0d89f95a75e6183a63ee72084`) were identical across
+  both runs. `toFixed`'s rounding is specified by ECMA-262 against the double's own value with
+  no separate scaling step, so it is bit-for-bit reproducible on any conforming engine —
+  verified to not reintroduce the classic `Math.round(x * 10**d) / 10**d` scaling-error trap
+  (`round.test.ts`), rather than merely assumed safe.
+- **Rounded exactly once, at publish time** (`publish.ts`'s `roundPantryData`, called
+  immediately before `data/indicators.json` is written) — never inside `buildAll()` or
+  `check()`, both of which still see full precision. This matters concretely for the three
+  indicators that read another indicator's already-built series
+  (`net-migration-rate`/`population-change`/`share-65-plus` all read population's): they
+  compute against the real, unrounded value, not a value already rounded once by an earlier
+  step.
+- **`src/indicators.headline.test.ts` updated to the newly rounded figures**, not merely
+  "fixed to keep passing": `net-migration-rate` (Stockholm 2024: 1.1621436... → 1.16),
+  `median-income` (Danderyd 2024: 458,705.740093942 → 458,706), `house-prices` (Danderyd 2021:
+  16,253,221.539089134 → 16,253,222), `population-change` (Järfälla 2024: 3.0348662... → 3.03;
+  Hällefors: -2.678983... → -2.68), `share-65-plus` (Borgholm 2025: 40.65499717673631 → 40.65).
+  `post-secondary-education`'s existing assertion (65.278) still passed within its own
+  tolerance against the newly rounded 65.28, but was updated anyway to the real published
+  number, on the same "a test that cannot fail is worse than none" reasoning. Every changed
+  assertion moved by less than its own unit's rounding precision — confirmed individually
+  before treating any of them as a mere rounding effect, since a larger jump would have been a
+  bug, not rounding.
+- **Two regression guards added** (`src/pantry-format.test.ts`), reading the real committed
+  `public/pantry/` artifacts directly (the same convention `indicators.headline.test.ts`
+  already established): one fails if the published JSON is ever pretty-printed again, one
+  fails if any published value or colour-scale break ever carries more decimal digits than its
+  unit allows. Both were confirmed red by reverting the fix they guard (the pretty-print
+  argument restored, and separately the rounding step skipped) and republishing before being
+  confirmed green again — see this task's own commit/report for the captured failing output.

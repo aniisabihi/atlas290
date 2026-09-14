@@ -129,9 +129,14 @@ describe('published pantry: headline facts', () => {
       expect(nonNullCount('net-migration-rate')).toBe(15_229)
     })
 
-    it("Stockholm's 2024 net migration rate is about 1.16 per 1,000 residents", () => {
+    // Follow-up to Task 13: the published pantry now rounds every value to the precision its
+    // unit honestly carries (per-thousand: 2 decimals) — the raw computed rate was
+    // 1.1621436477850968, which this asserted via toBeCloseTo before rounding was applied.
+    // Now published as exactly 1.16, so this asserts the real number, not merely "close to" a
+    // figure with more digits than the pantry actually stores.
+    it("Stockholm's 2024 net migration rate is 1.16 per 1,000 residents", () => {
       const { value, status } = cell('net-migration-rate', codeOf('Stockholm'), 2024)
-      expect(value).toBeCloseTo(1.162, 3)
+      expect(value).toBe(1.16)
       expect(status).toBe('present')
     })
   })
@@ -144,9 +149,13 @@ describe('published pantry: headline facts', () => {
       expect(nonNullCount('median-income')).toBe(7_537)
     })
 
-    it("Danderyd's 2024 median income is 458,705.74 kronor, adjusted to the latest (2025) kronor — not the 455,600 kronor nominal figure", () => {
+    // Follow-up to Task 13: sek rounds to whole kronor (0 decimals) — the raw adjusted value
+    // was 458,705.740093942, which this asserted via toBeCloseTo(…, 2) before rounding. Now
+    // published as exactly 458,706 kronor (rounded up from .74), still nowhere near the
+    // 455,600 kronor nominal (unadjusted) figure this test exists to rule out.
+    it("Danderyd's 2024 median income is 458,706 kronor, adjusted to the latest (2025) kronor — not the 455,600 kronor nominal figure", () => {
       const { value, status } = cell('median-income', codeOf('Danderyd'), 2024)
-      expect(value).toBeCloseTo(458_705.74, 2)
+      expect(value).toBe(458_706)
       expect(status).toBe('present')
     })
   })
@@ -159,9 +168,12 @@ describe('published pantry: headline facts', () => {
       expect(nonNullCount('house-prices')).toBe(12_723)
     })
 
-    it("Danderyd's 2021 mean house price is about 16,253,221.54 kronor, adjusted to the latest kronor", () => {
+    // Follow-up to Task 13: sek rounds to whole kronor (0 decimals) — the raw adjusted value
+    // was 16,253,221.539089134, which this asserted via toBeCloseTo(…, 2) before rounding. Now
+    // published as exactly 16,253,222 kronor (rounded up from .539).
+    it("Danderyd's 2021 mean house price is 16,253,222 kronor, adjusted to the latest kronor", () => {
       const { value, status } = cell('house-prices', codeOf('Danderyd'), 2021)
-      expect(value).toBeCloseTo(16_253_221.54, 2)
+      expect(value).toBe(16_253_222)
       expect(status).toBe('present')
     })
   })
@@ -174,9 +186,14 @@ describe('published pantry: headline facts', () => {
       expect(nonNullCount('post-secondary-education')).toBe(11_830)
     })
 
-    it("Danderyd's 2024 post-secondary education share is about 65.28 percent", () => {
+    // Follow-up to Task 13: percent rounds to 2 decimals — the raw share was
+    // 65.27777777777779, which this asserted via toBeCloseTo(65.278, 2) before rounding (that
+    // assertion still happened to pass afterward, within its 0.005 tolerance, but 65.278 is no
+    // longer the real published number — asserting it as if it still were would be exactly the
+    // kind of silent staleness this task exists to fix). Now published as exactly 65.28.
+    it("Danderyd's 2024 post-secondary education share is 65.28 percent", () => {
       const { value, status } = cell('post-secondary-education', codeOf('Danderyd'), 2024)
-      expect(value).toBeCloseTo(65.278, 2)
+      expect(value).toBe(65.28)
       expect(status).toBe('present')
     })
   })
@@ -189,12 +206,15 @@ describe('published pantry: headline facts', () => {
       expect(nonNullCount('population-change')).toBe(16_363)
     })
 
-    it('Järfälla grew 3.035 percent in 2024 and Hällefors shrank 2.679 percent', () => {
+    // Follow-up to Task 13: percent rounds to 2 decimals — the raw values were
+    // 3.0348662110506197 and -2.678983833718245, which this asserted via toBeCloseTo(…, 3)
+    // before rounding. Now published as exactly 3.03 and -2.68.
+    it('Järfälla grew 3.03 percent in 2024 and Hällefors shrank 2.68 percent', () => {
       const jarfalla = cell('population-change', codeOf('Järfälla'), 2024)
       const hallefors = cell('population-change', codeOf('Hällefors'), 2024)
-      expect(jarfalla.value).toBeCloseTo(3.035, 3)
+      expect(jarfalla.value).toBe(3.03)
       expect(jarfalla.status).toBe('present')
-      expect(hallefors.value).toBeCloseTo(-2.679, 3)
+      expect(hallefors.value).toBe(-2.68)
       expect(hallefors.status).toBe('present')
     })
   })
@@ -223,12 +243,18 @@ describe('published pantry: headline facts', () => {
       expect(nonNullCount('share-65-plus')).toBe(16_658)
     })
 
-    it("Borgholm's 2025 share aged 65+ is about 40.65 percent and Sundbyberg's is about 13.63 percent, both perturbed", () => {
+    // Follow-up to Task 13: percent rounds to 2 decimals. Borgholm's raw share was
+    // 40.65499717673631 — asserted here via toBeCloseTo(40.655, 2) before rounding, which sat
+    // right at that assertion's own 0.005 tolerance boundary (the actual gap was 0.0000028).
+    // toFixed(2) rounds the double's true value, which is a hair under 40.655, to 40.65, not
+    // 40.66 — confirmed directly in node, not assumed. Sundbyberg's raw share was
+    // 13.629824561403508, already rounding to the same 13.63 this test asserted before.
+    it("Borgholm's 2025 share aged 65+ is 40.65 percent and Sundbyberg's is 13.63 percent, both perturbed", () => {
       const borgholm = cell('share-65-plus', codeOf('Borgholm'), 2025)
       const sundbyberg = cell('share-65-plus', codeOf('Sundbyberg'), 2025)
-      expect(borgholm.value).toBeCloseTo(40.655, 2)
+      expect(borgholm.value).toBe(40.65)
       expect(borgholm.status).toBe('perturbed')
-      expect(sundbyberg.value).toBeCloseTo(13.63, 2)
+      expect(sundbyberg.value).toBe(13.63)
       expect(sundbyberg.status).toBe('perturbed')
     })
 
