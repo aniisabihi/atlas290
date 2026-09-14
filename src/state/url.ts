@@ -22,7 +22,17 @@ export type Lang = (typeof LANGS)[number]
 export const DEFAULT_LANG: Lang = 'sv'
 
 /** Query keys, in the order `toUrl` writes them, so one state is always one string. */
-const KEYS = { indicator: 'i', year: 'y', selected: 'm' } as const
+const KEYS = {
+  indicator: 'i',
+  year: 'y',
+  selected: 'm',
+  compare: 'c',
+  view: 'v',
+  table: 't',
+} as const
+
+export const VIEWS = ['map', 'cartogram'] as const
+export type View = (typeof VIEWS)[number]
 
 export type AppState = {
   lang: Lang
@@ -30,6 +40,19 @@ export type AppState = {
   year: number
   /** Four-digit municipality code, or nothing selected. */
   selected: string | null
+  /** The municipality being compared against `selected`, if any. */
+  compare: string | null
+  /**
+   * `null` means "whatever suits this screen" — bubbles on a phone, the map on a desktop.
+   *
+   * Deliberately nullable rather than defaulting to 'map' in the parser, which is what the plan
+   * first wrote. A concrete default would make `/sv/` mean "the geographic map" and a phone
+   * would then be overriding the URL rather than filling a gap in it. Absent means unstated, and
+   * anything the visitor actually chooses is written down.
+   */
+  view: View | null
+  /** The plain sortable table, the twin of whichever view is showing. */
+  table: boolean
 }
 
 /** The minimum a URL can be validated against. Plan 4 adds `compare` and `view` alongside. */
@@ -62,7 +85,15 @@ export function metaFrom(data: PantryData): PantryMeta {
 export function defaultsFor(meta: PantryMeta): AppState {
   const indicator = meta.indicators[0]
   if (!indicator) throw new Error('pantry meta lists no indicators')
-  return { lang: DEFAULT_LANG, indicator, year: meta.defaultYear, selected: null }
+  return {
+    lang: DEFAULT_LANG,
+    indicator,
+    year: meta.defaultYear,
+    selected: null,
+    compare: null,
+    view: null,
+    table: false,
+  }
 }
 
 function langFrom(pathname: string): Lang {
@@ -76,7 +107,13 @@ export function parseState(pathname: string, search: string, meta: PantryMeta): 
 
   const indicator = q.get(KEYS.indicator)
   const year = Number.parseInt(q.get(KEYS.year) ?? '', 10)
-  const selected = q.get(KEYS.selected)
+  const known = (code: string | null) => (code && meta.codes.includes(code) ? code : null)
+  const selected = known(q.get(KEYS.selected))
+  const candidate = known(q.get(KEYS.compare))
+  // A comparison needs something to compare against, and comparing a municipality with itself is
+  // not a view — it would render a panel of identical columns and a summary of ten ties.
+  const compare = selected && candidate !== selected ? candidate : null
+  const view = VIEWS.find((v) => v === q.get(KEYS.view)) ?? null
 
   return {
     lang: langFrom(pathname),
@@ -87,7 +124,10 @@ export function parseState(pathname: string, search: string, meta: PantryMeta): 
     year: Number.isFinite(year)
       ? Math.min(meta.years.max, Math.max(meta.years.min, year))
       : fallback.year,
-    selected: selected && meta.codes.includes(selected) ? selected : null,
+    selected,
+    compare,
+    view,
+    table: q.get(KEYS.table) === '1',
   }
 }
 
@@ -104,6 +144,9 @@ export function toUrl(state: AppState, meta: PantryMeta): string {
   if (state.indicator !== fallback.indicator) q.set(KEYS.indicator, state.indicator)
   if (state.year !== fallback.year) q.set(KEYS.year, String(state.year))
   if (state.selected !== null) q.set(KEYS.selected, state.selected)
+  if (state.compare !== null && state.selected !== null) q.set(KEYS.compare, state.compare)
+  if (state.view !== null) q.set(KEYS.view, state.view)
+  if (state.table) q.set(KEYS.table, '1')
   const search = q.toString()
   return `/${state.lang}/${search ? `?${search}` : ''}`
 }
