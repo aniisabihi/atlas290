@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sweden's municipalities in data</title>
+    <meta
+      name="description"
+      content="Explore Sweden's 290 municipalities through ten measures from Statistics Sweden, year by year from 1968 to today."
+    />
+    <!-- vite-ignore keeps Vite from treating these as asset paths to resolve: "/sv/" is a
+         directory, and without it the production build fails with EISDIR. Vite strips the
+         attribute from the output. -->
+    <link rel="alternate" hreflang="en" href="/en/" vite-ignore />
+    <link rel="alternate" hreflang="sv" href="/sv/" vite-ignore />
+    <link rel="alternate" hreflang="x-default" href="/" vite-ignore />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
