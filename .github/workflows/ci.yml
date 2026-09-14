@@ -95,3 +95,33 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  budget:
+    name: Performance budget
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - run: yarn install --immutable
+
+      - name: Resolve the Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      - run: yarn playwright install --with-deps chromium
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+
+      - run: yarn build
+      - name: Serve the built site and measure it
+        run: |
+          yarn preview --port 4173 --strictPort &
+          npx wait-on http://localhost:4173/en/ --timeout 60000
+          yarn budget http://localhost:4173/en/

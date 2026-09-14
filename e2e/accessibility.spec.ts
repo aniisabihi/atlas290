@@ -13,7 +13,16 @@ import { expect, test, type Page } from '@playwright/test'
  */
 
 const scan = (page: Page) =>
-  new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+  new AxeBuilder({ page }).withTags([
+    'wcag2a',
+    'wcag2aa',
+    'wcag21a',
+    'wcag21aa',
+    'wcag22aa',
+    // Not a WCAG level, but it is where axe keeps landmark structure — and the missing <main>
+    // that Lighthouse caught and this scan did not was exactly a best-practice rule.
+    'best-practice',
+  ])
 
 /** Waits until the pantry has loaded and something real is on screen. */
 async function ready(page: Page) {

@@ -117,6 +117,25 @@ test.describe('the keyboard reaches the map', () => {
     await page.keyboard.press('Tab')
     expect(await label(page)).toMatch(/^path:/)
   })
+
+  test('the skip link works in the table view too, where #map does not exist', async ({ page }) => {
+    // It used to point at #map, which the table view does not render — so the one control that
+    // exists to rescue a keyboard visitor was broken in exactly the view they are most likely to
+    // want. Caught by axe's skip-link rule once the rule set was widened past WCAG tags.
+    await page.goto('/en/?y=2024&t=1')
+    await page.getByRole('table').waitFor()
+    await page.keyboard.press('Tab')
+
+    const onTheLink = await page.evaluate(
+      () => document.activeElement?.tagName.toLowerCase() === 'a',
+    )
+    test.skip(!onTheLink, 'this host does not give links keyboard focus')
+
+    await expect(page.getByRole('link', { name: /skip to the table/i })).toBeFocused()
+    await page.keyboard.press('Enter')
+    await page.keyboard.press('Tab')
+    expect(await label(page)).toMatch(/^button:(Municipality|Value|Rank)/)
+  })
 })
 
 test.describe('arrow keys move, and show that they moved', () => {

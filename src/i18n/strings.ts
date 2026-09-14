@@ -15,9 +15,10 @@ const sv = {
   siteName: 'Sveriges kommuner i data',
   tagline: 'Tio mått, 290 kommuner, 1968–2026. Allt från SCB.',
   skipToMap: 'Hoppa till kartan',
+  skipToTable: 'Hoppa till tabellen',
 
   otherLanguage: 'English',
-  switchLanguage: 'Byt språk till engelska',
+  switchLanguage: 'English — byt språk till engelska',
 
   mapLabel: 'Karta över Sveriges kommuner',
   cartogramLabel: 'Bubbeldiagram över Sveriges kommuner, storlek efter folkmängd',
@@ -97,9 +98,10 @@ const en: Strings = {
   siteName: "Sweden's municipalities in data",
   tagline: 'Ten measures, 290 municipalities, 1968–2026. All from Statistics Sweden.',
   skipToMap: 'Skip to the map',
+  skipToTable: 'Skip to the table',
 
   otherLanguage: 'Svenska',
-  switchLanguage: 'Switch language to Swedish',
+  switchLanguage: 'Svenska — switch language to Swedish',
 
   mapLabel: 'Map of Sweden by municipality',
   cartogramLabel: 'Bubble chart of Sweden by municipality, sized by population',
