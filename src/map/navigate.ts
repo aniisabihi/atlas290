@@ -13,12 +13,18 @@ export const DIRECTIONS = Object.keys(VECTORS) as Direction[]
 export type NavContext = {
   neighbours: Readonly<Record<string, readonly string[]>>
   centroids: ReadonlyMap<string, readonly [number, number]>
+  /**
+   * How wide a cone counts as "that way", in cosine. Defaults to the geographic map's measured
+   * value; the cartogram supplies its own, because the right angle is a property of how the
+   * shapes are arranged rather than a universal constant.
+   */
+  coneCos?: number
 }
 
 /**
- * Both cones are 45 degrees, and both prefer the nearest candidate, so the whole rule reads as
- * one sentence: the nearest municipality within 45 degrees of the key pressed, preferring one
- * that shares a border.
+ * Both cones are the same width and both prefer the nearest candidate, so the whole rule reads as
+ * one sentence: the nearest municipality within the cone of the key pressed, preferring one that
+ * shares a border.
  *
  * Those numbers were measured rather than chosen. Sweeping the neighbour cone over 45, 60, 75
  * and 90 degrees against both tie-breaks, on the real graph and real centroids:
@@ -34,7 +40,23 @@ export type NavContext = {
  * widening the cone restores coverage but collapses two keys onto one destination. 45 degrees
  * with the nearest candidate is the only setting that gets both.
  */
-const CONE_COS = Math.cos(Math.PI / 4)
+export const MAP_CONE_COS = Math.cos((45 * Math.PI) / 180)
+
+/**
+ * The bubble cartogram needs a slightly wider cone than the geographic map, and this is measured
+ * rather than chosen. Sweeping the same rule over the Dorling layout:
+ *
+ *   cone  prefer      reachable   distinct keys
+ *    45   nearest      289/290    3.88   <- strands Salem
+ *    50   nearest      290/290    3.66   <- shipped
+ *    60   nearest      289/290    3.32   <- strands Landskrona
+ *    50   aligned      284/290    3.86
+ *
+ * Plan 3 proved every municipality is arrow-reachable on the geographic layout. That guarantee
+ * does not survive moving every centroid, so it is re-established here rather than assumed —
+ * `Cartogram.test.tsx` asserts it against the real bubble positions.
+ */
+export const CARTOGRAM_CONE_COS = Math.cos((50 * Math.PI) / 180)
 
 type Candidate = { code: string; distance: number; cos: number }
 
@@ -103,14 +125,15 @@ function beats(a: Candidate, b: Candidate, prefer: 'alignment' | 'distance'): bo
  * moving somewhere the visitor did not ask for.
  */
 export function step(from: string, direction: Direction, ctx: NavContext): string | null {
+  const cone = ctx.coneCos ?? MAP_CONE_COS
   const neighbour = bestInCone(
     from,
     ctx.neighbours[from] ?? [],
     direction,
-    CONE_COS,
+    cone,
     ctx.centroids,
     'distance',
   )
   if (neighbour) return neighbour
-  return bestInCone(from, ctx.centroids.keys(), direction, CONE_COS, ctx.centroids, 'distance')
+  return bestInCone(from, ctx.centroids.keys(), direction, cone, ctx.centroids, 'distance')
 }

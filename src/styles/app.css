@@ -521,3 +521,24 @@ button {
 .data-table tr[aria-current='true'] {
   outline: 2px solid var(--focus-core);
 }
+
+.cartogram {
+  display: block;
+  height: min(78vh, 900px);
+  width: 100%;
+  max-width: 100%;
+}
+
+.cartogram circle:focus-visible {
+  outline: none;
+}
+
+.cartogram[data-animate='true'] circle {
+  transition: fill var(--motion) ease;
+}
+
+.view-switch button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+}

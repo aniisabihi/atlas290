@@ -20,6 +20,7 @@ const sv = {
   switchLanguage: 'Byt språk till engelska',
 
   mapLabel: 'Karta över Sveriges kommuner',
+  cartogramLabel: 'Bubbeldiagram över Sveriges kommuner, storlek efter folkmängd',
   mapHint: 'Använd piltangenterna för att gå mellan grannkommuner. Enter väljer, Escape rensar.',
   noNeighbour: 'Ingen grannkommun åt det hållet.',
 
@@ -100,6 +101,7 @@ const en: Strings = {
   switchLanguage: 'Switch language to Swedish',
 
   mapLabel: 'Map of Sweden by municipality',
+  cartogramLabel: 'Bubble chart of Sweden by municipality, sized by population',
   mapHint:
     'Use the arrow keys to move between neighbouring municipalities. Enter selects, Escape clears.',
   noNeighbour: 'No neighbouring municipality that way.',

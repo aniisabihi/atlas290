@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { MunicipalityTopology } from '../../shared/geometry'
-import type { Adjacency, PantryData } from '../../shared/pantry'
+import type { Adjacency, Bubbles, PantryData } from '../../shared/pantry'
 import { lookup, observationSentence } from '../data/select'
 import { t } from '../i18n/strings'
 import { titleFor } from '../state/title'
@@ -13,6 +13,7 @@ import { IndicatorPicker } from './IndicatorPicker'
 import { LanguageSwitch } from './LanguageSwitch'
 import { Legend } from './Legend'
 import { LiveRegion } from './LiveRegion'
+import { Cartogram } from './Cartogram'
 import { MapView, type MapHandle } from './MapView'
 import { ComparePanel } from './ComparePanel'
 import { DataTable } from './DataTable'
@@ -30,10 +31,12 @@ export function App({
   data,
   topology,
   adjacency,
+  bubbles,
 }: {
   data: PantryData
   topology: MunicipalityTopology
   adjacency: Adjacency
+  bubbles: Bubbles
 }) {
   const meta = metaFrom(data)
   const lk = lookup(data)
@@ -60,6 +63,8 @@ export function App({
    */
   const [notice, setNotice] = useState('')
   const mapRef = useRef<MapHandle>(null)
+  // Unstated in the URL means "whatever suits this screen"; Task 9 makes that depend on width.
+  const view = state.view ?? 'map'
   const announcement =
     notice ||
     (state.selected
@@ -161,6 +166,29 @@ export function App({
               }}
             >
               {state.table ? strings.hideTable : strings.showTable}
+            </button>
+          </div>
+
+          <div className="view-switch">
+            <button
+              type="button"
+              aria-pressed={view === 'map'}
+              onClick={() => {
+                interrupt()
+                update({ view: 'map' })
+              }}
+            >
+              {strings.showMap}
+            </button>
+            <button
+              type="button"
+              aria-pressed={view === 'cartogram'}
+              onClick={() => {
+                interrupt()
+                update({ view: 'cartogram' })
+              }}
+            >
+              {strings.showCartogram}
             </button>
           </div>
 

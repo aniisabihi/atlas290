@@ -11,6 +11,11 @@ const validData = {
 }
 
 const validAdjacency = { schemaVersion: 1, neighbours: {}, synthetic: [] }
+const validBubbles = {
+  schemaVersion: 1,
+  basedOn: { indicator: 'population', year: 2024 },
+  circles: [],
+}
 
 const validTopology = {
   type: 'Topology',
@@ -30,12 +35,23 @@ function notOkResponse(): Response {
 }
 
 /** Routes each of the three pantry fetches to its own stub response. */
-function stubFetch(dataRes: Response, topoRes: Response, adjRes = okResponse(validAdjacency)) {
+function stubFetch(
+  dataRes: Response,
+  topoRes: Response,
+  adjRes = okResponse(validAdjacency),
+  bubbleRes = okResponse(validBubbles),
+) {
   vi.stubGlobal(
     'fetch',
     vi.fn((url: string) =>
       Promise.resolve(
-        url.includes('indicators') ? dataRes : url.includes('adjacency') ? adjRes : topoRes,
+        url.includes('indicators')
+          ? dataRes
+          : url.includes('adjacency')
+            ? adjRes
+            : url.includes('bubbles')
+              ? bubbleRes
+              : topoRes,
       ),
     ),
   )
@@ -52,6 +68,16 @@ describe('loadPantry', () => {
     [
       'the adjacency graph',
       () => stubFetch(okResponse(validData), okResponse(validTopology), notOkResponse()),
+    ],
+    [
+      'the bubble layout',
+      () =>
+        stubFetch(
+          okResponse(validData),
+          okResponse(validTopology),
+          okResponse(validAdjacency),
+          notOkResponse(),
+        ),
     ],
   ])('throws the pantry-files-missing message when %s is not ok', async (_label, stub) => {
     stub()
@@ -95,6 +121,7 @@ describe('loadPantry', () => {
       data: validData,
       topology: validTopology,
       adjacency: validAdjacency,
+      bubbles: validBubbles,
     })
   })
 })

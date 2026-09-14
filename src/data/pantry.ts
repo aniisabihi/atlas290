@@ -1,4 +1,4 @@
-import { Adjacency, PantryData } from '../../shared/pantry'
+import { Adjacency, Bubbles, PantryData } from '../../shared/pantry'
 import type { MunicipalityTopology } from '../../shared/geometry'
 
 /**
@@ -18,22 +18,25 @@ export async function loadPantry(): Promise<{
   data: PantryData
   topology: MunicipalityTopology
   adjacency: Adjacency
+  bubbles: Bubbles
 }> {
-  const [dataRes, topoRes, adjRes] = await Promise.all([
+  const [dataRes, topoRes, adjRes, bubbleRes] = await Promise.all([
     fetch('/pantry/data/indicators.json'),
     fetch('/pantry/geometry/municipalities.topo.json'),
     fetch('/pantry/geometry/adjacency.json'),
+    fetch('/pantry/layout/bubbles.json'),
   ])
-  if (!dataRes.ok || !topoRes.ok || !adjRes.ok) {
+  if (!dataRes.ok || !topoRes.ok || !adjRes.ok || !bubbleRes.ok) {
     throw new Error('pantry files missing; run yarn kitchen publish')
   }
   const data = PantryData.parse(await dataRes.json())
   const adjacency = Adjacency.parse(await adjRes.json())
+  const bubbles = Bubbles.parse(await bubbleRes.json())
   const topology = (await topoRes.json()) as MunicipalityTopology
   if (!Array.isArray(topology?.objects?.municipalities?.geometries)) {
     throw new Error(
       'public/pantry/geometry/municipalities.topo.json has no objects.municipalities.geometries array; run yarn kitchen publish',
     )
   }
-  return { data, topology, adjacency }
+  return { data, topology, adjacency, bubbles }
 }
