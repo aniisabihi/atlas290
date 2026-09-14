@@ -593,3 +593,30 @@ button {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+.notices {
+  margin-top: calc(var(--space) * 2);
+  border-top: 1px solid var(--border);
+  padding-top: var(--space);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.notices summary {
+  cursor: pointer;
+}
+
+.notices summary h2 {
+  display: inline;
+  font-size: 1rem;
+}
+
+.notices ul {
+  columns: 2;
+  list-style: none;
+  padding: 0;
+}
+
+.notices a {
+  color: var(--accent);
+}

@@ -21,6 +21,7 @@ import { DataTable } from './DataTable'
 import { FactsStrip } from './FactsStrip'
 import { ProfilePanel } from './ProfilePanel'
 import { NoDataPatterns } from './NoDataPatterns'
+import { Notices } from './Notices'
 import { SearchBox } from './SearchBox'
 import { YearSlider } from './YearSlider'
 
@@ -312,6 +313,8 @@ export function App({
           />
         )}
       </main>
+
+      <Notices lang={state.lang} />
 
       <LiveRegion message={announcement} silent={playing} />
     </div>
