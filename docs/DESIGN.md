@@ -1,8 +1,11 @@
 # Sweden Data Explorer — design
 
-Date: 2026-09-10, revised 2026-09-13 after design review. Status: Plan 1 (foundations and the
-first indicator) is implemented and the pantry is committed; the product itself — the map,
-time travel, cartogram morph and facts engine described below — is not yet built.
+Date: 2026-09-10, revised 2026-09-13 after design review, revised 2026-09-14 after Plan 2.
+Status: Plans 1 and 2 are implemented. The kitchen fetches, freezes, checks and publishes all
+ten indicators for 290 municipalities, with map geometry, keyboard adjacency and the bubble
+layout; the published pantry is 1.04 MB, 275 kB gzipped, and rebuilds byte-identically from
+frozen source. The product itself — the map, time travel, cartogram morph and facts engine
+described below — is not yet built; that is Plan 3 onward.
 Research behind every factual claim: [docs/research/](research/README.md).
 
 ## 1. What we are building
