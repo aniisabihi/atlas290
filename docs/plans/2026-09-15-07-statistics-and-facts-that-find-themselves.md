@@ -18,7 +18,7 @@ Measured on 2026-09-15 against the committed pantry, before anything was designe
 
 **2. There is a circularity nobody spotted when the order was decided.** All ten indicators are used to find the neighbours, so "unusual population among places with a similar population" is close to self-contradictory. The fix is leave-one-out — find the neighbours on the other nine, then measure the surprise on the tenth — and it is both principled and sayable out loud: _among the places most like Kävlinge in every other way, Kävlinge taxes least_.
 
-**3. The strongest facts turn out to need no neighbours at all.** The best material found anywhere in this investigation is in time, not in similarity: Kramfors and Strömsund lost people **every single year for 47 years** and then stopped; six municipalities have grown **every year since 1968**; Stockholm was **15% smaller in 1981** than in 1968; **288 of 290** municipalities tax more in 2026 than in 2000.
+**3. The strongest facts turn out to need no neighbours at all.** The best material found anywhere in this investigation is in time, not in similarity: Kramfors and Strömsund lost people **every single year for 47 years** and then stopped; six municipalities have grown **every year since 1968**; Stockholm was **15% smaller in 1981** than in 1968; **288 of 289** municipalities tax more in 2026 than in 2000.
 
 This does not undo the decision to run Plan 6 first — leave-one-out surprise is a real family and it needs Plan 6's machinery. But it is worth recording that the ordering argument was only partly right, and that the facts strip's best sentences would have been reachable either way.
 
@@ -32,9 +32,9 @@ This does not undo the decision to run Plan 6 first — leave-one-out surprise i
 | Leave-one-out **on the windowed standard scores** does: the top becomes Kävlinge and Vellinge taxing far below their twins, Lund's education, Burlöv's income, Gällivare's mining wages | rebuilt in the windowed space             |
 | Single-year surprise collapses onto the volatile indicators — **only `tax-rate`, `net-migration-rate` and `population-change`** appear in its top 40                                    | compared single-year with windowed        |
 | **Kramfors and Strömsund fell every year from 1968 to 2015** — 47 consecutive years                                                                                                     | walked every population series            |
-| **Six municipalities have grown every year since 1968**: Vallentuna, Sollentuna, Strängnäs, Växjö, Lund, Ängelholm                                                                      | same walk, the other direction            |
+| **Twelve municipalities have grown every year since 1968**: Vallentuna, Sollentuna, Strängnäs, Växjö, Lund, Ängelholm, Halmstad, Varberg, Härryda, Kungälv, Alingsås, Umeå              | same walk, the other direction            |
 | **29 municipalities fell to a trough and recovered** — Sundbyberg −11% to 1981 then +123%; Stockholm −15% to 1981 then +54%                                                             | found each trough and measured both sides |
-| **288 of 290 tax more in 2026 than in 2000**; **283 of 290** have a larger share aged 65+ than in 1968; **124 of 284** have fewer people than in 1968                                   | counted                                   |
+| **288 of 289 tax more in 2026 than in 2000** (Knivsta has no 2000 rate); **283 of 290** have a larger share aged 65+ than in 1968; **124 of 284** have fewer people than in 1968        | counted                                   |
 | The population series has **no structural breaks at all** — 16,368 `present` and 290 `perturbed`, nothing else                                                                          | tallied every status byte                 |
 | **2025 is the only perturbed year**, and every municipality's 2025 figure is perturbed                                                                                                  | same tally                                |
 | SCB's Cell Key Method noise is **an integer in −3…+3**, quoted from SCB in [scb-pxweb.md](../research/reports/scb-pxweb.md)                                                             | read the research report, not assumed     |
@@ -46,7 +46,7 @@ This does not undo the decision to run Plan 6 first — leave-one-out surprise i
 
 | Family     | What it says                                            | Ranked by                              |
 | ---------- | ------------------------------------------------------- | -------------------------------------- |
-| `country`  | 288 of 290 municipalities tax more in 2026 than in 2000 | how lopsided the split is              |
+| `country`  | 288 of 289 municipalities tax more in 2026 than in 2000 | how lopsided the split is              |
 | `run`      | Kramfors lost people every year for 47 years            | length of the run                      |
 | `reversal` | Stockholm was 15% smaller in 1981 than in 1968          | depth of the fall times the recovery   |
 | `unusual`  | Kävlinge taxes least of the places most like it         | leave-one-out gap, in standard scores  |
@@ -125,7 +125,7 @@ docs/decisions/0003-the-facts-engine.md
 
 - [ ] Both built on Task 2, both applying D3.
 - [ ] A reversal needs a real fall, a trough at least ten years before the end, and a real recovery; the thresholds are stated with the count they produce (29 municipalities).
-- [ ] Tests: Kramfors at 47 years, the six 1968-onward growth runs, Stockholm's trough in 1981.
+- [ ] Tests: Kramfors at 47 years, the twelve 1968-onward growth runs, Stockholm's trough in 1981.
 
 ### Task 5 — The `unusual` family
 

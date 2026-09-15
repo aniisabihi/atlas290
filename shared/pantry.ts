@@ -337,6 +337,73 @@ export const Similar = z
   })
 export type Similar = z.infer<typeof Similar>
 
+/**
+ * The facts strip, generated rather than written.
+ *
+ * Five sentences a person chose by hand became five the kitchen finds, one from each of five
+ * families. The families are separate because "how surprising" is not comparable across kinds
+ * of claim: a 47-year run of decline and a tax rate three points below a municipality's twins
+ * are both striking, and any single number ranking one against the other would be an invention
+ * dressed as objectivity. So each family ranks its own and the strip takes the best of each.
+ *
+ * `claim` is the property that has kept this strip honest since Plan 4. It states, in a form a
+ * test can recompute from `indicators.json` alone, exactly what the sentence asserts — so a
+ * monthly refresh that falsifies a fact fails the build instead of publishing a confident lie
+ * on the front page. It survives the move from hand-written to generated precisely because
+ * generation makes the hazard worse, not better: nobody reads a sentence nobody wrote.
+ */
+export const FACT_FAMILIES = ['country', 'run', 'reversal', 'unusual', 'extreme'] as const
+export type FactFamily = (typeof FACT_FAMILIES)[number]
+
+export const Facts = z
+  .object({
+    schemaVersion: z.literal(1),
+    facts: z.array(
+      z.object({
+        /** Stable across rebuilds, so a link to a fact keeps working. */
+        id: z.string().min(1),
+        family: z.enum(FACT_FAMILIES),
+        text: Bilingual,
+        /**
+         * Where the fact can be seen, as a language-less path the site prefixes. A fact the
+         * visitor cannot go and check is a claim, not a fact.
+         */
+        href: z.string().startsWith('/?'),
+        /** What this fact asserts, in a form the pantry can be asked to confirm. */
+        claim: z.string().min(1),
+      }),
+    ),
+  })
+  .superRefine((f, ctx) => {
+    const ids = new Set<string>()
+    const families = new Set<string>()
+    for (const fact of f.facts) {
+      if (ids.has(fact.id)) {
+        ctx.addIssue({ code: 'custom', message: `two facts share the id '${fact.id}'` })
+      }
+      ids.add(fact.id)
+      if (families.has(fact.family)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `two facts come from the '${fact.family}' family; the strip is one per family`,
+        })
+      }
+      families.add(fact.family)
+      // Without an indicator and a year the link lands on the site's defaults, which is a
+      // silent failure: the visitor sees a page that does not show the fact they clicked.
+      if (!fact.href.includes('i=') || !fact.href.includes('y=')) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `${fact.id}: href '${fact.href}' names no indicator and year, so it lands on the defaults`,
+        })
+      }
+      if (fact.text.sv.length === 0 || fact.text.en.length === 0) {
+        ctx.addIssue({ code: 'custom', message: `${fact.id}: missing one of the two languages` })
+      }
+    }
+  })
+export type Facts = z.infer<typeof Facts>
+
 export const Manifest = z.object({
   schemaVersion: z.literal(1),
   license: z.literal('CC0-1.0'),
