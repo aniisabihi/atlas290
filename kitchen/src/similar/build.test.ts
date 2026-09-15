@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import rawData from '../../../public/pantry/data/indicators.json'
+import rawSimilar from '../../../public/pantry/data/similar.json'
 import { PantryData, Similar, type Indicator } from '../../../shared/pantry'
 import {
   assertUsable,
@@ -101,6 +102,17 @@ describe('buildSimilar against the committed pantry', () => {
 
   it('is deterministic — the same pantry builds the same file', () => {
     expect(buildSimilar(data)).toEqual(built)
+  })
+
+  /**
+   * The committed file and this code must not drift apart. `yarn kitchen publish` is what
+   * writes it, and CI already refuses a rebuild that changes any pantry byte — but that check
+   * only fires if someone runs publish. This one fires on every test run, so a change to the
+   * metric that nobody republishes fails here rather than shipping a file computed by an
+   * older version of this module.
+   */
+  it('matches the file committed under public/pantry', () => {
+    expect(Similar.parse(rawSimilar)).toEqual(built)
   })
 
   it('loses the house-price dimension for Dorotea alone, and keeps it for the other four', () => {
