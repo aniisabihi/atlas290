@@ -1,6 +1,6 @@
 # Sweden Data Explorer — design
 
-Date: 2026-09-10, revised 2026-09-13 after design review, revised 2026-09-14 after Plans 2 and 3, revised 2026-09-15 after Plans 6, 7 and 8.
+Date: 2026-09-10, revised 2026-09-13 after design review, revised 2026-09-14 after Plans 2 and 3, revised 2026-09-15 after Plans 6 to 9.
 Status: **the first slice is complete** — all five plans are implemented. The kitchen fetches, freezes, checks and publishes all
 ten indicators for 290 municipalities, with map geometry, keyboard adjacency and the bubble
 layout; the published pantry is 1.04 MB, 275 kB gzipped, and rebuilds byte-identically from
@@ -19,12 +19,14 @@ municipality's own story — how much it has grown or shrunk since its first pub
 it turned, and the one measure it sits furthest out on. Every sentence re-derives its own claim
 from the pantry in the tests.
 
-Continuous integration runs 1,025 unit tests, 151 browser tests
+Continuous integration runs 1,071 unit tests, 184 browser tests
 across Chromium, Firefox and WebKit, an axe scan of nine page states and a measured performance
 budget on every pull request; a monthly job refreshes from SCB and opens a pull request; and the
 deploy runs only when all of that is green. What has not been done is written down in
 [accessibility.md](accessibility.md) — chiefly that no screen-reader pass has been run. The
-cartogram morph and pre-rendered pages remain increments ahead.
+cartogram morph shipped in Plan 8 — the 290 shapes travel between the map and the bubbles
+rather than cutting — and Plan 9 gave every municipality its own page, so a pasted link names
+the place. The second slice is complete, and every increment section 7 lists has shipped.
 Research behind every factual claim: [docs/research/](research/README.md).
 
 ## 1. What we are building
@@ -49,7 +51,7 @@ A visitor lands on a map coloured by population change, with a year slider parke
 | **Money is inflation-adjusted to current kronor by default**                                                               | Income runs from 1999 and house prices from 1981. Nominal kronor across four decades mostly show inflation. SCB's consumer price index is another CC0 table. Nominal stays visible in the profile and table.                                         |
 | **Phones are first-class, and see the cartogram by default**                                                               | The kitchen already computes the bubble layout. Bubbles give equal tap targets, waste no width on a country three times taller than wide, and fix the visual lie. Only the animated morph is deferred.                                               |
 | **Search box plus an explicit compare button**                                                                             | Sundbyberg, Solna and Burlöv are pixels on a national map. Search is also the keyboard and screen-reader entry point. "Compare with…" gives touch and keyboard the same path and makes the URL unambiguous.                                          |
-| **Links carry a correct title and description now; pre-rendered pages later**                                              | A pasted link should say what it shows. Static pages per municipality are a later increment. The URL grammar is final in the first slice so nothing shared ever breaks.                                                                              |
+| **Links carry a correct title and description now; pre-rendered pages later** _(shipped in Plan 9)_                        | A pasted link should say what it shows. Static pages per municipality are a later increment. The URL grammar is final in the first slice so nothing shared ever breaks.                                                                              |
 | **Origin and background indicators are out of scope**                                                                      | SCB publishes population by country of birth per municipality, and an agenda-driven site already puts exactly that on a time slider. Net migration means total, not split by origin. Revisit only with explicit framing rules and a decision record. |
 | **The site loads nothing but its own files**                                                                               | No analytics, no tracking, self-hosted fonts, enforced by a content security policy and stated on the site. Cloudflare's own request counts tell us if anyone came.                                                                                  |
 | **MIT code, CC0 data files, no coats of arms**                                                                             | Code anyone can learn from, data matching SCB's terms, a notices page for libraries and fonts. Municipal arms carry per-file licences and Swedish insignia law.                                                                                      |
@@ -179,7 +181,7 @@ The code lives on GitHub, CI runs on GitHub Actions, which is free for public re
 
 **First slice, about six weeks of evenings and weekends.** Map of 290 municipalities, the ten indicators above, year slider with play, fixed colour scales, profile panel, search, explicit compare, a hand-written strip of five deep-linked facts, static cartogram as the phone view, URL state with correct titles, both languages, WCAG 2.2 AA, deployed on Cloudflare Pages.
 
-**Then, each as its own increment with a recorded decision.** Similar-municipality search and rule-generated profile prose — both **done**, in [Plan 6](plans/2026-09-15-06-similar-municipalities-and-a-profile-that-reads.md), with [decision 0002](decisions/0002-similarity-metric.md). The automatic facts engine — **done**, in [Plan 7](plans/2026-09-15-07-statistics-and-facts-that-find-themselves.md), with [decision 0003](decisions/0003-the-facts-engine.md). The animated cartogram morph — **done**, in [Plan 8](plans/2026-09-15-08-the-morph.md), with [decision 0004](decisions/0004-the-morph.md). Still ahead: pre-rendered municipality pages with preview images.
+**Then, each as its own increment with a recorded decision.** Similar-municipality search and rule-generated profile prose — both **done**, in [Plan 6](plans/2026-09-15-06-similar-municipalities-and-a-profile-that-reads.md), with [decision 0002](decisions/0002-similarity-metric.md). The automatic facts engine — **done**, in [Plan 7](plans/2026-09-15-07-statistics-and-facts-that-find-themselves.md), with [decision 0003](decisions/0003-the-facts-engine.md). The animated cartogram morph — **done**, in [Plan 8](plans/2026-09-15-08-the-morph.md), with [decision 0004](decisions/0004-the-morph.md). Pre-rendered municipality pages with preview images — **done**, in [Plan 9](plans/2026-09-15-09-a-page-per-municipality.md), with [decision 0005](decisions/0005-a-page-per-municipality.md). Every increment named here has now shipped.
 
 **Explicitly deferred.** Neighbourhood-level zoom into SCB's 6,160 small areas. A preference-based "where should I live". A daily guessing game. Animated migration flows. Any of these may never be built.
 

@@ -8,7 +8,8 @@ Ten measures from 1968 to 2026: a choropleth you can drive with a mouse, a keybo
 box, a year you can drag or play, a bubble cartogram that fixes the visual lie a geographic map
 tells about where people live — with the 290 shapes travelling between the two rather than cutting — a profile with ten small histories per municipality, an explicit
 comparison that declines to declare a winner, and a plain sortable table twin of every view.
-Everything is in the URL, so every view is a link.
+Everything is in the URL, so every view is a link — and every municipality has its own page at
+`/en/malmo-1280/`, with its own title, description and preview card.
 
 The five facts on the front page are found by the kitchen rather than written by hand — one from
 each of five families, from the whole country down to a single municipality against its twins.
@@ -34,8 +35,19 @@ yarn lint        # oxlint and Prettier
 yarn build       # production build into dist/
 yarn kitchen publish   # rebuild the pantry from frozen SCB responses, offline
 yarn e2e               # browser tests in Chromium, Firefox and WebKit
+yarn cards             # redraw the 290 preview cards (rarely; see below)
 yarn budget            # Lighthouse against the built site, with a budget
 ```
+
+`yarn build` also writes the 580 municipality pages. `yarn cards` redraws the preview images in
+`public/share/` and is deliberately **not** part of the build: text renders differently on macOS
+and Linux, so running it in CI would produce a diff on every run. The cards carry no figures, so a
+data refresh never invalidates them — run it when the design changes or a municipality is added.
+
+**Link previews need a domain.** `og:image` only resolves for a crawler when it is absolute. Set
+`SITE_ORIGIN=https://example.org` when building and the tags become absolute; without it they are
+root-relative, which is correct for the site and invisible to a crawler. The build says so on
+every run.
 
 Accessibility, including what has _not_ been checked: [docs/accessibility.md](docs/accessibility.md).
 
