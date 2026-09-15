@@ -445,6 +445,56 @@ button {
   }
 }
 
+/*
+ * "Places like this". Laid out as a wrapping row of chips rather than a vertical list, because
+ * a numbered-looking column invites the reader to take the order seriously — and the measured
+ * gap between the fifth and sixth nearest is 0.032 against distances near 1.0, so there is no
+ * order worth reading. A `ul` is still the right element: it is a set of five, and a screen
+ * reader saying "list of 5 items" is the truth.
+ */
+.similar {
+  margin-top: var(--space);
+  border-top: 1px solid var(--border);
+  padding-top: var(--space);
+}
+
+.similar h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.similar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.similar-list a {
+  display: inline-block;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  /*
+   * WCAG 2.2 AA asks for 24x24 CSS pixels (2.5.8 Target Size (Minimum)); the 44x44 figure
+   * people usually quote is 2.5.5, which is AAA and not what DESIGN section 5 targets. These
+   * render at 37px tall and at least 60px wide, measured in the browser, so they clear the AA
+   * minimum with half again to spare without making a five-item list look like five buttons.
+   */
+  min-height: 2.25rem;
+  line-height: 1.6;
+}
+
+.similar-method {
+  margin: 0.6rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  max-width: var(--measure);
+}
+
 .compare-table {
   width: 100%;
   border-collapse: collapse;

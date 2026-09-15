@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { MunicipalityTopology } from '../../shared/geometry'
-import type { Adjacency, Bubbles, PantryData } from '../../shared/pantry'
+import type { Adjacency, Bubbles, PantryData, Similar } from '../../shared/pantry'
 import { lookup, observationSentence } from '../data/select'
 import { t } from '../i18n/strings'
 import { titleFor } from '../state/title'
@@ -20,6 +20,7 @@ import { ComparePanel } from './ComparePanel'
 import { DataTable } from './DataTable'
 import { FactsStrip } from './FactsStrip'
 import { ProfilePanel } from './ProfilePanel'
+import { SimilarPlaces } from './SimilarPlaces'
 import { NoDataPatterns } from './NoDataPatterns'
 import { Notices } from './Notices'
 import { SearchBox } from './SearchBox'
@@ -38,11 +39,13 @@ export function App({
   topology,
   adjacency,
   bubbles,
+  similar,
 }: {
   data: PantryData
   topology: MunicipalityTopology
   adjacency: Adjacency
   bubbles: Bubbles
+  similar: Similar
 }) {
   const meta = metaFrom(data)
   const lk = lookup(data)
@@ -302,6 +305,15 @@ export function App({
             code={state.selected}
             year={state.year}
             lang={state.lang}
+            similar={
+              <SimilarPlaces
+                lk={lk}
+                similar={similar}
+                meta={meta}
+                state={state}
+                lang={state.lang}
+              />
+            }
             onClose={() => {
               const closing = state.selected
               setNotice('')

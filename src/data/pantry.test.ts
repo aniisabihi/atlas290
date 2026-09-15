@@ -16,6 +16,16 @@ const validBubbles = {
   basedOn: { indicator: 'population', year: 2024 },
   circles: [],
 }
+const validSimilar = {
+  schemaVersion: 1,
+  method: {
+    indicators: ['population'],
+    logged: ['population'],
+    window: { from: 2015, to: 2024 },
+    neighbours: 5,
+  },
+  nearest: {},
+}
 
 const validTopology = {
   type: 'Topology',
@@ -40,6 +50,7 @@ function stubFetch(
   topoRes: Response,
   adjRes = okResponse(validAdjacency),
   bubbleRes = okResponse(validBubbles),
+  similarRes = okResponse(validSimilar),
 ) {
   vi.stubGlobal(
     'fetch',
@@ -51,7 +62,9 @@ function stubFetch(
             ? adjRes
             : url.includes('bubbles')
               ? bubbleRes
-              : topoRes,
+              : url.includes('similar')
+                ? similarRes
+                : topoRes,
       ),
     ),
   )
@@ -76,6 +89,17 @@ describe('loadPantry', () => {
           okResponse(validData),
           okResponse(validTopology),
           okResponse(validAdjacency),
+          notOkResponse(),
+        ),
+    ],
+    [
+      'the similar-municipalities file',
+      () =>
+        stubFetch(
+          okResponse(validData),
+          okResponse(validTopology),
+          okResponse(validAdjacency),
+          okResponse(validBubbles),
           notOkResponse(),
         ),
     ],
@@ -115,13 +139,28 @@ describe('loadPantry', () => {
     await expect(loadPantry()).rejects.toThrow(/four digits/)
   })
 
-  it('resolves with the validated data, the topology and the adjacency graph', async () => {
+  it('validates the similar file rather than trusting it', async () => {
+    stubFetch(
+      okResponse(validData),
+      okResponse(validTopology),
+      okResponse(validAdjacency),
+      okResponse(validBubbles),
+      // A municipality listed as its own neighbour. The panel would render it as a link
+      // back to the page it is already on, which looks like a styling bug rather than a
+      // broken pantry — so the loader has to refuse it here.
+      okResponse({ ...validSimilar, nearest: { '0180': ['0180'] } }),
+    )
+    await expect(loadPantry()).rejects.toThrow(/is listed as its own neighbour/)
+  })
+
+  it('resolves with the validated data, the topology, the adjacency graph and the neighbours', async () => {
     stubFetch(okResponse(validData), okResponse(validTopology))
     await expect(loadPantry()).resolves.toEqual({
       data: validData,
       topology: validTopology,
       adjacency: validAdjacency,
       bubbles: validBubbles,
+      similar: validSimilar,
     })
   })
 })

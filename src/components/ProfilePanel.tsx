@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { observationAt, rankOf, type Lookup } from '../data/select'
 import { nominalOf } from '../data/nominal'
 import { formatWithUnit, statusPhrase } from '../i18n/format'
@@ -23,6 +23,8 @@ export function ProfilePanel({
   lang,
   onClose,
   asSheet = false,
+  story,
+  similar,
 }: {
   lk: Lookup
   code: string
@@ -31,6 +33,17 @@ export function ProfilePanel({
   onClose: () => void
   /** On a narrow screen the panel arrives as a bottom sheet rather than a column. */
   asSheet?: boolean
+  /**
+   * Two slots rather than two more data props.
+   *
+   * Both of these depend on the whole `AppState` — the story on the selected year, the similar
+   * list on the indicator and year it has to carry into its links — and passing the state down
+   * here would duplicate `code`, `year` and `lang`, which are already three of its fields. So
+   * the panel stays what it has always been, a layout for everything known about one
+   * municipality, and App composes what goes in it.
+   */
+  story?: ReactNode
+  similar?: ReactNode
 }) {
   const strings = t(lang)
   const heading = useRef<HTMLHeadingElement>(null)
@@ -71,6 +84,8 @@ export function ProfilePanel({
         </button>
       </div>
 
+      {story}
+
       <ul className="profile-rows">
         {lk.data.indicators.map((indicator) => {
           const { value, status } = observationAt(lk, indicator.id, code, year)
@@ -100,6 +115,8 @@ export function ProfilePanel({
           )
         })}
       </ul>
+
+      {similar}
     </section>
   )
 }
