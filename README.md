@@ -1,6 +1,6 @@
 # Atlas 290
 
-[![CI](https://github.com/aniisabihi/sweden-data-explorer/actions/workflows/ci.yml/badge.svg)](https://github.com/aniisabihi/sweden-data-explorer/actions/workflows/ci.yml)
+[![CI](https://github.com/aniisabihi/atlas290/actions/workflows/ci.yml/badge.svg)](https://github.com/aniisabihi/atlas290/actions/workflows/ci.yml)
 
 An interactive atlas of Sweden's 290 municipalities — the number is the name — built entirely from
 Statistics Sweden (SCB) open data. Not affiliated with SCB. Static site, no server, no runtime API, no tracking.

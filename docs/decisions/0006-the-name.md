@@ -80,8 +80,10 @@ name — not break it, but date it.
 - **The link previews are now unblocked** and will render from the first successful deploy. That
   deploy is still waiting on the repository owner's Cloudflare token; nothing in this repository
   can create it.
-- The npm package is renamed. **The GitHub repository is not** — that is the owner's action, and
-  GitHub redirects the old path afterwards, so the CI badge keeps working either way.
+- The npm package and the GitHub repository are both renamed to `atlas290`, the latter by the
+  owner. GitHub 301-redirects the old path, verified after the rename, so links and clones that
+  already exist keep working — including the CI badge, which was updated anyway rather than left
+  to lean on a redirect.
 - The plan documents under `docs/plans/` still say "Sweden Data Explorer" and are left alone. They
   are a record of what was decided when, not a description of the current site.
 
