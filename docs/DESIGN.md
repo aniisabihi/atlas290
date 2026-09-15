@@ -1,6 +1,6 @@
 # Sweden Data Explorer — design
 
-Date: 2026-09-10, revised 2026-09-13 after design review, revised 2026-09-14 after Plans 2 and 3, revised 2026-09-15 after Plan 6.
+Date: 2026-09-10, revised 2026-09-13 after design review, revised 2026-09-14 after Plans 2 and 3, revised 2026-09-15 after Plans 6 and 7.
 Status: **the first slice is complete** — all five plans are implemented. The kitchen fetches, freezes, checks and publishes all
 ten indicators for 290 municipalities, with map geometry, keyboard adjacency and the bubble
 layout; the published pantry is 1.04 MB, 275 kB gzipped, and rebuilds byte-identically from
@@ -10,7 +10,7 @@ diacritic-folding search, arrow-key navigation over the map, and a debounced liv
 profile with ten small histories and, for money, what the figure was at the time; an explicit
 compare puts a second beside it with no verdict; a sortable table is the twin of every view; the
 bubble cartogram is a view anyone can switch to and the default on a phone; and five
-hand-written facts each link into the view that proves them.
+five facts each link into the view that proves them — and since Plan 7 nobody writes those five: the kitchen finds them, one from each of five families, and publishes them with the figures each asserts.
 
 **Plan 6, the first of the second slice, is also done.** The profile now names the five
 municipalities most like the one on screen, from a distance metric computed in the kitchen over
@@ -19,12 +19,12 @@ municipality's own story — how much it has grown or shrunk since its first pub
 it turned, and the one measure it sits furthest out on. Every sentence re-derives its own claim
 from the pantry in the tests.
 
-Continuous integration runs 868 unit tests, 121 browser tests
+Continuous integration runs 978 unit tests, 130 browser tests
 across Chromium, Firefox and WebKit, an axe scan of nine page states and a measured performance
 budget on every pull request; a monthly job refreshes from SCB and opens a pull request; and the
 deploy runs only when all of that is green. What has not been done is written down in
 [accessibility.md](accessibility.md) — chiefly that no screen-reader pass has been run. The
-cartogram morph, the automatic facts engine and pre-rendered pages remain increments ahead.
+cartogram morph and pre-rendered pages remain increments ahead.
 Research behind every factual claim: [docs/research/](research/README.md).
 
 ## 1. What we are building
@@ -179,7 +179,7 @@ The code lives on GitHub, CI runs on GitHub Actions, which is free for public re
 
 **First slice, about six weeks of evenings and weekends.** Map of 290 municipalities, the ten indicators above, year slider with play, fixed colour scales, profile panel, search, explicit compare, a hand-written strip of five deep-linked facts, static cartogram as the phone view, URL state with correct titles, both languages, WCAG 2.2 AA, deployed on Cloudflare Pages.
 
-**Then, each as its own increment with a recorded decision.** Similar-municipality search and rule-generated profile prose — both **done**, in [Plan 6](plans/2026-09-15-06-similar-municipalities-and-a-profile-that-reads.md), with [decision 0002](decisions/0002-similarity-metric.md). Still ahead: the automatic facts engine, the animated cartogram morph, and pre-rendered municipality pages with preview images.
+**Then, each as its own increment with a recorded decision.** Similar-municipality search and rule-generated profile prose — both **done**, in [Plan 6](plans/2026-09-15-06-similar-municipalities-and-a-profile-that-reads.md), with [decision 0002](decisions/0002-similarity-metric.md). The automatic facts engine — **done**, in [Plan 7](plans/2026-09-15-07-statistics-and-facts-that-find-themselves.md), with [decision 0003](decisions/0003-the-facts-engine.md). Still ahead: the animated cartogram morph, and pre-rendered municipality pages with preview images.
 
 **Explicitly deferred.** Neighbourhood-level zoom into SCB's 6,160 small areas. A preference-based "where should I live". A daily guessing game. Animated migration flows. Any of these may never be built.
 

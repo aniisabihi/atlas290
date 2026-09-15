@@ -10,7 +10,9 @@ tells about where people live, a profile with ten small histories per municipali
 comparison that declines to declare a winner, and a plain sortable table twin of every view.
 Everything is in the URL, so every view is a link.
 
-Each profile also opens with a few sentences telling that municipality's own story, and names the
+The five facts on the front page are found by the kitchen rather than written by hand — one from
+each of five families, from the whole country down to a single municipality against its twins.
+Each profile opens with a few sentences telling that municipality's own story, and names the
 five places most like it — measured across all ten indicators over the last ten complete years,
 with the method stated on the page and the reasoning in
 [decision 0002](docs/decisions/0002-similarity-metric.md).
