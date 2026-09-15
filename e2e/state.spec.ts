@@ -22,7 +22,7 @@ test.describe('a link is a view', () => {
     await page.goto('/en/?y=2024&m=1280&v=map')
     await page.getByRole('button', { name: 'Bubbles' }).click()
     await expect(page.getByRole('group', { name: /bubble chart/i })).toBeVisible()
-    await expect(page).toHaveURL(/m=1280/)
+    await expect(page).toHaveURL(/\/malmo-1280\//)
     await expect(page.getByRole('heading', { level: 2, name: 'Malmö' })).toBeVisible()
   })
 
@@ -74,7 +74,7 @@ test.describe('language lives in the path', () => {
   test('the switch carries the whole view across', async ({ page }) => {
     await page.goto('/en/?i=mean-age&y=2010&m=1280')
     await page.getByRole('link', { name: /switch language/i }).click()
-    await expect(page).toHaveURL('/sv/?i=mean-age&y=2010&m=1280')
+    await expect(page).toHaveURL('/sv/malmo-1280/?i=mean-age&y=2010')
     await expect(page.locator('html')).toHaveAttribute('lang', 'sv')
   })
 })

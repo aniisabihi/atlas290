@@ -1,8 +1,8 @@
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { parseSegment } from './shared/slug'
+import { parseSegment } from './shared/slug.ts'
 
 /**
  * Serves `/{lang}/{slug}-{code}/` from that language's entry page while developing.
@@ -15,40 +15,75 @@ import { parseSegment } from './shared/slug'
  * The code is checked against the pantry so an unknown one 404s here exactly as it will in
  * production, rather than silently rendering the front page and looking like a bug in the app.
  */
+function knownCodes(): Set<string> {
+  const data = JSON.parse(
+    readFileSync(resolve(import.meta.dirname, 'public/pantry/data/indicators.json'), 'utf8'),
+  ) as { municipalities: Array<{ code: string }> }
+  return new Set(data.municipalities.map((m) => m.code))
+}
+
+/** `/{lang}/{segment}/` and the code it names, or null when the path is something else. */
+function municipalityRequest(url: string): { lang: string; code: string | null } | null {
+  const path = url.split('?')[0] ?? ''
+  const match = /^\/(sv|en)\/([^/]+)\/?$/.exec(path)
+  if (!match?.[1] || !match[2]) return null
+  return { lang: match[1], code: parseSegment(match[2]) }
+}
+
 function municipalityPages(): Plugin {
   return {
     name: 'municipality-pages',
+
+    /**
+     * `vite preview` has its own SPA fallback and would answer 200 with the root page for a
+     * path that does not exist, while Cloudflare Pages — having no such file — answers 404. The
+     * browser tests run against preview, so without this the suite would assert the preview
+     * server's behaviour rather than the one that ships.
+     *
+     * Registered BEFORE Vite's own middlewares, not after. By the time the internal ones have
+     * run, `/en/atlantis-9999/` has already been rewritten to `/index.html` by the SPA fallback
+     * and the original path is gone — which is exactly how the first attempt at this managed to
+     * 404 the language entry pages and let the unknown ones through.
+     *
+     * The rule is the file system, not a list of codes: 404 when the document a static host
+     * would serve is not there. That cannot drift from what Cloudflare does, because it is the
+     * same question.
+     */
+    configurePreviewServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const request = municipalityRequest(req.url ?? '')
+        if (!request) return next()
+        const path = (req.url ?? '').split('?')[0] ?? ''
+        const file = resolve(import.meta.dirname, `dist${path.replace(/\/?$/, '/')}index.html`)
+        if (existsSync(file)) return next()
+        res.statusCode = 404
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+        res.end(`No municipality page at ${path}`)
+      })
+    },
+
     configureServer(server) {
       let codes: Set<string> | null = null
       server.middlewares.use((req, res, next) => {
-        const path = (req.url ?? '').split('?')[0] ?? ''
-        const match = /^\/(sv|en)\/([^/]+)\/?$/.exec(path)
-        if (!match) return next()
-        const code = match[2] ? parseSegment(match[2]) : null
+        const request = municipalityRequest(req.url ?? '')
+        if (!request) return next()
+        codes ??= knownCodes()
 
-        codes ??= new Set(
-          (
-            JSON.parse(
-              readFileSync(
-                resolve(import.meta.dirname, 'public/pantry/data/indicators.json'),
-                'utf8',
-              ),
-            ) as { municipalities: Array<{ code: string }> }
-          ).municipalities.map((m) => m.code),
-        )
-
-        if (!code || !codes.has(code)) {
+        if (!request.code || !codes.has(request.code)) {
           // Not `next()`. Vite's SPA fallback would answer 200 with the root page, while
           // production has no such file and answers 404 — and a route that only fails once
           // deployed is the hardest kind to notice.
           res.statusCode = 404
           res.setHeader('Content-Type', 'text/plain; charset=utf-8')
-          res.end(`No municipality page at ${path}`)
+          res.end(`No municipality page at ${req.url}`)
           return
         }
 
-        const html = readFileSync(resolve(import.meta.dirname, `${match[1]}/index.html`), 'utf8')
-        server.transformIndexHtml(req.url ?? path, html).then(
+        const html = readFileSync(
+          resolve(import.meta.dirname, `${request.lang}/index.html`),
+          'utf8',
+        )
+        server.transformIndexHtml(req.url ?? '/', html).then(
           (transformed) => {
             res.setHeader('Content-Type', 'text/html')
             res.end(transformed)
