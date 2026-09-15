@@ -263,6 +263,80 @@ export const Bubbles = z.object({
 })
 export type Bubbles = z.infer<typeof Bubbles>
 
+/**
+ * Each municipality's nearest neighbours in the space of the ten indicators — "places like
+ * this" — computed in the kitchen and published, like every other derived figure.
+ *
+ * A separate file rather than a field on `PantryData`, for the same reason adjacency and the
+ * bubble layout are separate: it is derived FROM the data rather than part of it, so the site
+ * can validate and fail on it on its own, and a future plan can drop or replace it without
+ * touching the schema every view depends on.
+ *
+ * `method` is published rather than assumed. The panel's "measured over 2015-2024 across ten
+ * indicators" line is rendered from this object, so changing the window in the kitchen cannot
+ * leave a stale sentence behind in the site — the exact drift Plan 4's facts strip was built
+ * to prevent, applied here before it can happen.
+ */
+export const Similar = z
+  .object({
+    schemaVersion: z.literal(1),
+    method: z.object({
+      /** Indicator ids the distance was computed over, in the pantry's own published order. */
+      indicators: z.array(IndicatorId).nonempty(),
+      /**
+       * Which of those were log-transformed before standardising. Published, not inferred:
+       * the site states the method, and a reader who wants to check it needs to know that
+       * population was compared on a log scale rather than a linear one.
+       */
+      logged: z.array(IndicatorId),
+      /** Inclusive years the per-year standard scores were averaged over. */
+      window: z.object({ from: z.number().int(), to: z.number().int() }),
+      /** How many neighbours each municipality gets. */
+      neighbours: z.number().int().positive(),
+    }),
+    /**
+     * Municipality code to the codes of its nearest neighbours, nearest first. The ORDER is
+     * real but must not be presented as a ranking: the gap between the fifth and sixth nearest
+     * has a median of 0.032 against typical distances near 1.0, and a minimum of exactly 0.000,
+     * so "the third most similar" would be false precision. The site lists them as a set.
+     *
+     * The relationship is also NOT symmetric — A is in B's five for only 55% of pairs — so
+     * nothing may read this as "these two are each other's neighbours".
+     */
+    nearest: z.record(MunicipalityCode, z.array(MunicipalityCode)),
+  })
+  .superRefine((s, ctx) => {
+    if (s.method.window.from > s.method.window.to) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `window runs ${s.method.window.from}-${s.method.window.to}, which is backwards`,
+      })
+    }
+    for (const id of s.method.logged) {
+      if (!s.method.indicators.includes(id)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `'${id}' is listed as log-transformed but is not one of the indicators the distance was computed over`,
+        })
+      }
+    }
+    for (const [code, neighbours] of Object.entries(s.nearest)) {
+      if (neighbours.length === 0) {
+        ctx.addIssue({ code: 'custom', message: `${code}: no neighbours, which is not a result` })
+      }
+      if (neighbours.includes(code)) {
+        ctx.addIssue({ code: 'custom', message: `${code}: is listed as its own neighbour` })
+      }
+      if (new Set(neighbours).size !== neighbours.length) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `${code}: the same municipality appears twice among its neighbours`,
+        })
+      }
+    }
+  })
+export type Similar = z.infer<typeof Similar>
+
 export const Manifest = z.object({
   schemaVersion: z.literal(1),
   license: z.literal('CC0-1.0'),
