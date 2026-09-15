@@ -3,6 +3,7 @@ import {
   Indicator,
   IndicatorSeries,
   Municipality,
+  Facts,
   Similar,
   OBSERVATION_STATUS,
   PantryData,
@@ -185,5 +186,63 @@ describe('Similar', () => {
     expect(() =>
       Similar.parse({ ...valid, nearest: { ...valid.nearest, '0180': ['180', '1280'] } }),
     ).toThrow(/four digits/)
+  })
+})
+
+describe('Facts', () => {
+  const fact = (over: Record<string, unknown> = {}) => ({
+    id: 'tax-up',
+    family: 'country' as const,
+    text: { sv: '288 av 290 kommuner…', en: '288 of 290 municipalities…' },
+    href: '/?i=tax-rate&y=2026',
+    claim: '288 of 290',
+    ...over,
+  })
+  const valid = { schemaVersion: 1 as const, facts: [fact()] }
+
+  it('accepts a well-formed file', () => {
+    expect(Facts.parse(valid).facts[0]?.id).toBe('tax-up')
+  })
+
+  it('refuses two facts with the same id', () => {
+    expect(() => Facts.parse({ ...valid, facts: [fact(), fact({ family: 'run' })] })).toThrow(
+      /two facts share the id 'tax-up'/,
+    )
+  })
+
+  it('refuses two facts from the same family', () => {
+    // The strip is a spread, not five of the same kind — which is the whole reason the
+    // families exist rather than one ranking.
+    expect(() => Facts.parse({ ...valid, facts: [fact(), fact({ id: 'other' })] })).toThrow(
+      /two facts come from the 'country' family/,
+    )
+  })
+
+  it('refuses an href that names no indicator and year', () => {
+    // The silent failure this closes: the link parses, the site renders, and the visitor
+    // lands on the default view — which does not show the fact they clicked.
+    expect(() => Facts.parse({ ...valid, facts: [fact({ href: '/?m=0180' })] })).toThrow(
+      /names no indicator and year/,
+    )
+  })
+
+  it('refuses an href that is not a site path at all', () => {
+    expect(() =>
+      Facts.parse({ ...valid, facts: [fact({ href: 'https://scb.se/?i=x&y=1' })] }),
+    ).toThrow()
+  })
+
+  it('refuses a fact missing one of the two languages', () => {
+    expect(() =>
+      Facts.parse({ ...valid, facts: [fact({ text: { sv: 'något', en: '' } })] }),
+    ).toThrow(/missing one of the two languages/)
+  })
+
+  it('refuses a fact with no claim, because nothing could then check it', () => {
+    expect(() => Facts.parse({ ...valid, facts: [fact({ claim: '' })] })).toThrow()
+  })
+
+  it('refuses a family it does not know', () => {
+    expect(() => Facts.parse({ ...valid, facts: [fact({ family: 'surprising' })] })).toThrow()
   })
 })

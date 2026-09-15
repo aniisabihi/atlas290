@@ -3,7 +3,7 @@ import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSy
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import type { ZodType } from 'zod'
-import { Adjacency, Bubbles, Manifest, PantryData, Similar } from '../../shared/pantry'
+import { Adjacency, Bubbles, Facts, Manifest, PantryData, Similar } from '../../shared/pantry'
 import type { Indicator, IndicatorSeries, Municipality } from '../../shared/pantry'
 import { check } from './check'
 import { cmp } from './cmp'
@@ -11,6 +11,7 @@ import { roundIndicatorBreaks, roundSeriesValues } from './round'
 import { buildAdjacency, curatedEdgePairs, type CuratedEdge } from './geometry/adjacency'
 import { buildBubbles } from './geometry/bubbles'
 import { buildSimilar } from './similar/build'
+import { buildFacts } from './facts/build'
 import { buildTopology, centroids, GEOMETRY_SOURCE } from './geometry/build'
 import { municipalityProps } from './geometry/props'
 import { CKM_FROM, POPULATION } from './indicators/population'
@@ -407,6 +408,17 @@ export async function publish(
      * measured 0.032 median gap between the fifth and sixth nearest.
      */
     writePantryFile(join(pantryDir, 'data/similar.json'), Similar, buildSimilar(published))
+
+    /**
+     * Plan 7: the facts strip, found rather than written. Computed from the published data for
+     * the same reason the similarity file is — it is a claim ABOUT `indicators.json`, and a
+     * reader checking "288 of 289" has only the published file to check it against.
+     *
+     * It is written last of the data files because it is the only one built on top of another:
+     * the `unusual` family reuses Plan 6's windowed features, so a change to the similarity
+     * metric changes a sentence on the front page.
+     */
+    writePantryFile(join(pantryDir, 'data/facts.json'), Facts, buildFacts(published))
     writePantryFile(
       join(pantryDir, 'manifest.json'),
       Manifest,

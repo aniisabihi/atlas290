@@ -5,7 +5,7 @@ import { App } from './components/App'
 
 const root = createRoot(document.getElementById('root')!)
 loadPantry()
-  .then(({ data, topology, adjacency, bubbles, similar }) =>
+  .then(({ data, topology, adjacency, bubbles, similar, facts }) =>
     root.render(
       <App
         data={data}
@@ -13,6 +13,7 @@ loadPantry()
         adjacency={adjacency}
         bubbles={bubbles}
         similar={similar}
+        facts={facts}
       />,
     ),
   )

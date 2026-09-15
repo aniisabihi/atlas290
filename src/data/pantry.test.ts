@@ -16,6 +16,18 @@ const validBubbles = {
   basedOn: { indicator: 'population', year: 2024 },
   circles: [],
 }
+const validFacts = {
+  schemaVersion: 1,
+  facts: [
+    {
+      id: 'country-population-lower',
+      family: 'country',
+      text: { sv: '128 av 284 kommuner…', en: '128 of 284 municipalities…' },
+      href: '/?i=population&y=2025',
+      claim: '128 of 284',
+    },
+  ],
+}
 const validSimilar = {
   schemaVersion: 1,
   method: {
@@ -51,6 +63,7 @@ function stubFetch(
   adjRes = okResponse(validAdjacency),
   bubbleRes = okResponse(validBubbles),
   similarRes = okResponse(validSimilar),
+  factsRes = okResponse(validFacts),
 ) {
   vi.stubGlobal(
     'fetch',
@@ -64,7 +77,9 @@ function stubFetch(
               ? bubbleRes
               : url.includes('similar')
                 ? similarRes
-                : topoRes,
+                : url.includes('facts')
+                  ? factsRes
+                  : topoRes,
       ),
     ),
   )
@@ -89,6 +104,18 @@ describe('loadPantry', () => {
           okResponse(validData),
           okResponse(validTopology),
           okResponse(validAdjacency),
+          notOkResponse(),
+        ),
+    ],
+    [
+      'the facts file',
+      () =>
+        stubFetch(
+          okResponse(validData),
+          okResponse(validTopology),
+          okResponse(validAdjacency),
+          okResponse(validBubbles),
+          okResponse(validSimilar),
           notOkResponse(),
         ),
     ],
@@ -161,6 +188,7 @@ describe('loadPantry', () => {
       adjacency: validAdjacency,
       bubbles: validBubbles,
       similar: validSimilar,
+      facts: validFacts,
     })
   })
 })

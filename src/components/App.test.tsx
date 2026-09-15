@@ -6,7 +6,8 @@ import rawTopology from '../../public/pantry/geometry/municipalities.topo.json'
 import rawAdjacency from '../../public/pantry/geometry/adjacency.json'
 import rawBubbles from '../../public/pantry/layout/bubbles.json'
 import rawSimilar from '../../public/pantry/data/similar.json'
-import { Adjacency, Bubbles, PantryData, Similar } from '../../shared/pantry'
+import rawFacts from '../../public/pantry/data/facts.json'
+import { Adjacency, Bubbles, Facts, PantryData, Similar } from '../../shared/pantry'
 import type { MunicipalityTopology } from '../../shared/geometry'
 import { App } from './App'
 import { SETTLE_MS } from './LiveRegion'
@@ -16,6 +17,7 @@ const topology = rawTopology as unknown as MunicipalityTopology
 const adjacency = Adjacency.parse(rawAdjacency)
 const bubbles = Bubbles.parse(rawBubbles)
 const similar = Similar.parse(rawSimilar)
+const facts = Facts.parse(rawFacts)
 
 /**
  * Integration, at the level where the pieces are wired to each other. The unit tests all passed
@@ -32,6 +34,7 @@ const open = (url: string) => {
       adjacency={adjacency}
       bubbles={bubbles}
       similar={similar}
+      facts={facts}
     />,
   )
 }
