@@ -6,7 +6,7 @@ An interactive atlas of Sweden's 290 municipalities built entirely from Statisti
 
 Ten measures from 1968 to 2026: a choropleth you can drive with a mouse, a keyboard or a search
 box, a year you can drag or play, a bubble cartogram that fixes the visual lie a geographic map
-tells about where people live, a profile with ten small histories per municipality, an explicit
+tells about where people live — with the 290 shapes travelling between the two rather than cutting — a profile with ten small histories per municipality, an explicit
 comparison that declines to declare a winner, and a plain sortable table twin of every view.
 Everything is in the URL, so every view is a link.
 

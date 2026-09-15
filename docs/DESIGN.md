@@ -1,6 +1,6 @@
 # Sweden Data Explorer — design
 
-Date: 2026-09-10, revised 2026-09-13 after design review, revised 2026-09-14 after Plans 2 and 3, revised 2026-09-15 after Plans 6 and 7.
+Date: 2026-09-10, revised 2026-09-13 after design review, revised 2026-09-14 after Plans 2 and 3, revised 2026-09-15 after Plans 6, 7 and 8.
 Status: **the first slice is complete** — all five plans are implemented. The kitchen fetches, freezes, checks and publishes all
 ten indicators for 290 municipalities, with map geometry, keyboard adjacency and the bubble
 layout; the published pantry is 1.04 MB, 275 kB gzipped, and rebuilds byte-identically from
@@ -19,7 +19,7 @@ municipality's own story — how much it has grown or shrunk since its first pub
 it turned, and the one measure it sits furthest out on. Every sentence re-derives its own claim
 from the pantry in the tests.
 
-Continuous integration runs 978 unit tests, 130 browser tests
+Continuous integration runs 1,025 unit tests, 151 browser tests
 across Chromium, Firefox and WebKit, an axe scan of nine page states and a measured performance
 budget on every pull request; a monthly job refreshes from SCB and opens a pull request; and the
 deploy runs only when all of that is green. What has not been done is written down in
@@ -179,7 +179,7 @@ The code lives on GitHub, CI runs on GitHub Actions, which is free for public re
 
 **First slice, about six weeks of evenings and weekends.** Map of 290 municipalities, the ten indicators above, year slider with play, fixed colour scales, profile panel, search, explicit compare, a hand-written strip of five deep-linked facts, static cartogram as the phone view, URL state with correct titles, both languages, WCAG 2.2 AA, deployed on Cloudflare Pages.
 
-**Then, each as its own increment with a recorded decision.** Similar-municipality search and rule-generated profile prose — both **done**, in [Plan 6](plans/2026-09-15-06-similar-municipalities-and-a-profile-that-reads.md), with [decision 0002](decisions/0002-similarity-metric.md). The automatic facts engine — **done**, in [Plan 7](plans/2026-09-15-07-statistics-and-facts-that-find-themselves.md), with [decision 0003](decisions/0003-the-facts-engine.md). Still ahead: the animated cartogram morph, and pre-rendered municipality pages with preview images.
+**Then, each as its own increment with a recorded decision.** Similar-municipality search and rule-generated profile prose — both **done**, in [Plan 6](plans/2026-09-15-06-similar-municipalities-and-a-profile-that-reads.md), with [decision 0002](decisions/0002-similarity-metric.md). The automatic facts engine — **done**, in [Plan 7](plans/2026-09-15-07-statistics-and-facts-that-find-themselves.md), with [decision 0003](decisions/0003-the-facts-engine.md). The animated cartogram morph — **done**, in [Plan 8](plans/2026-09-15-08-the-morph.md), with [decision 0004](decisions/0004-the-morph.md). Still ahead: pre-rendered municipality pages with preview images.
 
 **Explicitly deferred.** Neighbourhood-level zoom into SCB's 6,160 small areas. A preference-based "where should I live". A daily guessing game. Animated migration flows. Any of these may never be built.
 
@@ -212,10 +212,8 @@ SCB's own land use and area statistics give a partial nature picture without lea
 
 ## 9. Still open
 
-Deliberately undecided until we prototype or reach them:
+Deliberately undecided until we prototype or reach them. Two questions that stood here — whether the morph needs a Canvas layer, and bubbles versus a hexagon grid — were closed by [Plan 8](plans/2026-09-15-08-the-morph.md) and [decision 0004](decisions/0004-the-morph.md): no Canvas, and bubbles.
 
-- Whether the animated morph needs a Canvas layer beneath the SVG to hold 60 frames per second on a mid-range phone. Canvas, if added, sits under the SVG focus and ARIA layer, never replacing it.
-- Bubble cartogram versus hexagon grid for the morph target.
 - Indicators beyond the first ten.
 - Visual design language.
 - Project name, with one hard constraint: it must not suggest affiliation with SCB.
