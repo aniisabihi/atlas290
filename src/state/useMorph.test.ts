@@ -67,97 +67,123 @@ describe('useMorph', () => {
     })
   }
 
-  it('starts wherever it is pointed', () => {
-    expect(renderHook(() => useMorph(0, false)).result.current).toBe(0)
-    expect(renderHook(() => useMorph(1, false)).result.current).toBe(1)
+  /** Renders the hook and records every frame it pushes. */
+  const drive = (initial: 0 | 1, reduced = false) => {
+    const frames: number[] = []
+    const view = renderHook(
+      ({ to, reduce }) =>
+        useMorph(to, reduce, (t) => {
+          frames.push(t)
+        }),
+      { initialProps: { to: initial, reduce: reduced } },
+    )
+    return { frames, ...view }
+  }
+
+  const last = (frames: number[]) => frames[frames.length - 1]
+
+  it('pushes the resting value straight away', () => {
+    expect(last(drive(0).frames)).toBe(0)
+    expect(last(drive(1).frames)).toBe(1)
   })
 
   it('travels to the other end and lands exactly on it', () => {
-    const { result, rerender } = renderHook(({ to }) => useMorph(to, false), {
-      initialProps: { to: 0 as 0 | 1 },
-    })
-    rerender({ to: 1 })
+    const { frames, rerender } = drive(0)
+    rerender({ to: 1, reduce: false })
     advance(MORPH_MS / 2)
-    expect(result.current).toBeGreaterThan(0)
-    expect(result.current).toBeLessThan(1)
+    expect(last(frames)).toBeGreaterThan(0)
+    expect(last(frames)).toBeLessThan(1)
     advance(MORPH_MS)
     // Exactly 1, not 0.9999: morphD draws the real circle only at exactly 1.
-    expect(result.current).toBe(1)
+    expect(last(frames)).toBe(1)
+  })
+
+  it('pushes a frame for every step, not only the ends', () => {
+    // The point of the callback API: the caller writes each frame to the DOM itself, because
+    // asking React to re-render 290 paths sixty times a second dropped 13 to 16 frames of
+    // every 67 under 4x and 6x CPU throttling.
+    const { frames, rerender } = drive(0)
+    const before = frames.length
+    rerender({ to: 1, reduce: false })
+    for (let i = 0; i < 10; i++) advance(MORPH_MS / 20)
+    expect(frames.length - before).toBeGreaterThan(8)
   })
 
   it('turns round from where it is rather than teleporting', () => {
-    const { result, rerender } = renderHook(({ to }) => useMorph(to, false), {
-      initialProps: { to: 0 as 0 | 1 },
-    })
-    rerender({ to: 1 })
+    const { frames, rerender } = drive(0)
+    rerender({ to: 1, reduce: false })
     advance(MORPH_MS / 2)
-    const midway = result.current
+    const midway = last(frames)!
     expect(midway).toBeGreaterThan(0.2)
-    rerender({ to: 0 })
+    rerender({ to: 0, reduce: false })
     advance(1)
-    // The first frame after reversing is near where it was, not near the far end.
-    expect(Math.abs(result.current - midway)).toBeLessThan(0.1)
+    expect(Math.abs(last(frames)! - midway)).toBeLessThan(0.1)
     advance(MORPH_MS)
-    expect(result.current).toBe(0)
+    expect(last(frames)).toBe(0)
   })
 
   it('eases rather than moving linearly', () => {
-    // The mutation this catches: using `progress` directly instead of `easeInOut(progress)`
-    // left every test green, because the easing tests covered the function and not its use.
     // A quarter of the way through the clock, a linear morph is at 0.25 and this one is at
     // 4 * 0.25^3 = 0.0625.
-    const { result, rerender } = renderHook(({ to }) => useMorph(to, false), {
-      initialProps: { to: 0 as 0 | 1 },
-    })
-    rerender({ to: 1 })
+    const { frames, rerender } = drive(0)
+    rerender({ to: 1, reduce: false })
     advance(MORPH_MS / 4)
-    expect(result.current).toBeCloseTo(0.0625, 4)
-    expect(result.current).toBeLessThan(0.15)
+    expect(last(frames)).toBeCloseTo(0.0625, 4)
   })
 
   it('gives a short return trip a short duration', () => {
-    const { result, rerender } = renderHook(({ to }) => useMorph(to, false), {
-      initialProps: { to: 0 as 0 | 1 },
-    })
-    rerender({ to: 1 })
+    const { frames, rerender } = drive(0)
+    rerender({ to: 1, reduce: false })
     advance(MORPH_MS * 0.1)
-    const near = result.current
-    rerender({ to: 0 })
-    // Only `near` of the journey is left, so it must finish in well under the full duration.
+    const near = last(frames)!
+    rerender({ to: 0, reduce: false })
     advance(MORPH_MS * near + 1)
-    expect(result.current).toBe(0)
+    expect(last(frames)).toBe(0)
   })
 
   it('never schedules a frame when the visitor asked for less motion', () => {
     // Not a shorter morph or a faster one: none at all. A 290-shape flight across the screen
     // is the largest movement on this site, and the setting exists for people that harms.
-    const { result, rerender } = renderHook(({ to }) => useMorph(to, true), {
-      initialProps: { to: 0 as 0 | 1 },
-    })
+    const { frames, rerender } = drive(0, true)
     expect(callbacks).toHaveLength(0)
-    rerender({ to: 1 })
+    rerender({ to: 1, reduce: true })
     expect(callbacks).toHaveLength(0)
-    expect(result.current).toBe(1)
-    rerender({ to: 0 })
+    expect(last(frames)).toBe(1)
+    rerender({ to: 0, reduce: true })
     expect(callbacks).toHaveLength(0)
-    expect(result.current).toBe(0)
+    expect(last(frames)).toBe(0)
   })
 
   it('schedules frames when motion is allowed, so the test above means something', () => {
-    const { rerender } = renderHook(({ to }) => useMorph(to, false), {
-      initialProps: { to: 0 as 0 | 1 },
-    })
-    rerender({ to: 1 })
+    const { rerender } = drive(0)
+    rerender({ to: 1, reduce: false })
     expect(callbacks.length).toBeGreaterThan(0)
+  })
+
+  it('does not restart when the callback identity changes', () => {
+    // The caller passes an inline arrow. Listing it as a dependency would restart the
+    // animation on every render, which is an animation that never finishes.
+    const frames: number[] = []
+    const { rerender } = renderHook(
+      ({ to }) =>
+        useMorph(to, false, (t) => {
+          frames.push(t)
+        }),
+      { initialProps: { to: 0 as 0 | 1 } },
+    )
+    rerender({ to: 1 })
+    advance(MORPH_MS / 2)
+    const midway = frames[frames.length - 1]!
+    rerender({ to: 1 })
+    advance(MORPH_MS / 4)
+    expect(frames[frames.length - 1]!).toBeGreaterThan(midway)
   })
 
   it('stops when it is unmounted mid-flight', () => {
     const cancel = vi.fn()
     vi.stubGlobal('cancelAnimationFrame', cancel)
-    const { rerender, unmount } = renderHook(({ to }) => useMorph(to, false), {
-      initialProps: { to: 0 as 0 | 1 },
-    })
-    rerender({ to: 1 })
+    const { rerender, unmount } = drive(0)
+    rerender({ to: 1, reduce: false })
     advance(MORPH_MS / 4)
     unmount()
     expect(cancel).toHaveBeenCalled()

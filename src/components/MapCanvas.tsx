@@ -108,8 +108,6 @@ export function MapCanvas({
   const paths = useRef(new Map<string, SVGPathElement>())
   const [focused, setFocused] = useState<string | null>(null)
 
-  const t = useMorph(view === 'cartogram' ? 1 : 0, !animate)
-
   /** The bubbles, in the map's own coordinates, so a shape can travel between the two. */
   const circles = useMemo(() => placeAll(bubbles.circles), [bubbles])
   const circleByCode = useMemo(() => new Map(circles.map((c) => [c.code, c])), [circles])
@@ -139,9 +137,9 @@ export function MapCanvas({
     }
   }, [shapes, circleByCode])
 
-  /** What to draw for one municipality at the current `t`. */
+  /** What to draw for one municipality at `t`. */
   const pathFor = useCallback(
-    (code: string, mapD: string): string => {
+    (code: string, mapD: string, t: number): string => {
       const pair = pairs?.get(code)
       if (!pair) {
         // No proxies: cut at the halfway point rather than drawing nothing.
@@ -150,8 +148,42 @@ export function MapCanvas({
       }
       return morphD(pair, t)
     },
-    [pairs, circleByCode, t],
+    [pairs, circleByCode],
   )
+
+  const svgRef = useRef<SVGSVGElement>(null)
+  const rings = useRef<SVGPathElement[]>([])
+  const cartogramBox = useMemo(() => boxAround(circles, CARTOGRAM_PADDING), [circles])
+
+  /**
+   * One frame, written straight to the DOM.
+   *
+   * This is the whole reason `useMorph` pushes frames rather than holding `t` in state. Only
+   * `d` and the viewBox change while the shapes are moving; every fill, every accessible name
+   * and every observation lookup stays exactly as it was, and asking React to prove that sixty
+   * times a second dropped 13 to 16 frames of every 67 at 4x and 6x throttling.
+   */
+  const applyFrame = useCallback(
+    (t: number) => {
+      for (const shape of shapes) {
+        paths.current.get(shape.code)?.setAttribute('d', pathFor(shape.code, shape.d, t))
+      }
+      for (const ring of rings.current) {
+        const code = ring.dataset['ringFor']
+        if (!code) continue
+        ring.setAttribute('d', pathFor(code, shapeD(shapes, code), t))
+      }
+      svgRef.current?.setAttribute(
+        'viewBox',
+        `${lerp(0, cartogramBox.x, t).toFixed(1)} ${lerp(0, cartogramBox.y, t).toFixed(1)} ` +
+          `${lerp(FRAME[0], cartogramBox.width, t).toFixed(1)} ` +
+          `${lerp(FRAME[1], cartogramBox.height, t).toFixed(1)}`,
+      )
+    },
+    [shapes, pathFor, cartogramBox],
+  )
+
+  useMorph(view === 'cartogram' ? 1 : 0, !animate, applyFrame)
 
   /**
    * The view the arrow keys answer to.
@@ -162,6 +194,12 @@ export function MapCanvas({
    * where the bubbles would send it, which is where the visitor is about to be looking.
    */
   const atCartogram = view === 'cartogram'
+  /**
+   * What React renders: the RESTING state of whichever view is current. Every frame in between
+   * is written by `applyFrame` over the top, and the last one lands exactly here — so the
+   * markup a screen reader or a test sees is always one of the two real ends, never a proxy.
+   */
+  const resting = atCartogram ? 1 : 0
 
   const nav: NavContext = useMemo(
     () =>
@@ -226,18 +264,16 @@ export function MapCanvas({
   )
 
   /** The viewBox travels too, so the bubbles fill the panel at rest exactly as they did. */
-  const cartogramBox = useMemo(() => boxAround(circles, CARTOGRAM_PADDING), [circles])
-  const mapBox: Box = { x: 0, y: 0, width: FRAME[0], height: FRAME[1] }
   const box: Box = {
-    x: lerp(mapBox.x, cartogramBox.x, t),
-    y: lerp(mapBox.y, cartogramBox.y, t),
-    width: lerp(mapBox.width, cartogramBox.width, t),
-    height: lerp(mapBox.height, cartogramBox.height, t),
+    x: lerp(0, cartogramBox.x, resting),
+    y: lerp(0, cartogramBox.y, resting),
+    width: lerp(FRAME[0], cartogramBox.width, resting),
+    height: lerp(FRAME[1], cartogramBox.height, resting),
   }
 
-  const selectedD = selected ? pathFor(selected, shapeD(shapes, selected)) : undefined
+  const selectedD = selected ? pathFor(selected, shapeD(shapes, selected), resting) : undefined
   const focusedD =
-    focused && focused !== selected ? pathFor(focused, shapeD(shapes, focused)) : undefined
+    focused && focused !== selected ? pathFor(focused, shapeD(shapes, focused), resting) : undefined
 
   return (
     <svg
@@ -248,7 +284,7 @@ export function MapCanvas({
       className="map"
       data-animate={animate ? 'true' : 'false'}
       data-view={atCartogram ? 'cartogram' : 'map'}
-      data-morphing={t > 0 && t < 1 ? 'true' : undefined}
+      ref={svgRef}
       onKeyDown={onKeyDown}
     >
       {shapes.map((shape) => {
@@ -268,7 +304,7 @@ export function MapCanvas({
               if (el) paths.current.set(shape.code, el)
               else paths.current.delete(shape.code)
             }}
-            d={pathFor(shape.code, shape.d)}
+            d={pathFor(shape.code, shape.d, resting)}
             role="button"
             aria-label={`${name}, ${reading}`}
             aria-current={shape.code === selected ? 'true' : undefined}
@@ -285,8 +321,9 @@ export function MapCanvas({
         )
       })}
       {selectedD && (
-        <g data-selection-ring="" pointerEvents="none">
+        <g data-selection-ring="" pointerEvents="none" ref={collectRings(rings)}>
           <path
+            data-ring-for={selected ?? undefined}
             d={selectedD}
             fill="none"
             stroke={FOCUS_RING.halo}
@@ -294,6 +331,7 @@ export function MapCanvas({
             vectorEffect="non-scaling-stroke"
           />
           <path
+            data-ring-for={selected ?? undefined}
             d={selectedD}
             fill="none"
             stroke={FOCUS_RING.core}
@@ -303,8 +341,9 @@ export function MapCanvas({
         </g>
       )}
       {focusedD && (
-        <g data-focus-ring="" pointerEvents="none">
+        <g data-focus-ring="" pointerEvents="none" ref={collectRings(rings)}>
           <path
+            data-ring-for={focused ?? undefined}
             d={focusedD}
             fill="none"
             stroke={FOCUS_RING.halo}
@@ -312,6 +351,7 @@ export function MapCanvas({
             vectorEffect="non-scaling-stroke"
           />
           <path
+            data-ring-for={focused ?? undefined}
             d={focusedD}
             fill="none"
             stroke={FOCUS_RING.core}
@@ -323,6 +363,21 @@ export function MapCanvas({
       )}
     </svg>
   )
+}
+
+/**
+ * Gathers the two paths of a ring group so `applyFrame` can move them with their shape. Each
+ * carries the code it follows, because the selection and the keyboard can be on two different
+ * municipalities at once.
+ */
+function collectRings(store: React.RefObject<SVGPathElement[]>) {
+  return (group: SVGGElement | null) => {
+    if (!group) return
+    store.current = [
+      ...store.current.filter((p) => p.isConnected && !group.contains(p)),
+      ...group.querySelectorAll('path'),
+    ]
+  }
 }
 
 function shapeD(shapes: ReturnType<typeof shapesFor>, code: string): string {

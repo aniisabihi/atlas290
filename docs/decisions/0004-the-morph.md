@@ -43,6 +43,32 @@ round of rAF timings was worth nothing.
 If a real device ever proves slower than 6×, the fix is fewer sample points, not a second
 renderer: 16 points still fits at 10×.
 
+#### What the benchmark did not measure, and what that cost
+
+The table above measures `setAttribute` on 290 nodes. The first implementation held `t` in React
+state, so every frame re-rendered 290 path components — recomputing every fill, every accessible
+name and every observation lookup, none of which change while the shapes are moving. Measured in
+the real application, dropping a frame at anything over 18 ms:
+
+| CPU throttle | `t` in React state | frames written directly |
+| ------------ | -----------------: | ----------------------: |
+| 1×           |            0 of 67 |                 1 of 67 |
+| 4×           |           16 of 67 |                 1 of 67 |
+| 6×           |           13 of 67 |                 5 of 67 |
+
+So D1's headroom was real and the first implementation spent it somewhere else. The fix was to
+make the implementation do what the benchmark measured: `useMorph` pushes each frame to a
+callback, the component writes `d` and the viewBox straight to the nodes, and React owns the two
+resting states and everything that is not moving.
+
+What remains at 6× is a handful of frames, mostly the first — which carries the click, React's
+render of the new resting state, and the start of the animation together. It is a hitch at the
+start of a journey on a device six times slower than this machine, not a stutter through it.
+
+**This is recorded rather than tidied away because the lesson generalises**: a benchmark that
+measures the mechanism rather than the implementation will tell you a true thing about the wrong
+program.
+
 ### D2 — 32 sample points
 
 The rule is the most faithful resampling that still fits a phone-class frame budget. 64 misses at
@@ -103,7 +129,11 @@ still exactly the two ends.
   engines.
 - That fallback is a supported state, not a failure: without path measurement the views still
   switch, they simply cut. The morph is the enhancement; reaching the cartogram is not.
-- The performance budget in CI is the regression alarm for D1.
+- The performance budget in CI is the regression alarm for D1, though it measures load and not
+  the morph; the in-situ frame counts above were taken by hand and are not re-run automatically.
+- `d` is imperative state. React sets it for the resting states and `applyFrame` overwrites it
+  every frame in between, which is the standard trade for an animation and is worth naming: a
+  future change that makes React the owner of `d` again will look tidier and drop frames.
 
 ## Where the numbers are re-derived
 

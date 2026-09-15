@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 
 /**
  * The clock behind the morph: a `t` that travels between 0 (the map) and 1 (the bubbles).
@@ -36,32 +36,55 @@ export function easeInOut(t: number): number {
  * the shapes turn round rather than teleport. The duration is scaled by the distance left, so a
  * short return trip is not given the full 650 ms.
  */
-export function useMorph(target: 0 | 1, reducedMotion: boolean): number {
-  const [animated, setAnimated] = useState<number>(target)
+/**
+ * Calls `onFrame(t)` for every frame of the journey, and once on arrival.
+ *
+ * **It deliberately does not hold `t` in React state.** The first version did, and re-rendering
+ * 290 path components sixty times a second is a different piece of work from moving them: with
+ * the throttle at 4x and 6x, 13 to 16 frames of every 67 were dropped, against an isolated
+ * benchmark that said a morph costs 10 ms at 6x. The benchmark was measuring `setAttribute` on
+ * 290 nodes; the component was measuring React reconciling 290 elements, recomputing every fill,
+ * every accessible name and every observation lookup — none of which change while the shapes are
+ * moving.
+ *
+ * So the caller writes the frame itself, straight to the nodes. React owns the resting states
+ * and everything that is not moving; this owns `d`.
+ *
+ * `onFrame` is held in a ref rather than listed as a dependency, so a caller that passes an
+ * inline arrow function does not restart the animation on every render.
+ */
+export function useMorph(
+  target: 0 | 1,
+  reducedMotion: boolean,
+  onFrame: (t: number) => void,
+): void {
   /**
-   * Where the morph actually is, for the next animation to start from.
-   *
-   * Written only inside the effect and its frame callback, never during render — a ref touched
-   * while rendering is a value React is free to discard, and the lint rule that says so is
-   * right.
+   * Where the morph actually is, for the next animation to start from. Written only inside the
+   * effect and its frame callback, never during render — a ref touched while rendering is a
+   * value React is free to discard, and the lint rule that says so is right.
    */
   const position = useRef<number>(target)
   const frame = useRef<number | null>(null)
+  const latest = useRef(onFrame)
+  useEffect(() => {
+    latest.current = onFrame
+  })
 
   useEffect(() => {
     if (reducedMotion) {
-      // No frames, and no setState from an effect: the returned value is derived below. The ref
-      // is still kept honest so that turning the setting off mid-session resumes from the right
-      // place rather than from wherever the last animation stopped.
+      // Not a shorter morph or a faster one: none at all. Straight to the far end.
       position.current = target
+      latest.current(target)
       return
     }
 
     const from = position.current
-    if (from === target) return
+    if (from === target) {
+      latest.current(target)
+      return
+    }
 
-    const distance = Math.abs(target - from)
-    const duration = MORPH_MS * distance
+    const duration = MORPH_MS * Math.abs(target - from)
     const started = performance.now()
 
     const tick = (now: number) => {
@@ -70,7 +93,7 @@ export function useMorph(target: 0 | 1, reducedMotion: boolean): number {
       // what `morphD` needs in order to draw the real geometry rather than a proxy at 0.9999.
       const value = from + (target - from) * easeInOut(progress)
       position.current = value
-      setAnimated(value)
+      latest.current(value)
       frame.current = progress < 1 ? requestAnimationFrame(tick) : null
     }
     frame.current = requestAnimationFrame(tick)
@@ -80,14 +103,4 @@ export function useMorph(target: 0 | 1, reducedMotion: boolean): number {
       frame.current = null
     }
   }, [target, reducedMotion])
-
-  /**
-   * Derived rather than stored for the reduced-motion case.
-   *
-   * One consequence, small and deliberate: if the visitor turns the system setting off while a
-   * view change is on screen, the single render between that and the effect running shows the
-   * last animated value. The next frame is correct. Writing state during render to close a
-   * one-frame gap in a setting nobody toggles mid-session would be the worse trade.
-   */
-  return reducedMotion ? target : animated
 }
