@@ -14,8 +14,7 @@ import { IndicatorPicker } from './IndicatorPicker'
 import { LanguageSwitch } from './LanguageSwitch'
 import { Legend } from './Legend'
 import { LiveRegion } from './LiveRegion'
-import { Cartogram } from './Cartogram'
-import { MapView, type MapHandle } from './MapView'
+import { MapCanvas, type MapHandle } from './MapCanvas'
 import { ComparePanel } from './ComparePanel'
 import { DataTable } from './DataTable'
 import { FactsStrip } from './FactsStrip'
@@ -235,44 +234,26 @@ export function App({
                 />
               ) : (
                 <div className="map-frame" id="map">
-                  {view === 'cartogram' ? (
-                    <Cartogram
-                      ref={mapRef}
-                      lk={lk}
-                      bubbles={bubbles}
-                      adjacencyNeighbours={adjacency.neighbours}
-                      indicatorId={state.indicator}
-                      year={state.year}
-                      selected={state.selected}
-                      lang={state.lang}
-                      onNoMove={() => setNotice(strings.noNeighbour)}
-                      onMoved={() => setNotice('')}
-                      onSelect={(code) => {
-                        interrupt()
-                        setNotice('')
-                        update({ selected: code === state.selected ? null : code })
-                      }}
-                    />
-                  ) : (
-                    <MapView
-                      ref={mapRef}
-                      lk={lk}
-                      topology={topology}
-                      adjacency={adjacency}
-                      indicatorId={state.indicator}
-                      year={state.year}
-                      selected={state.selected}
-                      lang={state.lang}
-                      animate={!reducedMotion}
-                      onNoMove={() => setNotice(strings.noNeighbour)}
-                      onMoved={() => setNotice('')}
-                      onSelect={(code) => {
-                        interrupt()
-                        setNotice('')
-                        update({ selected: code === state.selected ? null : code })
-                      }}
-                    />
-                  )}
+                  <MapCanvas
+                    ref={mapRef}
+                    lk={lk}
+                    topology={topology}
+                    adjacency={adjacency}
+                    bubbles={bubbles}
+                    view={view}
+                    indicatorId={state.indicator}
+                    year={state.year}
+                    selected={state.selected}
+                    lang={state.lang}
+                    animate={!reducedMotion}
+                    onNoMove={() => setNotice(strings.noNeighbour)}
+                    onMoved={() => setNotice('')}
+                    onSelect={(code) => {
+                      interrupt()
+                      setNotice('')
+                      update({ selected: code === state.selected ? null : code })
+                    }}
+                  />
                 </div>
               )}
             </div>
