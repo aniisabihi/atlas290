@@ -144,6 +144,12 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
+    env:
+      # The Cloudflare Pages project name, which is also the hostname it is served from. Declared
+      # once because two things need it and they must not drift: the deploy target, and the
+      # absolute origin the link previews are built against. Changing this name changes the site's
+      # address, so it is a decision, not a setting — docs/decisions/0006-the-name.md.
+      PAGES_PROJECT: atlas290
     steps:
       - uses: actions/checkout@v4
       - run: corepack enable
@@ -169,8 +175,12 @@ jobs:
             echo "::notice title=Deploy skipped::CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are not set on this repository, so there is nowhere to deploy to. README.md has the steps. Everything else on this commit passed."
           fi
 
+      # SITE_ORIGIN is what makes og:image and canonical absolute. Without it the pages are still
+      # correct but no crawler can resolve the preview image, so a pasted link shows no card.
       - run: yarn build
         if: steps.configured.outputs.ready == 'true'
+        env:
+          SITE_ORIGIN: https://${{ env.PAGES_PROJECT }}.pages.dev
 
       - name: Publish
         if: steps.configured.outputs.ready == 'true'
@@ -181,5 +191,5 @@ jobs:
           # wrangler is a pinned devDependency rather than a third-party action, so what runs here
           # is whatever yarn.lock says and nothing else.
           yarn wrangler pages deploy dist \
-            --project-name=sweden-data-explorer \
+            --project-name="$PAGES_PROJECT" \
             --branch=main
