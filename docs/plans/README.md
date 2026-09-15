@@ -41,12 +41,12 @@ Unlike the first slice there is no "ship" plan at the end. Plan 5 built the mach
 three browsers, an accessibility scan, a performance budget, a gated deploy — so every plan below
 ships through it as it lands.
 
-| #   | Plan                                             | Ends with                                                                                                                                                                                                                                                                                                                                    | Status      |
-| --- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| 6   | Similar municipalities, and a profile that reads | A distance metric across standardised indicators, published as each municipality's nearest neighbours; "places like this" in the profile; and rule-generated prose telling a municipality's own story in both languages, every sentence traceable to the figures behind it.                                                                  | not started |
-| 7   | Statistics, and facts that find themselves       | A shared statistics module in the kitchen — rank, standardised score, trend, longest run, sharpest reversal, distance from neighbours — and a generated facts file that replaces the five hand-written sentences. Ranked by how surprising a fact is, not merely how true, and each one still carries a check that re-derives its own claim. | not started |
-| 8   | The morph                                        | The 290 map shapes animating into their bubble positions and back, holding frame rate on a mid-range phone, cross-fading instead when reduced motion is asked for. Settles the two questions section 9 of DESIGN parks: whether a Canvas layer is needed beneath the SVG, and whether the target is bubbles or a hexagon grid.               | not started |
-| 9   | A page per municipality                          | 580 pre-rendered pages, 290 municipalities in two languages, each with its own title, description and preview image — so a link to Malmö shows Malmö when it is pasted into a chat rather than the site's front page.                                                                                                                        | not started |
+| #   | Plan                                                                                                                 | Ends with                                                                                                                                                                                                                                                                                                                                    | Status      |
+| --- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| 6   | [Similar municipalities, and a profile that reads](2026-09-15-06-similar-municipalities-and-a-profile-that-reads.md) | A distance metric across standardised indicators, published as each municipality's nearest neighbours; "places like this" in the profile; and rule-generated prose telling a municipality's own story in both languages, every sentence traceable to the figures behind it.                                                                  | **done**    |
+| 7   | Statistics, and facts that find themselves                                                                           | A shared statistics module in the kitchen — rank, standardised score, trend, longest run, sharpest reversal, distance from neighbours — and a generated facts file that replaces the five hand-written sentences. Ranked by how surprising a fact is, not merely how true, and each one still carries a check that re-derives its own claim. | not started |
+| 8   | The morph                                                                                                            | The 290 map shapes animating into their bubble positions and back, holding frame rate on a mid-range phone, cross-fading instead when reduced motion is asked for. Settles the two questions section 9 of DESIGN parks: whether a Canvas layer is needed beneath the SVG, and whether the target is bubbles or a hexagon grid.               | not started |
+| 9   | A page per municipality                                                                                              | 580 pre-rendered pages, 290 municipalities in two languages, each with its own title, description and preview image — so a link to Malmö shows Malmö when it is pasted into a chat rather than the site's front page.                                                                                                                        | not started |
 
 **Why similarity comes before facts.** The facts engine was the obvious first plan and is
 deliberately second. A fact is only interesting relative to something: a naive engine ranking by
@@ -62,9 +62,14 @@ These are open in [DESIGN section 9](../DESIGN.md#9-still-open) and are not deci
 belongs to the plan that reaches it, and each gets a record in
 [docs/decisions/](../decisions/README.md).
 
-- **Plan 6.** Whether "similar" means all ten indicators or a chosen few, and what to do about
-  indicators whose coverage does not overlap. Mean age starts in 1998 and median income in 1999;
-  a distance computed over different years for different pairs is not a distance.
+- **Plan 6 — settled.** All ten indicators, one vote each; a ten-year window ending at the last
+  year every indicator covers, fixed rather than following the year slider. Both were decided by
+  measurement rather than by argument, and both are recorded with their numbers in
+  [decision 0002](../decisions/0002-similarity-metric.md). The coverage worry this entry was
+  written about turned out to have a cleaner answer than expected: the window ends at the last
+  year EVERY indicator covers, so no pair is ever compared over different years. Two consequences
+  went into [DESIGN section 8](../DESIGN.md#8-known-limitations-stated-honestly) as stated
+  limitations rather than being fixed.
 - **Plan 7.** What makes a fact interesting rather than merely true — now with Plan 6's
   neighbours available as a baseline, which is the reason for the order.
 - **Plan 8.** Canvas under the SVG or not, and bubbles or hexagons. Both are performance
