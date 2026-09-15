@@ -1,8 +1,9 @@
-# Sweden Data Explorer
+# Atlas 290
 
 [![CI](https://github.com/aniisabihi/sweden-data-explorer/actions/workflows/ci.yml/badge.svg)](https://github.com/aniisabihi/sweden-data-explorer/actions/workflows/ci.yml)
 
-An interactive atlas of Sweden's 290 municipalities built entirely from Statistics Sweden (SCB) open data. Static site, no server, no runtime API, no tracking.
+An interactive atlas of Sweden's 290 municipalities — the number is the name — built entirely from
+Statistics Sweden (SCB) open data. Not affiliated with SCB. Static site, no server, no runtime API, no tracking.
 
 Ten measures from 1968 to 2026: a choropleth you can drive with a mouse, a keyboard or a search
 box, a year you can drag or play, a bubble cartogram that fixes the visual lie a geographic map
@@ -44,10 +45,10 @@ yarn budget            # Lighthouse against the built site, with a budget
 and Linux, so running it in CI would produce a diff on every run. The cards carry no figures, so a
 data refresh never invalidates them — run it when the design changes or a municipality is added.
 
-**Link previews need a domain.** `og:image` only resolves for a crawler when it is absolute. Set
-`SITE_ORIGIN=https://example.org` when building and the tags become absolute; without it they are
-root-relative, which is correct for the site and invisible to a crawler. The build says so on
-every run.
+**Link previews need an absolute origin.** `og:image` only resolves for a crawler when it is
+absolute. The deploy sets `SITE_ORIGIN=https://atlas290.pages.dev` for you; build locally without
+it and the tags stay root-relative, which is correct for the site and invisible to a crawler. The
+build says which it did on every run.
 
 Accessibility, including what has _not_ been checked: [docs/accessibility.md](docs/accessibility.md).
 
@@ -64,8 +65,14 @@ or a chat with an assistant.
 
 1. **Create a Cloudflare account** (the free plan is enough — 500 builds a month, 20,000 files per
    site and 25 MiB per file, against a site that is a handful of files with a 1.05 MB largest) and
-   a **Pages project** named `sweden-data-explorer`. Choose "Direct Upload" rather than connecting
-   the git repository, because Actions does the building.
+   a **Pages project** named `atlas290`. Choose "Direct Upload" rather than connecting the git
+   repository, because Actions does the building.
+
+   The name is not cosmetic: Cloudflare serves the project at `<project>.pages.dev`, so this is
+   what makes the site `https://atlas290.pages.dev` — which is the origin the deploy builds the
+   link previews against. A project under a different name deploys fine and shows no preview
+   cards. The workflow declares it once as `PAGES_PROJECT` so the two cannot drift.
+
 2. **Create an API token** at _My Profile → API Tokens → Create Token → Custom token_ with the
    minimum this needs:
    - Permission: **Account → Cloudflare Pages → Edit**

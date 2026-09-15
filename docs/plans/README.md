@@ -93,29 +93,34 @@ belongs to the plan that reaches it, and each gets a record in
 - **Plan 9 — settled, and the guess was wrong.** SVG rendered at build time is not a candidate at
   all: no platform documents SVG support for `og:image`, and Facebook's, Slack's and X's own
   documentation each decline to say. The cards are rasterised with Playwright, which was already
-  here — 290 of them in 4.9 seconds, 7.4 MB, one per municipality rather than 580 because all 290
-  names are identical in both languages. [Decision 0005](../decisions/0005-a-page-per-municipality.md).
+  here — 290 of them in seconds, one per municipality rather than 580 because all 290 names are
+  identical in both languages. (They were redrawn at 4.7 MB when the project was named; the
+  figure in [decision 0005](../decisions/0005-a-page-per-municipality.md) is what was measured
+  that day.) [Decision 0005](../decisions/0005-a-page-per-municipality.md).
 
 ## Not plans, but next
 
-Three things are open that no plan can close.
+Two things are open that no plan can close. A third — the name — was closed on 2026-09-15.
 
+- ~~**The name.**~~ **Settled: Atlas 290**, in [decision 0006](../decisions/0006-the-name.md). It
+  had been read as blocking a paid custom domain; it was not. Cloudflare Pages serves the project
+  at `<project-name>.pages.dev`, which is free and absolute, so the name alone unblocks the link
+  previews. The deploy now builds against `https://atlas290.pages.dev`.
 - **The deploy.** The site is built, tested and gated but has nowhere to go. It needs a Cloudflare
   account and an API token, which only the repository owner can create —
   [README.md](../../README.md) has the steps and the minimum permission. Until then the deploy
-  job skips with a note.
-- **The name.** [DESIGN section 9](../DESIGN.md#9-still-open) still lists the project name as
-  undecided, with one hard constraint: it must not suggest affiliation with SCB. It blocks the
-  custom domain, and the domain is what makes the `hreflang` tags absolute rather than relative.
+  job skips with a note. **It is now the only thing between the project and a live site**, and the
+  Pages project must be created under the name `atlas290` or the previews will not render.
 - **A screen-reader pass.** [docs/accessibility.md](../accessibility.md) records that none has
   happened, and why: the agent that built this cannot run VoiceOver, NVDA or JAWS, and nothing was
   substituted for it. It is the largest quality gap in the project, and it is concentrated in the
   three constructs where the accessibility tree looks right and the experience often is not — the
   search combobox, the roving tabindex across 290 shapes, and the debounced live region.
 
-Two small items are queued behind those: the map is the last tab stop, so a keyboard visitor
-passes ten controls to reach it (the skip link works, but the source order belongs with a layout
-change rather than a release), and `hreflang` needs absolute URLs once a domain exists.
+One small item is queued behind those: the map is the last tab stop, so a keyboard visitor passes
+ten controls to reach it (the skip link works, but the source order belongs with a layout change
+rather than a release). The `hreflang` item that stood beside it is closed — the generated
+municipality pages take their absolute URLs from `SITE_ORIGIN`, which the deploy now sets.
 
 ## Later, and possibly never
 
