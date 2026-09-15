@@ -51,7 +51,9 @@ describe('App', () => {
 
   it('renders the whole view from the URL alone', () => {
     open('/en/?i=house-prices&y=1990&m=0184')
-    expect(screen.getByRole('radio', { name: 'House prices', checked: true })).toBeTruthy()
+    expect((screen.getByRole('combobox', { name: 'Measure' }) as HTMLSelectElement).value).toBe(
+      'house-prices',
+    )
     expect((screen.getByRole('slider') as HTMLInputElement).value).toBe('1990')
     expect(screen.getByRole('button', { current: true }).getAttribute('aria-label')).toMatch(
       /^Solna/,
@@ -90,7 +92,7 @@ describe('App', () => {
 
   it('keeps the year when the indicator changes, and explains the empty map', async () => {
     open('/en/?y=1970')
-    await userEvent.click(screen.getByRole('radio', { name: 'Mean age' }))
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Measure' }), 'mean-age')
     expect((screen.getByRole('slider') as HTMLInputElement).value).toBe('1970')
     expect(screen.getByText(/Mean age is published for 1998–2025/)).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Go to 1998' })).toBeTruthy()
@@ -98,7 +100,7 @@ describe('App', () => {
 
   it('puts the whole view in the address bar', async () => {
     open('/en/?y=2024')
-    await userEvent.click(screen.getByRole('radio', { name: 'Mean age' }))
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Measure' }), 'mean-age')
     expect(window.location.pathname + window.location.search).toBe('/en/?i=mean-age&y=2024')
   })
 
@@ -189,7 +191,7 @@ describe('App', () => {
   it('updates the title when the view changes', async () => {
     open('/en/?y=2024')
     expect(document.title).toBe("Population 2024 · Sweden's municipalities in data")
-    await userEvent.click(screen.getByRole('radio', { name: 'Mean age' }))
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Measure' }), 'mean-age')
     expect(document.title).toBe("Mean age 2024 · Sweden's municipalities in data")
   })
 

@@ -254,10 +254,6 @@ h3 {
 }
 
 .search label,
-.indicator-picker legend {
-  font-weight: 600;
-}
-
 .search input {
   width: 100%;
   padding: 0.5rem;
@@ -294,25 +290,34 @@ h3 {
 
 /* ---------------------------------------------------------- the indicator */
 
+/*
+ * Layout only — the box itself is `.panel`, the same one the search, the legend and the
+ * year slider sit in. It used to be a fieldset and drew its own border, which meant it also
+ * quietly relied on the browser's default fieldset padding; as a div that padding is not
+ * there, and restating `.panel`'s four properties here would be the same rule written twice.
+ */
 .indicator-picker {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem 1rem;
-  margin: 0;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
 .indicator-picker label {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-weight: 400;
+  font-weight: 600;
 }
 
-.indicator-picker input {
-  accent-color: var(--accent);
+/*
+ * `font: inherit` and an explicit colour and background, or the control keeps the platform's
+ * own — which on a dark page means black text on white in the middle of everything else.
+ */
+.indicator-picker select {
+  width: 100%;
+  padding: 0.5rem;
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
 
 .about-indicator summary {
