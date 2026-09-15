@@ -5,9 +5,9 @@ import type { AppState } from './url'
 /**
  * What the browser tab says, and what a screen reader announces on arrival.
  *
- * A link that says "Sweden's municipalities in data" in every tab tells the person you sent it to
- * nothing at all. The municipality comes first where one is selected, because that is what the
- * visitor came for; the site's own name comes last, where a truncated tab drops it harmlessly.
+ * A link that says only the site's name in every tab tells the person you sent it to nothing at
+ * all. The municipality comes first where one is selected, because that is what the visitor came
+ * for; "Atlas 290" comes last, where a truncated tab drops it harmlessly.
  */
 export function titleFor(lk: Lookup, state: AppState): string {
   const strings = t(state.lang)

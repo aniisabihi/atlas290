@@ -27,9 +27,17 @@ const root = resolve(import.meta.dirname, '..')
  * project name, which `docs/plans/README.md` lists as still undecided — so this is one constant
  * to change on the day it is, not 580 files to regenerate by hand.
  */
-export const ORIGIN = process.env['SITE_ORIGIN'] ?? null
+export const origin = () => process.env['SITE_ORIGIN'] ?? null
 
-const absolute = (path) => (ORIGIN ? `${ORIGIN.replace(/\/$/, '')}${path}` : path)
+/**
+ * Read per call rather than captured at import, so a test can set the variable and see the
+ * difference. A module-level constant would freeze whatever the environment happened to be when
+ * the file was first imported, which for a test runner is "never set".
+ */
+const absolute = (path) => {
+  const base = origin()
+  return base ? `${base.replace(/\/$/, '')}${path}` : path
+}
 
 const COPY = {
   sv: {
@@ -37,14 +45,14 @@ const COPY = {
     description: (name) =>
       `${name} i tio mått från SCB, år för år från 1968 till i dag: folkmängd, medelålder, ` +
       `inkomst, skattesats och mer.`,
-    site: 'Sveriges kommuner i data',
+    site: 'Atlas 290',
   },
   en: {
     title: (name, site) => `${name} · ${site}`,
     description: (name) =>
       `${name} in ten measures from Statistics Sweden, year by year from 1968 to today: ` +
       `population, mean age, income, tax rate and more.`,
-    site: "Sweden's municipalities in data",
+    site: 'Atlas 290',
   },
 }
 
@@ -92,6 +100,9 @@ export function pageFor(html, { lang, name, code }) {
     )
   // The entry pages carry site-wide alternates; a municipality page's point at its own two.
   out = out.replace(/\s*<link rel="alternate"[^>]*>/g, '')
+  // Defensive rather than currently necessary: two canonicals is a silent conflict, and this
+  // file also rewrites the entry pages, so one could acquire a canonical between the two steps.
+  out = out.replace(/\s*<link rel="canonical"[^>]*>/g, '')
   out = out.replace(
     '</head>',
     `  <link rel="alternate" hreflang="sv" href="${absolute(`/sv/${segment}/`)}" />\n` +
@@ -100,6 +111,24 @@ export function pageFor(html, { lang, name, code }) {
   )
   if (out === html) throw new Error(`${lang}/${segment}: nothing was rewritten`)
   return out
+}
+
+/**
+ * The three entry pages — `/`, `/sv/`, `/en/` — given absolute alternates and a canonical.
+ *
+ * `hreflang` is the reason this exists: Google's specification requires a fully-qualified URL,
+ * and the entry pages ship root-relative ones because they are hand-written HTML with no origin
+ * to write. Without an origin this is a no-op and the file is returned unchanged, which is
+ * exactly what a local build should do.
+ */
+export function entryPageFor(html, path) {
+  if (!origin()) return html
+  let out = html.replace(
+    /(<link rel="alternate"[^>]*?href=")([^"]*)(")/g,
+    (_match, before, href, after) => `${before}${absolute(href)}${after}`,
+  )
+  out = out.replace(/\s*<link rel="canonical"[^>]*>/g, '')
+  return out.replace('</head>', `  <link rel="canonical" href="${absolute(path)}" />\n  </head>`)
 }
 
 export function buildPages({ distDir = join(root, 'dist'), dataFile } = {}) {
@@ -122,22 +151,35 @@ export function buildPages({ distDir = join(root, 'dist'), dataFile } = {}) {
       written.push(`${lang}/${segment}/index.html`)
     }
   }
+
+  // AFTER the municipality pages, not before: they are copies of the entry page, and rewriting
+  // the source first would give all 580 an absolute canonical pointing at the language root.
+  for (const [file, path] of [
+    ['index.html', '/'],
+    ['sv/index.html', '/sv/'],
+    ['en/index.html', '/en/'],
+  ]) {
+    const full = join(distDir, file)
+    if (!existsSync(full)) continue
+    writeFileSync(full, entryPageFor(readFileSync(full, 'utf8'), path))
+  }
+
   return written
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const written = buildPages()
   console.log(`${written.length} municipality pages written`)
-  if (ORIGIN) {
-    console.log(`  preview tags absolute against ${ORIGIN}`)
+  if (origin()) {
+    console.log(`  preview tags absolute against ${origin()}`)
   } else {
-    // Not a failure: there is no domain yet, and the pages themselves are correct. But a
-    // crawler cannot resolve a root-relative og:image, so the preview will not appear until
-    // SITE_ORIGIN is set. Said plainly rather than left for somebody to discover by pasting a
-    // link into a chat and seeing nothing.
+    // Not a failure, and normal for a local build. But a crawler cannot resolve a root-relative
+    // og:image, so no preview will appear unless SITE_ORIGIN is set. Said plainly rather than
+    // left for somebody to discover by pasting a link into a chat and seeing nothing.
     console.log(
-      '  SITE_ORIGIN is not set, so og:image and canonical are root-relative — correct for the\n' +
-        '  site, but link previews will not render anywhere until the project has a domain.',
+      '  SITE_ORIGIN is not set, so og:image, canonical and hreflang are root-relative — correct\n' +
+        '  for the site, but link previews will not render. The deploy sets it; a local build\n' +
+        '  does not need to.',
     )
   }
 }

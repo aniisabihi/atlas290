@@ -9,8 +9,8 @@
  *
  * **Nothing on the card changes when the data does.** It carries the municipality's name and the
  * site's, and no figure — so a monthly refresh never rewrites 290 binaries. A card with a
- * headline number on it would cost the same 7.6 MB and then churn all of it every month, which
- * is roughly 90 MB of git history a year for a number nobody reads twice.
+ * headline number on it would cost the same 4.7 MB and then churn all of it every month, which
+ * is roughly 56 MB of git history a year for a number nobody reads twice.
  *
  * One card serves both languages, because all 290 municipality names are identical in Swedish
  * and English. `shared/slug.test.ts` asserts that rather than assuming it.
@@ -31,7 +31,8 @@ const HEIGHT = 630
 const root = resolve(import.meta.dirname, '..')
 const outDir = join(root, 'public/share')
 
-const SITE = { sv: 'Sveriges kommuner i data', en: "Sweden's municipalities in data" }
+/** One line, not two: the name is the same in both languages, which is why it was chosen. */
+const SITE = 'Atlas 290'
 
 /**
  * Deliberately one palette rather than following a colour scheme: the card is its own artwork,
@@ -58,7 +59,7 @@ function card(name) {
 </style>
 <body>
   <div><div class="rule"></div><h1>${escapeHtml(name)}</h1></div>
-  <p class="site">${SITE.sv} · ${SITE.en}</p>
+  <p class="site">${SITE}</p>
 </body></html>`
 }
 

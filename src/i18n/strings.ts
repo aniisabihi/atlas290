@@ -12,8 +12,11 @@ import type { Lang } from '../state/url'
  */
 
 const sv = {
-  siteName: 'Sveriges kommuner i data',
-  tagline: 'Tio mått, 290 kommuner, 1968–2026. Allt från SCB.',
+  // The one string that is deliberately identical in both languages. A site that is equally
+  // Swedish and English cannot have a name that reads as foreign in half of it, and the number
+  // says the same thing in both. See docs/decisions/0006-the-name.md.
+  siteName: 'Atlas 290',
+  tagline: 'Sveriges alla kommuner i tio mått, 1968–2026. Allt från SCB.',
   skipToMap: 'Hoppa till kartan',
   skipToTable: 'Hoppa till tabellen',
 
@@ -106,8 +109,8 @@ const sv = {
 export type Strings = typeof sv
 
 const en: Strings = {
-  siteName: "Sweden's municipalities in data",
-  tagline: 'Ten measures, 290 municipalities, 1968–2026. All from Statistics Sweden.',
+  siteName: 'Atlas 290',
+  tagline: 'Every municipality in Sweden in ten measures, 1968–2026. All from Statistics Sweden.',
   skipToMap: 'Skip to the map',
   skipToTable: 'Skip to the table',
 

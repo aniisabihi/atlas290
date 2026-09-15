@@ -12,20 +12,18 @@ const state = (over: Partial<AppState> = {}): AppState => ({ ...defaultsFor(meta
 
 describe('titleFor', () => {
   it('names the indicator and year when nothing is selected', () => {
-    expect(titleFor(lk, state({ lang: 'en', year: 2024 }))).toBe(
-      "Population 2024 · Sweden's municipalities in data",
-    )
+    expect(titleFor(lk, state({ lang: 'en', year: 2024 }))).toBe('Population 2024 · Atlas 290')
   })
 
   it('puts the municipality first, because that is what the visitor came for', () => {
     expect(titleFor(lk, state({ lang: 'en', year: 2024, selected: '0180' }))).toBe(
-      "Stockholm · Population 2024 · Sweden's municipalities in data",
+      'Stockholm · Population 2024 · Atlas 290',
     )
   })
 
   it('names both when comparing', () => {
     expect(titleFor(lk, state({ lang: 'en', year: 2024, selected: '0180', compare: '1280' }))).toBe(
-      "Stockholm and Malmö · Population 2024 · Sweden's municipalities in data",
+      'Stockholm and Malmö · Population 2024 · Atlas 290',
     )
   })
 
@@ -40,13 +38,13 @@ describe('titleFor', () => {
 
   it('does not say "map", because that is the ordinary case and needs no label', () => {
     expect(titleFor(lk, state({ lang: 'en', year: 2024, view: 'map' }))).toBe(
-      "Population 2024 · Sweden's municipalities in data",
+      'Population 2024 · Atlas 290',
     )
   })
 
   it('speaks Swedish throughout, taking the indicator name from the pantry', () => {
     expect(titleFor(lk, state({ year: 2024, selected: '1280', indicator: 'mean-age' }))).toBe(
-      'Malmö · Medelålder 2024 · Sveriges kommuner i data',
+      'Malmö · Medelålder 2024 · Atlas 290',
     )
   })
 
