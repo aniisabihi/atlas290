@@ -91,9 +91,14 @@ describe('the other three sentences', () => {
   it('states the unusual one against its twins, with both figures', () => {
     const { text } = best('unusual')
     expect(text.sv).toBe(
-      'Kävlinge har lägre kommunal skattesats än platserna som liknar den: 29,69 mot 32,64.',
+      'Kommunal skattesats i Kävlinge — lägre än i platserna som liknar den: 29,69 mot 32,64.',
     )
-    expect(text.en).toContain('the places most like it')
+    expect(text.en).toBe(
+      'Municipal tax rate in Kävlinge — lower than in the places most like it: 29.69 against 32.64.',
+    )
+    // The article trap this phrasing avoids: "has lower municipal tax rate" is missing an "a",
+    // and adding one breaks "lower house prices", which is plural.
+    expect(text.en).not.toMatch(/has (lower|higher)/)
   })
 
   it('formats numbers for each locale', () => {

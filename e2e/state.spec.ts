@@ -40,7 +40,7 @@ test.describe('a link is a view', () => {
     // sentence somebody wrote: the `unusual` fact is the one that compares a municipality with
     // the places most like it, and its link has to land on that municipality and that measure.
     await page.goto('/en/?y=2024')
-    await page.getByRole('link', { name: /than the places most like it/ }).click()
+    await page.getByRole('link', { name: /than in the places most like it/ }).click()
     await expect(page.getByRole('heading', { level: 2, name: 'Kävlinge' })).toBeVisible()
     await expect(page).toHaveURL(/i=tax-rate/)
     await expect(page.getByText('29.69%')).toBeVisible()

@@ -126,14 +126,16 @@ export function phrase(
       const municipality = lookup.municipality(code)
       const who = municipality?.name ?? { sv: code, en: code }
       const lower = self < peers
-      const name = {
-        sv: indicator.name.sv.toLocaleLowerCase('sv-SE'),
-        en: indicator.name.en.toLocaleLowerCase('en-GB'),
-      }
+      // The measure is named as a LABEL rather than as the object of "has …", for the same
+      // reason the profile story does it (Plan 6): English needs an article whose form depends
+      // on whether the indicator name is singular or plural — "a lower municipal tax rate" but
+      // "lower house prices" — and Swedish needs adjective agreement. Both are properties of
+      // names that come from the pantry and cannot be inflected reliably from outside. Naming
+      // the measure first sidesteps the article and the agreement together.
       return {
         text: {
-          sv: `${who.sv} har ${lower ? 'lägre' : 'högre'} ${name.sv} än platserna som liknar den: ${measure(self, indicator, 'sv')} mot ${measure(peers, indicator, 'sv')}.`,
-          en: `${who.en} has ${lower ? 'lower' : 'higher'} ${name.en} than the places most like it: ${measure(self, indicator, 'en')} against ${measure(peers, indicator, 'en')}.`,
+          sv: `${indicator.name.sv} i ${who.sv} — ${lower ? 'lägre' : 'högre'} än i platserna som liknar den: ${measure(self, indicator, 'sv')} mot ${measure(peers, indicator, 'sv')}.`,
+          en: `${indicator.name.en} in ${who.en} — ${lower ? 'lower' : 'higher'} than in the places most like it: ${measure(self, indicator, 'en')} against ${measure(peers, indicator, 'en')}.`,
         },
         href: `/?i=${indicator.id}&y=${year}&m=${code}`,
         claim: `${code} ${indicator.id} ${year}: ${self} vs peers ${peers}`,
