@@ -180,7 +180,11 @@ export function MapView({
             vectorEffect="non-scaling-stroke"
 
             onClick={() => {
-              setFocused(shape.code)
+              // `move` rather than `setFocused`: it also calls .focus(), so the roving tabindex
+              // and real DOM focus cannot disagree, whatever a given browser does about focusing
+              // an SVG shape on click. Where this opens the profile, the panel then takes focus
+              // to its own heading, which is Plan 4's rule and happens after this.
+              move(shape.code)
               onSelect(shape.code)
             }}
           />

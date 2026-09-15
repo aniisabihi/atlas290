@@ -61,49 +61,52 @@ export function ComparePanel({
         {summary.notComparable > 0 && <> · {strings.notComparable(summary.notComparable)}</>}
       </p>
 
-      <table className="compare-table">
-        {/*
-         * A caption rather than relying on the section heading: a screen reader listing the
-         * page's tables should be able to tell this one from the map's twin without leaving it.
-         */}
-        <caption className="visually-hidden">
-          {strings.tableCaption(`${nameOf(selected)} ${strings.and} ${nameOf(compare)}`, year)}
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">{strings.indicatorLegend}</th>
-            <th scope="col">{nameOf(selected)}</th>
-            <th scope="col">{nameOf(compare)}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.indicator.id}>
-              <th scope="row">{row.indicator.name[lang]}</th>
-              <td data-higher={row.higher === 'a' ? 'true' : undefined}>
-                {row.a === null
-                  ? statusPhrase(
-                      lk.series(row.indicator.id).years.includes(year)
-                        ? 'not-yet-published'
-                        : 'outside-coverage',
-                      lang,
-                    )
-                  : formatWithUnit(row.a, row.indicator, lang)}
-              </td>
-              <td data-higher={row.higher === 'b' ? 'true' : undefined}>
-                {row.b === null
-                  ? statusPhrase(
-                      lk.series(row.indicator.id).years.includes(year)
-                        ? 'not-yet-published'
-                        : 'outside-coverage',
-                      lang,
-                    )
-                  : formatWithUnit(row.b, row.indicator, lang)}
-              </td>
+      {/* A table may scroll in its own box; the page may not. WCAG 2.2 SC 1.4.10. */}
+      <div className="table-scroll">
+        <table className="compare-table">
+          {/*
+           * A caption rather than relying on the section heading: a screen reader listing the
+           * page's tables should be able to tell this one from the map's twin without leaving it.
+           */}
+          <caption className="visually-hidden">
+            {strings.tableCaption(`${nameOf(selected)} ${strings.and} ${nameOf(compare)}`, year)}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">{strings.indicatorLegend}</th>
+              <th scope="col">{nameOf(selected)}</th>
+              <th scope="col">{nameOf(compare)}</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.indicator.id}>
+                <th scope="row">{row.indicator.name[lang]}</th>
+                <td data-higher={row.higher === 'a' ? 'true' : undefined}>
+                  {row.a === null
+                    ? statusPhrase(
+                        lk.series(row.indicator.id).years.includes(year)
+                          ? 'not-yet-published'
+                          : 'outside-coverage',
+                        lang,
+                      )
+                    : formatWithUnit(row.a, row.indicator, lang)}
+                </td>
+                <td data-higher={row.higher === 'b' ? 'true' : undefined}>
+                  {row.b === null
+                    ? statusPhrase(
+                        lk.series(row.indicator.id).years.includes(year)
+                          ? 'not-yet-published'
+                          : 'outside-coverage',
+                        lang,
+                      )
+                    : formatWithUnit(row.b, row.indicator, lang)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   )
 }

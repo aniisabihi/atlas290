@@ -21,7 +21,12 @@ describe('the string tables', () => {
     // `coverage` is deliberately identical — "1968–2026" is the same in both languages — so it
     // is named here rather than allowed through by a loose rule that would also let a genuinely
     // untranslated string pass.
-    const identicalOnPurpose = new Set<string>(['coverage'])
+    const identicalOnPurpose = new Set<string>([
+      'coverage',
+      // 'Data' is the same word in Swedish and English, and inventing a difference to satisfy a
+      // test would be worse copy than the honest repetition.
+      'noticesData',
+    ])
     const same = keys.filter((k) => {
       if (identicalOnPurpose.has(String(k))) return false
       const [a, b] = [t('sv')[k], t('en')[k]]

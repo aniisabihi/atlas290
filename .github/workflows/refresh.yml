@@ -1,0 +1,120 @@
+name: Monthly refresh
+
+# SCB publishes on its own timetable; once a month is enough to notice.
+#
+# Scheduled runs are not guaranteed — GitHub's own documentation says they can be delayed when
+# load is high and that queued jobs may be dropped — so `workflow_dispatch` is always available
+# and nothing depends on a run happening on an exact day.
+on:
+  schedule:
+    - cron: '17 4 1 * *' # 04:17 UTC on the first of each month. Off the hour, where load is worst.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - run: yarn install --immutable
+
+      - name: Keep the committed pantry to compare against
+        run: cp public/pantry/data/indicators.json /tmp/pantry-before.json
+
+      # The only step in this repository that is allowed to talk to SCB.
+      - name: Fetch from Statistics Sweden
+        run: yarn kitchen fetch
+
+      - name: Publish
+        run: yarn kitchen publish
+
+      # The check stage already rejects implausible values, but it cannot tell a withdrawn series
+      # from a half-empty response — both look like fewer values. This stops either from being
+      # published without a person having looked.
+      - name: Refuse a refresh that loses data
+        run: node tools/pantry-guard.mjs /tmp/pantry-before.json public/pantry/data/indicators.json
+
+      - name: Check the result the same way a pull request would be checked
+        run: |
+          yarn typecheck
+          yarn lint
+          yarn test
+          yarn build
+
+      - name: Is there anything new?
+        id: changed
+        run: |
+          if [ -n "$(git status --porcelain kitchen/raw public/pantry)" ]; then
+            echo "yes=true" >> "$GITHUB_OUTPUT"
+            git --no-pager diff --stat kitchen/raw public/pantry
+          else
+            echo "yes=false" >> "$GITHUB_OUTPUT"
+            echo "Statistics Sweden has published nothing new since the last run."
+          fi
+
+      - name: Open a pull request with the new figures
+        if: steps.changed.outputs.yes == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          branch="data/refresh-$(date -u +%Y-%m-%d)"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -b "$branch"
+          git add kitchen/raw public/pantry
+          git commit -m "data: refresh from Statistics Sweden
+
+          Opened by the monthly refresh workflow. Every value is republished from
+          newly frozen SCB responses; review the diff before merging."
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "Data refresh $(date -u +%Y-%m-%d)" \
+            --body "Statistics Sweden has published new figures. The frozen responses under \`kitchen/raw/\` and the pantry were rebuilt from them, the guard confirmed no published value was lost, and the full suite passed before this was opened.
+
+          A data refresh is meant to arrive as a readable diff rather than a silent change to a live site — so please read it."
+
+      # Runs whether or not the data changed, and that is the point.
+      #
+      # GitHub disables scheduled workflows in a public repository after 60 days without
+      # repository activity, and its documentation does not define what counts as activity. A
+      # project whose data is stable for two months would therefore quietly stop checking for new
+      # data — the exact failure a monthly job exists to prevent. One committed line a month is
+      # activity under any reading of the rule.
+      - name: Stay alive
+        # `always()` on purpose. If the fetch fails, or the guard stops a lossy refresh, or the
+        # tests go red, the earlier steps end the job — and without this the keep-alive commit
+        # would be skipped too. Sixty days of failing refreshes would then disable the scheduled
+        # workflow, silencing the very job whose failures were the warning.
+        if: always()
+        run: |
+          # Anything the failed steps left behind is discarded; a pull request branch, if one was
+          # created, has already been pushed and is unaffected.
+          git reset --hard
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout main
+          git pull --ff-only
+          mkdir -p docs
+          printf '%s — refresh ran; job result: %s; new data: %s\n' \
+            "$(date -u +%Y-%m-%d)" "${{ job.status }}" "${{ steps.changed.outputs.yes || 'unknown' }}" \
+            >> docs/refresh-log.md
+          git add docs/refresh-log.md
+          git commit -m "chore: record that the monthly refresh ran
+
+          This commit exists to keep the scheduled workflow alive. GitHub disables
+          scheduled workflows in a public repository after 60 days without repository
+          activity, so the job commits one line a month whether or not the data changed."
+          git push origin main

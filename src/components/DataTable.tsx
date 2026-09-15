@@ -86,35 +86,37 @@ export function DataTable({
   }
 
   return (
-    <table className="data-table">
-      <caption>{strings.tableCaption(indicator.name[lang], year)}</caption>
-      <thead>
-        <tr>
-          {header('name', strings.columnMunicipality)}
-          {header('value', strings.columnValue)}
-          {header('rank', strings.columnRank)}
-        </tr>
-      </thead>
-      <tbody>
-        {sorted.map((row) => (
-          <tr
-            key={row.municipality.code}
-            aria-current={row.municipality.code === selected ? 'true' : undefined}
-          >
-            <th scope="row">
-              <button type="button" onClick={() => onSelect(row.municipality.code)}>
-                {row.municipality.name[lang]}
-              </button>
-            </th>
-            <td>
-              {row.value === null
-                ? statusPhrase(row.status, lang)
-                : formatWithUnit(row.value, indicator, lang)}
-            </td>
-            <td>{row.rank ? strings.rank(row.rank.rank, row.rank.outOf) : ''}</td>
+    <div className="table-scroll">
+      <table className="data-table">
+        <caption>{strings.tableCaption(indicator.name[lang], year)}</caption>
+        <thead>
+          <tr>
+            {header('name', strings.columnMunicipality)}
+            {header('value', strings.columnValue)}
+            {header('rank', strings.columnRank)}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {sorted.map((row) => (
+            <tr
+              key={row.municipality.code}
+              aria-current={row.municipality.code === selected ? 'true' : undefined}
+            >
+              <th scope="row">
+                <button type="button" onClick={() => onSelect(row.municipality.code)}>
+                  {row.municipality.name[lang]}
+                </button>
+              </th>
+              <td>
+                {row.value === null
+                  ? statusPhrase(row.status, lang)
+                  : formatWithUnit(row.value, indicator, lang)}
+              </td>
+              <td>{row.rank ? strings.rank(row.rank.rank, row.rank.outOf) : ''}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }

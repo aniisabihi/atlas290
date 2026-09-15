@@ -11,17 +11,18 @@
     "dev": "vite",
     "build": "tsc -p tsconfig.app.json --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.kitchen.json --noEmit",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.kitchen.json --noEmit && tsc -p tsconfig.e2e.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "oxlint . && prettier --check .",
     "format": "prettier --write .",
-    "kitchen": "tsx kitchen/src/cli.ts"
+    "kitchen": "tsx kitchen/src/cli.ts",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "budget": "node tools/lighthouse-budget.mjs"
   },
   "dependencies": {
-    "d3-force": "^3.0.0",
     "d3-geo": "^3.1.1",
-    "d3-scale": "^4.0.2",
     "d3-scale-chromatic": "^3.1.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
@@ -29,12 +30,13 @@
     "zod": "^4.6.2"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
     "@types/d3-force": "^3.0.10",
     "@types/d3-geo": "^3.1.1",
-    "@types/d3-scale": "^4.0.9",
     "@types/d3-scale-chromatic": "^3.1.0",
     "@types/jsdom": "^30",
     "@types/node": "^26.5.1",
@@ -43,14 +45,18 @@
     "@types/topojson-client": "^3.1.5",
     "@types/topojson-specification": "^1.0.5",
     "@vitejs/plugin-react": "^6.1.1",
+    "d3-force": "^3.0.0",
     "jsdom": "^30.0.1",
+    "lighthouse": "^13.4.1",
     "mapshaper": "^0.7.61",
     "oxlint": "^1.82.0",
     "prettier": "^3.9.6",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2",
     "vite": "^8.3.0",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.0",
+    "wait-on": "^9.1.0",
+    "wrangler": "^4.131.1"
   },
   "resolutions": {
     "adm-zip": "^0.6.0"

@@ -45,8 +45,13 @@ describe('LanguageSwitch', () => {
     expect(link.textContent).toBe('English')
   })
 
-  it('names what it does rather than leaving the language name to speak for itself', () => {
+  it('starts its accessible name with the words a visitor can see', () => {
+    // WCAG 2.5.3, Label in Name: someone using voice control says what is on screen. If the link
+    // reads "English" and its accessible name is only "byt språk till engelska", saying "click
+    // English" does nothing. Found by Lighthouse; axe's WCAG rule set did not flag it.
     render(<LanguageSwitch state={state} meta={meta} />)
-    expect(screen.getByRole('link', { name: 'Byt språk till engelska' })).toBeTruthy()
+    const link = screen.getByRole('link', { name: 'English — byt språk till engelska' })
+    expect(link.textContent).toBe('English')
+    expect(link.getAttribute('aria-label')!.startsWith(link.textContent!)).toBe(true)
   })
 })

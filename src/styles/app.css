@@ -593,3 +593,40 @@ button {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+.notices {
+  margin-top: calc(var(--space) * 2);
+  border-top: 1px solid var(--border);
+  padding-top: var(--space);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.notices summary {
+  cursor: pointer;
+}
+
+.notices summary h2 {
+  display: inline;
+  font-size: 1rem;
+}
+
+.notices ul {
+  columns: 2;
+  list-style: none;
+  padding: 0;
+}
+
+.notices a {
+  color: var(--accent);
+}
+
+/*
+ * A table may scroll sideways inside its own box; the page may not. WCAG 2.2 SC 1.4.10 allows
+ * exactly this exception for content that genuinely needs a second dimension, and three columns
+ * of formatted numbers at 320 px is that content.
+ */
+.table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}

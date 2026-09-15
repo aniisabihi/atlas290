@@ -7,3 +7,11 @@ dist/
 !.yarn/releases
 !.yarn/plugins
 coverage/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+
+# Lighthouse
+/lighthouse-report.json

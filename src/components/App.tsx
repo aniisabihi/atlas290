@@ -21,6 +21,7 @@ import { DataTable } from './DataTable'
 import { FactsStrip } from './FactsStrip'
 import { ProfilePanel } from './ProfilePanel'
 import { NoDataPatterns } from './NoDataPatterns'
+import { Notices } from './Notices'
 import { SearchBox } from './SearchBox'
 import { YearSlider } from './YearSlider'
 
@@ -87,11 +88,17 @@ export function App({
   return (
     <div className="page">
       <NoDataPatterns />
-      <a className="skip-link" href="#map">
-        {strings.skipToMap}
-      </a>
 
       <header className="page-header">
+        {/*
+         * Inside the header so that no content sits outside a landmark, and pointing at #view
+         * rather than #map because #map does not exist in the table view — where the skip link
+         * was therefore broken. Found by widening the axe rule set after Lighthouse caught the
+         * missing <main>.
+         */}
+        <a className="skip-link" href="#view">
+          {state.table ? strings.skipToTable : strings.skipToMap}
+        </a>
         <div>
           <h1>{strings.siteName}</h1>
           <p className="tagline">{strings.tagline}</p>
@@ -99,209 +106,215 @@ export function App({
         <LanguageSwitch state={state} meta={meta} />
       </header>
 
-      <div className="layout">
-        <div className="controls">
-          <div className="panel">
-            <SearchBox
-              municipalities={data.municipalities}
-              lang={state.lang}
-              onSelect={(code) => {
-                interrupt()
-                setNotice('')
-                update({ selected: code })
-              }}
-            />
-          </div>
+      <main id="content">
+        <div className="layout">
+          <div className="controls">
+            <div className="panel">
+              <SearchBox
+                municipalities={data.municipalities}
+                lang={state.lang}
+                onSelect={(code) => {
+                  interrupt()
+                  setNotice('')
+                  update({ selected: code })
+                }}
+              />
+            </div>
 
-          <IndicatorPicker
-            lk={lk}
-            selected={state.indicator}
-            lang={state.lang}
-            onChange={(chosen) => {
-              interrupt()
-              setNotice('')
-              // The year is deliberately kept. If the new indicator does not cover it, EmptyYear
-              // explains and offers a jump; moving the year silently would hide the fact that
-              // the ten indicators do not cover the same span.
-              update({ indicator: chosen })
-            }}
-          />
-
-          <div className="panel year-slider-panel">
-            <YearSlider
+            <IndicatorPicker
               lk={lk}
-              meta={meta}
-              indicatorId={state.indicator}
-              year={state.year}
+              selected={state.indicator}
               lang={state.lang}
-              playing={playing}
-              onYear={(year, stepping) => {
-                setNotice('')
-                update({ year }, { replace: stepping })
-              }}
-              onPlayingChange={setPlaying}
-            />
-          </div>
-
-          <div className="panel">
-            <Legend lk={lk} indicatorId={state.indicator} year={state.year} lang={state.lang} />
-          </div>
-
-          <div className="panel">
-            <AboutIndicator lk={lk} indicatorId={state.indicator} lang={state.lang} />
-          </div>
-        </div>
-
-        <div className="map-column">
-          <p id="map-hint" className="tagline">
-            {strings.mapHint}
-          </p>
-          {!covered && (
-            <EmptyYear
-              lk={lk}
-              indicatorId={state.indicator}
-              year={state.year}
-              lang={state.lang}
-              onYear={(year) => {
+              onChange={(chosen) => {
                 interrupt()
                 setNotice('')
-                update({ year })
+                // The year is deliberately kept. If the new indicator does not cover it, EmptyYear
+                // explains and offers a jump; moving the year silently would hide the fact that
+                // the ten indicators do not cover the same span.
+                update({ indicator: chosen })
               }}
             />
-          )}
-          <div className="view-switch">
-            <button
-              type="button"
-              aria-pressed={state.table}
-              onClick={() => {
-                interrupt()
-                update({ table: !state.table })
-              }}
-            >
-              {state.table ? strings.hideTable : strings.showTable}
-            </button>
+
+            <div className="panel year-slider-panel">
+              <YearSlider
+                lk={lk}
+                meta={meta}
+                indicatorId={state.indicator}
+                year={state.year}
+                lang={state.lang}
+                playing={playing}
+                onYear={(year, stepping) => {
+                  setNotice('')
+                  update({ year }, { replace: stepping })
+                }}
+                onPlayingChange={setPlaying}
+              />
+            </div>
+
+            <div className="panel">
+              <Legend lk={lk} indicatorId={state.indicator} year={state.year} lang={state.lang} />
+            </div>
+
+            <div className="panel">
+              <AboutIndicator lk={lk} indicatorId={state.indicator} lang={state.lang} />
+            </div>
           </div>
 
-          <div className="view-switch">
-            <button
-              type="button"
-              aria-pressed={view === 'map'}
-              onClick={() => {
-                interrupt()
-                update({ view: 'map' })
-              }}
-            >
-              {strings.showMap}
-            </button>
-            <button
-              type="button"
-              aria-pressed={view === 'cartogram'}
-              onClick={() => {
-                interrupt()
-                update({ view: 'cartogram' })
-              }}
-            >
-              {strings.showCartogram}
-            </button>
-          </div>
+          <div className="map-column">
+            <p id="map-hint" className="tagline">
+              {strings.mapHint}
+            </p>
+            {!covered && (
+              <EmptyYear
+                lk={lk}
+                indicatorId={state.indicator}
+                year={state.year}
+                lang={state.lang}
+                onYear={(year) => {
+                  interrupt()
+                  setNotice('')
+                  update({ year })
+                }}
+              />
+            )}
+            <div className="view-switch">
+              <button
+                type="button"
+                aria-pressed={state.table}
+                onClick={() => {
+                  interrupt()
+                  update({ table: !state.table })
+                }}
+              >
+                {state.table ? strings.hideTable : strings.showTable}
+              </button>
+            </div>
 
-          {state.table ? (
-            <DataTable
-              lk={lk}
-              indicatorId={state.indicator}
-              year={state.year}
-              selected={state.selected}
-              lang={state.lang}
-              onSelect={(code) => {
-                interrupt()
-                setNotice('')
-                update({ selected: code })
-              }}
-            />
-          ) : (
-            <div className="map-frame" id="map">
-              {view === 'cartogram' ? (
-                <Cartogram
-                  ref={mapRef}
+            <div className="view-switch">
+              <button
+                type="button"
+                aria-pressed={view === 'map'}
+                onClick={() => {
+                  interrupt()
+                  update({ view: 'map' })
+                }}
+              >
+                {strings.showMap}
+              </button>
+              <button
+                type="button"
+                aria-pressed={view === 'cartogram'}
+                onClick={() => {
+                  interrupt()
+                  update({ view: 'cartogram' })
+                }}
+              >
+                {strings.showCartogram}
+              </button>
+            </div>
+
+            <div id="view" tabIndex={-1}>
+              {state.table ? (
+                <DataTable
                   lk={lk}
-                  bubbles={bubbles}
-                  adjacencyNeighbours={adjacency.neighbours}
                   indicatorId={state.indicator}
                   year={state.year}
                   selected={state.selected}
                   lang={state.lang}
-                  onNoMove={() => setNotice(strings.noNeighbour)}
-                  onMoved={() => setNotice('')}
                   onSelect={(code) => {
                     interrupt()
                     setNotice('')
-                    update({ selected: code === state.selected ? null : code })
+                    update({ selected: code })
                   }}
                 />
               ) : (
-                <MapView
-                  ref={mapRef}
-                  lk={lk}
-                  topology={topology}
-                  adjacency={adjacency}
-                  indicatorId={state.indicator}
-                  year={state.year}
-                  selected={state.selected}
-                  lang={state.lang}
-                  animate={!reducedMotion}
-                  onNoMove={() => setNotice(strings.noNeighbour)}
-                  onMoved={() => setNotice('')}
-                  onSelect={(code) => {
-                    interrupt()
-                    setNotice('')
-                    update({ selected: code === state.selected ? null : code })
-                  }}
-                />
+                <div className="map-frame" id="map">
+                  {view === 'cartogram' ? (
+                    <Cartogram
+                      ref={mapRef}
+                      lk={lk}
+                      bubbles={bubbles}
+                      adjacencyNeighbours={adjacency.neighbours}
+                      indicatorId={state.indicator}
+                      year={state.year}
+                      selected={state.selected}
+                      lang={state.lang}
+                      onNoMove={() => setNotice(strings.noNeighbour)}
+                      onMoved={() => setNotice('')}
+                      onSelect={(code) => {
+                        interrupt()
+                        setNotice('')
+                        update({ selected: code === state.selected ? null : code })
+                      }}
+                    />
+                  ) : (
+                    <MapView
+                      ref={mapRef}
+                      lk={lk}
+                      topology={topology}
+                      adjacency={adjacency}
+                      indicatorId={state.indicator}
+                      year={state.year}
+                      selected={state.selected}
+                      lang={state.lang}
+                      animate={!reducedMotion}
+                      onNoMove={() => setNotice(strings.noNeighbour)}
+                      onMoved={() => setNotice('')}
+                      onSelect={(code) => {
+                        interrupt()
+                        setNotice('')
+                        update({ selected: code === state.selected ? null : code })
+                      }}
+                    />
+                  )}
+                </div>
               )}
             </div>
-          )}
+          </div>
         </div>
-      </div>
 
-      {/*
-       * Below the views rather than among the controls. They are somewhere to go next, not a
-       * control, and putting them in the left column meant a keyboard visitor passed five
-       * links before reaching the map.
-       */}
-      <FactsStrip lang={state.lang} />
+        {/*
+         * Below the views rather than among the controls. They are somewhere to go next, not a
+         * control, and putting them in the left column meant a keyboard visitor passed five
+         * links before reaching the map.
+         */}
+        <FactsStrip lang={state.lang} />
 
-      {state.selected && (
-        <ComparePanel
-          lk={lk}
-          selected={state.selected}
-          compare={state.compare}
-          year={state.year}
-          lang={state.lang}
-          onCompare={(compare) => {
-            interrupt()
-            setNotice('')
-            update({ compare })
-          }}
-        />
-      )}
+        {state.selected && (
+          <ComparePanel
+            lk={lk}
+            selected={state.selected}
+            compare={state.compare}
+            year={state.year}
+            lang={state.lang}
+            onCompare={(compare) => {
+              interrupt()
+              setNotice('')
+              update({ compare })
+            }}
+          />
+        )}
 
-      {state.selected && (
-        <ProfilePanel
-          asSheet={narrow}
-          lk={lk}
-          code={state.selected}
-          year={state.year}
-          lang={state.lang}
-          onClose={() => {
-            const closing = state.selected
-            setNotice('')
-            update({ selected: null, compare: null })
-            // Focus goes back to the shape that opened the panel, rather than being dropped at
-            // the top of the document.
-            if (closing) mapRef.current?.focusMunicipality(closing)
-          }}
-        />
-      )}
+        {state.selected && (
+          <ProfilePanel
+            asSheet={narrow}
+            lk={lk}
+            code={state.selected}
+            year={state.year}
+            lang={state.lang}
+            onClose={() => {
+              const closing = state.selected
+              setNotice('')
+              update({ selected: null, compare: null })
+              // Focus goes back to the shape that opened the panel, rather than being dropped at
+              // the top of the document.
+              if (closing) mapRef.current?.focusMunicipality(closing)
+            }}
+          />
+        )}
+      </main>
+
+      <Notices lang={state.lang} />
 
       <LiveRegion message={announcement} silent={playing} />
     </div>
