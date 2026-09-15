@@ -17,29 +17,57 @@ const draw = (selected = 'population', lang: 'sv' | 'en' = 'en') => {
 }
 
 describe('IndicatorPicker', () => {
-  it('is a named group of ten radios', () => {
+  it('is a labelled select of ten indicators', () => {
     draw()
-    expect(screen.getByRole('group', { name: 'Measure' })).toBeTruthy()
-    expect(screen.getAllByRole('radio')).toHaveLength(10)
+    const select = screen.getByRole('combobox', { name: 'Measure' })
+    expect(select).toBeTruthy()
+    expect(screen.getAllByRole('option')).toHaveLength(10)
   })
 
-  it('checks exactly the one the URL says', () => {
+  it('shows exactly the one the URL says', () => {
     draw('house-prices')
-    const checked = screen.getAllByRole('radio').filter((r) => (r as HTMLInputElement).checked)
-    expect(checked).toHaveLength(1)
-    expect(screen.getByRole('radio', { name: 'House prices' })).toBe(checked[0])
+    const select = screen.getByRole('combobox', { name: 'Measure' }) as HTMLSelectElement
+    expect(select.value).toBe('house-prices')
+    const selected = screen.getAllByRole('option').filter((o) => (o as HTMLOptionElement).selected)
+    expect(selected).toHaveLength(1)
+    expect((selected[0] as HTMLOptionElement).textContent).toBe('House prices')
   })
 
   it('reports the new indicator when one is chosen', async () => {
     const { onChange } = draw()
-    await userEvent.click(screen.getByRole('radio', { name: 'Mean age' }))
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Measure' }), 'mean-age')
     expect(onChange).toHaveBeenCalledWith('mean-age')
+  })
+
+  it('carries the indicator id as the value, not its name', () => {
+    // The id is what goes in the URL. Reading the visible name back out of the control would
+    // put "Mean age" in the address bar, and break the moment the page is in Swedish.
+    draw()
+    const options = screen.getAllByRole('option') as HTMLOptionElement[]
+    expect(options.map((o) => o.value)).toEqual(lk.data.indicators.map((i) => i.id))
   })
 
   it('names every indicator in Swedish too', () => {
     draw('population', 'sv')
-    expect(screen.getByRole('group', { name: 'Mått' })).toBeTruthy()
-    expect(screen.getByRole('radio', { name: 'Medelålder' })).toBeTruthy()
-    expect(screen.getByRole('radio', { name: 'Småhuspriser' })).toBeTruthy()
+    expect(screen.getByRole('combobox', { name: 'Mått' })).toBeTruthy()
+    expect(screen.getByRole('option', { name: 'Medelålder' })).toBeTruthy()
+    expect(screen.getByRole('option', { name: 'Småhuspriser' })).toBeTruthy()
+  })
+
+  it('ties the label to the control, so the name is not guessed from proximity', () => {
+    // getByRole with a name would also pass on an aria-label or on nothing at all in some
+    // engines; this asserts the actual for/id pair a screen reader follows.
+    const { container } = draw()
+    const label = container.querySelector('label')!
+    const select = container.querySelector('select')!
+    expect(label.getAttribute('for')).toBe(select.id)
+    expect(select.id).not.toBe('')
+  })
+
+  it('lists the indicators in the pantry’s own order', () => {
+    draw()
+    expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(
+      lk.data.indicators.map((i) => i.name.en),
+    )
   })
 })

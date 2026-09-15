@@ -5,7 +5,7 @@ test.describe('a link is a view', () => {
   test('a deep link restores indicator, year, municipality and profile', async ({ page }) => {
     await page.goto('/en/?i=house-prices&y=1990&m=0184')
     await expect(page.getByRole('heading', { level: 2, name: 'Solna' })).toBeVisible()
-    await expect(page.getByRole('radio', { name: 'House prices' })).toBeChecked()
+    await expect(page.getByRole('combobox', { name: 'Measure' })).toHaveValue('house-prices')
     await expect(page.getByRole('slider')).toHaveValue('1990')
     await expect(page).toHaveTitle(/^Solna · House prices 1990/)
   })
@@ -28,11 +28,11 @@ test.describe('a link is a view', () => {
 
   test('the back button goes back', async ({ page }) => {
     await page.goto('/en/?y=2024')
-    await page.getByRole('radio', { name: 'Mean age' }).click()
+    await page.getByRole('combobox', { name: 'Measure' }).selectOption('mean-age')
     await expect(page).toHaveURL(/i=mean-age/)
     await page.goBack()
     await expect(page).toHaveURL(/\/en\/\?y=2024$/)
-    await expect(page.getByRole('radio', { name: 'Population', exact: true })).toBeChecked()
+    await expect(page.getByRole('combobox', { name: 'Measure' })).toHaveValue('population')
   })
 
   test('a fact link lands on a view that shows the fact', async ({ page }) => {
