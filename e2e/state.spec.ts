@@ -36,10 +36,14 @@ test.describe('a link is a view', () => {
   })
 
   test('a fact link lands on a view that shows the fact', async ({ page }) => {
+    // The facts are generated now (Plan 7), so this names one by its family rather than by a
+    // sentence somebody wrote: the `unusual` fact is the one that compares a municipality with
+    // the places most like it, and its link has to land on that municipality and that measure.
     await page.goto('/en/?y=2024')
-    await page.getByRole('link', { name: /A house in Danderyd costs 22 times/ }).click()
-    await expect(page.getByRole('heading', { level: 2, name: 'Danderyd' })).toBeVisible()
-    await expect(page.getByText('13,813,000 SEK (in 2025 kronor)')).toBeVisible()
+    await page.getByRole('link', { name: /than the places most like it/ }).click()
+    await expect(page.getByRole('heading', { level: 2, name: 'Kävlinge' })).toBeVisible()
+    await expect(page).toHaveURL(/i=tax-rate/)
+    await expect(page.getByText('29.69%')).toBeVisible()
   })
 })
 

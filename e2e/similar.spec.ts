@@ -86,3 +86,60 @@ test('the two new sections keep the profile clean under axe', async ({ page }) =
     .analyze()
   expect(results.violations).toEqual([])
 })
+
+/**
+ * The facts strip, once nobody writes it.
+ *
+ * Named by shape rather than by wording throughout: a test that hard-codes a generated
+ * sentence fails on the next data refresh for a reason that says nothing about whether the
+ * strip works.
+ */
+test.describe('the generated facts strip', () => {
+  test('shows five facts, each a real link into the site', async ({ page }) => {
+    await page.goto('/en/?y=2024')
+    const strip = page.getByRole('region', { name: /things you did not think to ask/i })
+    await expect(strip).toBeVisible()
+    const links = strip.getByRole('link')
+    await expect(links).toHaveCount(5)
+    for (const link of await links.all()) {
+      const href = await link.getAttribute('href')
+      expect(href).toMatch(/^\/en\/\?/)
+      expect(href).toMatch(/i=/)
+      // The fact itself is the link text: "read more" five times over is useless in a screen
+      // reader's list of links.
+      expect((await link.textContent())!.length).toBeGreaterThan(20)
+    }
+  })
+
+  test('every fact link lands somewhere that is not the front page', async ({ page }) => {
+    await page.goto('/en/?y=2024')
+    const strip = page.getByRole('region', { name: /things you did not think to ask/i })
+    const hrefs = await strip
+      .getByRole('link')
+      .evaluateAll((els) => els.map((e) => (e as HTMLAnchorElement).getAttribute('href')!))
+    for (const href of hrefs) {
+      await page.goto(href)
+      await expect(page).toHaveURL(new RegExp(href.replace(/[?]/g, '\\?')))
+      // Something rendered: the map or the table is on screen, not an error.
+      await expect(page.locator('#view')).toBeVisible()
+    }
+  })
+
+  test('reads in Swedish too, and differently', async ({ page }) => {
+    // `allTextContents()` does NOT auto-wait: it returns whatever matches at that instant.
+    // Called straight after a goto it reads the page before React has rendered the strip, and
+    // comes back empty. The English half of this test passed on timing alone until the
+    // Swedish half exposed it. Waiting on a retrying expectation first is the fix.
+    const strip = (name: RegExp) => page.getByRole('region', { name }).getByRole('link')
+
+    await page.goto('/en/?y=2024')
+    await expect(strip(/things you did not think to ask/i)).toHaveCount(5)
+    const english = await strip(/things you did not think to ask/i).allTextContents()
+
+    await page.goto('/sv/?y=2024')
+    await expect(strip(/Sådant du inte tänkt fråga om/i)).toHaveCount(5)
+    const swedish = await strip(/Sådant du inte tänkt fråga om/i).allTextContents()
+
+    expect(swedish).not.toEqual(english)
+  })
+})

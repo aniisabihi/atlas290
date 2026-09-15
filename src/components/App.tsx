@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { MunicipalityTopology } from '../../shared/geometry'
-import type { Adjacency, Bubbles, PantryData, Similar } from '../../shared/pantry'
+import type { Adjacency, Bubbles, Facts, PantryData, Similar } from '../../shared/pantry'
 import { lookup, observationSentence } from '../data/select'
 import { t } from '../i18n/strings'
 import { titleFor } from '../state/title'
@@ -41,12 +41,14 @@ export function App({
   adjacency,
   bubbles,
   similar,
+  facts,
 }: {
   data: PantryData
   topology: MunicipalityTopology
   adjacency: Adjacency
   bubbles: Bubbles
   similar: Similar
+  facts: Facts
 }) {
   const meta = metaFrom(data)
   const lk = lookup(data)
@@ -282,7 +284,7 @@ export function App({
          * control, and putting them in the left column meant a keyboard visitor passed five
          * links before reaching the map.
          */}
-        <FactsStrip lang={state.lang} />
+        <FactsStrip lang={state.lang} facts={facts} />
 
         {state.selected && (
           <ComparePanel
