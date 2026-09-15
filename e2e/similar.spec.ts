@@ -20,7 +20,7 @@ test.describe('places like this', () => {
 
     await similar.getByRole('link', { name: 'Uppsala' }).click()
 
-    await expect(page).toHaveURL(/m=0380/)
+    await expect(page).toHaveURL(/\/uppsala-0380\//)
     await expect(page.getByRole('heading', { level: 2, name: 'Uppsala' })).toBeVisible()
     await expect(page).toHaveTitle(/^Uppsala ·/)
   })
@@ -33,7 +33,7 @@ test.describe('places like this', () => {
       .click()
     await expect(page).toHaveURL(/i=mean-age/)
     await expect(page).toHaveURL(/y=2010/)
-    await expect(page).toHaveURL(/m=2480/)
+    await expect(page).toHaveURL(/\/umea-2480\//)
   })
 
   test('states how the neighbours were found', async ({ page }) => {
@@ -51,7 +51,7 @@ test.describe('places like this', () => {
     await uppsala.focus()
     await expect(uppsala).toBeFocused()
     await page.keyboard.press('Enter')
-    await expect(page).toHaveURL(/m=0380/)
+    await expect(page).toHaveURL(/\/uppsala-0380\//)
   })
 })
 

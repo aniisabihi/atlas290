@@ -23,7 +23,7 @@ Increments after the first slice (facts engine, animated morph, similar municipa
 
 ---
 
-## The second slice — making the data speak
+## The second slice — making the data speak · **done**
 
 The first slice built a map you can read, drive and link to. Everything in it answers a question
 you already had. The second slice is about the questions you did not think to ask: it takes the
@@ -41,12 +41,12 @@ Unlike the first slice there is no "ship" plan at the end. Plan 5 built the mach
 three browsers, an accessibility scan, a performance budget, a gated deploy — so every plan below
 ships through it as it lands.
 
-| #   | Plan                                                                                                                 | Ends with                                                                                                                                                                                                                                                                                                                                                                                                    | Status      |
-| --- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
-| 6   | [Similar municipalities, and a profile that reads](2026-09-15-06-similar-municipalities-and-a-profile-that-reads.md) | A distance metric across standardised indicators, published as each municipality's nearest neighbours; "places like this" in the profile; and rule-generated prose telling a municipality's own story in both languages, every sentence traceable to the figures behind it.                                                                                                                                  | **done**    |
-| 7   | [Statistics, and facts that find themselves](2026-09-15-07-statistics-and-facts-that-find-themselves.md)             | A statistics module in the kitchen — runs, reversals, shares, extremes — and five fact families that generate the strip, replacing the five hand-written sentences. Each family ranks its own candidates; there is deliberately no score comparing across them, because "how surprising" has no honest exchange rate between kinds of claim. Every fact still carries a check that re-derives its own claim. | **done**    |
-| 8   | [The morph](2026-09-15-08-the-morph.md)                                                                              | The 290 map shapes animating into their bubble positions and back, holding frame rate on a mid-range phone, cross-fading instead when reduced motion is asked for. Settles the two questions section 9 of DESIGN parks: whether a Canvas layer is needed beneath the SVG, and whether the target is bubbles or a hexagon grid.                                                                               | **done**    |
-| 9   | A page per municipality                                                                                              | 580 pre-rendered pages, 290 municipalities in two languages, each with its own title, description and preview image — so a link to Malmö shows Malmö when it is pasted into a chat rather than the site's front page.                                                                                                                                                                                        | not started |
+| #   | Plan                                                                                                                 | Ends with                                                                                                                                                                                                                                                                                                                                                                                                    | Status   |
+| --- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| 6   | [Similar municipalities, and a profile that reads](2026-09-15-06-similar-municipalities-and-a-profile-that-reads.md) | A distance metric across standardised indicators, published as each municipality's nearest neighbours; "places like this" in the profile; and rule-generated prose telling a municipality's own story in both languages, every sentence traceable to the figures behind it.                                                                                                                                  | **done** |
+| 7   | [Statistics, and facts that find themselves](2026-09-15-07-statistics-and-facts-that-find-themselves.md)             | A statistics module in the kitchen — runs, reversals, shares, extremes — and five fact families that generate the strip, replacing the five hand-written sentences. Each family ranks its own candidates; there is deliberately no score comparing across them, because "how surprising" has no honest exchange rate between kinds of claim. Every fact still carries a check that re-derives its own claim. | **done** |
+| 8   | [The morph](2026-09-15-08-the-morph.md)                                                                              | The 290 map shapes animating into their bubble positions and back, holding frame rate on a mid-range phone, cross-fading instead when reduced motion is asked for. Settles the two questions section 9 of DESIGN parks: whether a Canvas layer is needed beneath the SVG, and whether the target is bubbles or a hexagon grid.                                                                               | **done** |
+| 9   | [A page per municipality](2026-09-15-09-a-page-per-municipality.md)                                                  | 580 pre-rendered pages, 290 municipalities in two languages, each with its own title, description and preview image — so a link to Malmö shows Malmö when it is pasted into a chat rather than the site's front page.                                                                                                                                                                                        | **done** |
 
 **Why similarity comes before facts.** The facts engine was the obvious first plan and is
 deliberately second. A fact is only interesting relative to something: a naive engine ranking by
@@ -56,7 +56,14 @@ which the pantry already holds, and places like it, which it does not. Plan 6 co
 second baseline, so Plan 7 can ask "unusual _for a place like this_" rather than only "unusual".
 Decided by the architect, 2026-09-15.
 
-### What each plan has to decide
+**Complete.** The profile names the five places most like the one on screen and opens with a few
+sentences of its own story; the facts strip finds its own five facts across five families; the 290
+shapes travel between the map and the bubbles rather than cutting; and every municipality has its
+own page, so a pasted link names the place. Of the three things the original vision claimed nobody
+in Sweden had — time depth to 1968, a shape-changing map, auto-surfaced facts — all three now
+exist.
+
+### What each plan decided
 
 These are open in [DESIGN section 9](../DESIGN.md#9-still-open) and are not decided here. Each
 belongs to the plan that reaches it, and each gets a record in
@@ -83,8 +90,11 @@ belongs to the plan that reaches it, and each gets a record in
   mean maintaining two renderers forever beneath an accessibility layer that has to exist either
   way. Bubbles, not hexagons — which turned out not to be a performance question at all: a morph
   has to end at the view that already exists. [Decision 0004](../decisions/0004-the-morph.md).
-- **Plan 9.** How to make 580 preview images without a paid service. SVG rendered at build time is
-  the obvious candidate and needs checking against what social platforms actually accept.
+- **Plan 9 — settled, and the guess was wrong.** SVG rendered at build time is not a candidate at
+  all: no platform documents SVG support for `og:image`, and Facebook's, Slack's and X's own
+  documentation each decline to say. The cards are rasterised with Playwright, which was already
+  here — 290 of them in 4.9 seconds, 7.4 MB, one per municipality rather than 580 because all 290
+  names are identical in both languages. [Decision 0005](../decisions/0005-a-page-per-municipality.md).
 
 ## Not plans, but next
 

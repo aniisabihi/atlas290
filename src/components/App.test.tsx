@@ -198,7 +198,7 @@ describe('App', () => {
   it('offers the other language as a link carrying the current view', () => {
     open('/en/?i=mean-age&y=2010&m=1280')
     expect(screen.getByRole('link', { name: /switch language/i }).getAttribute('href')).toBe(
-      '/sv/?i=mean-age&y=2010&m=1280',
+      '/sv/malmo-1280/?i=mean-age&y=2010',
     )
   })
 })

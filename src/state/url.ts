@@ -1,4 +1,5 @@
 import type { PantryData } from '../../shared/pantry'
+import { parseSegment, segmentFor } from '../../shared/slug'
 
 /**
  * The URL is the application's memory. Everything the site renders is a function of the path and
@@ -59,6 +60,14 @@ export type AppState = {
 export type PantryMeta = {
   indicators: readonly string[]
   codes: readonly string[]
+  /**
+   * Code to name, for building the readable half of a municipality path.
+   *
+   * One map rather than one per language: all 290 names are identical in Swedish and English,
+   * which `shared/slug.test.ts` asserts rather than assumes. A future translated name would need
+   * a decision about which language the slug speaks, and that test is where it would surface.
+   */
+  names: Readonly<Record<string, string>>
   /** The full year axis, always shown whatever indicator is chosen. */
   years: { min: number; max: number }
   /** The year a visitor arrives on: the latest the default indicator actually covers. */
@@ -74,6 +83,7 @@ export function metaFrom(data: PantryData): PantryMeta {
   return {
     indicators: data.indicators.map((i) => i.id),
     codes: data.municipalities.map((m) => m.code),
+    names: Object.fromEntries(data.municipalities.map((m) => [m.code, m.name.sv])),
     years: { min: Math.min(...years), max: Math.max(...years) },
     // Deliberately the default indicator's last year, not the axis end. The axis reaches 2026
     // because municipal tax rates are set a year ahead; opening on 2026 would show every
@@ -101,6 +111,22 @@ function langFrom(pathname: string): Lang {
   return LANGS.find((l) => l === segment) ?? DEFAULT_LANG
 }
 
+/**
+ * The municipality a path names, if it names one: `/en/malmo-1280/` is Malmö.
+ *
+ * Plan 9 pre-renders a page per municipality so that a pasted link says what it shows, and those
+ * pages live at real paths because static hosting cannot serve different documents for different
+ * query strings. The path is therefore a second way to say `?m=`, not a replacement for it —
+ * every link already shared keeps working, which is what DESIGN means by calling the URL grammar
+ * final.
+ */
+function municipalityFrom(pathname: string, meta: PantryMeta): string | null {
+  const segment = pathname.split('/')[2]
+  if (!segment) return null
+  const code = parseSegment(segment)
+  return code && meta.codes.includes(code) ? code : null
+}
+
 export function parseState(pathname: string, search: string, meta: PantryMeta): AppState {
   const q = new URLSearchParams(search)
   const fallback = defaultsFor(meta)
@@ -108,7 +134,10 @@ export function parseState(pathname: string, search: string, meta: PantryMeta): 
   const indicator = q.get(KEYS.indicator)
   const year = Number.parseInt(q.get(KEYS.year) ?? '', 10)
   const known = (code: string | null) => (code && meta.codes.includes(code) ? code : null)
-  const selected = known(q.get(KEYS.selected))
+  // The path wins over `?m`. It is what the server used to choose which document to send, so a
+  // page that said Malmö in its title and then rendered Göteborg would be the worse failure —
+  // and the only way to get both is to hand-write one.
+  const selected = municipalityFrom(pathname, meta) ?? known(q.get(KEYS.selected))
   const candidate = known(q.get(KEYS.compare))
   // A comparison needs something to compare against, and comparing a municipality with itself is
   // not a view — it would render a panel of identical columns and a summary of ten ties.
@@ -143,10 +172,15 @@ export function toUrl(state: AppState, meta: PantryMeta): string {
   // link stays short and never pins a value the visitor did not actually choose.
   if (state.indicator !== fallback.indicator) q.set(KEYS.indicator, state.indicator)
   if (state.year !== fallback.year) q.set(KEYS.year, String(state.year))
-  if (state.selected !== null) q.set(KEYS.selected, state.selected)
+  // The selection is the path now, not a query key — so it is never written here.
   if (state.compare !== null && state.selected !== null) q.set(KEYS.compare, state.compare)
   if (state.view !== null) q.set(KEYS.view, state.view)
   if (state.table) q.set(KEYS.table, '1')
   const search = q.toString()
-  return `/${state.lang}/${search ? `?${search}` : ''}`
+  const name = state.selected ? meta.names[state.selected] : undefined
+  const path =
+    state.selected && name
+      ? `/${state.lang}/${segmentFor(name, state.selected)}/`
+      : `/${state.lang}/`
+  return `${path}${search ? `?${search}` : ''}`
 }
