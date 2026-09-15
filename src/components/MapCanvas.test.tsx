@@ -4,37 +4,57 @@ import userEvent from '@testing-library/user-event'
 import rawData from '../../public/pantry/data/indicators.json'
 import rawTopology from '../../public/pantry/geometry/municipalities.topo.json'
 import rawAdjacency from '../../public/pantry/geometry/adjacency.json'
-import { Adjacency, PantryData } from '../../shared/pantry'
+import rawBubbles from '../../public/pantry/layout/bubbles.json'
+import { Adjacency, Bubbles, PantryData } from '../../shared/pantry'
 import type { MunicipalityTopology } from '../../shared/geometry'
 import { lookup } from '../data/select'
-import { NO_VALUE_FILLS, paletteFor } from '../map/colour'
-import { MapView } from './MapView'
+import { fillFor, NO_VALUE_FILLS, paletteFor } from '../map/colour'
+import { placeAll } from '../map/frame'
+import { CARTOGRAM_CONE_COS, DIRECTIONS, step, type NavContext } from '../map/navigate'
+import { MapCanvas } from './MapCanvas'
 
 const lk = lookup(PantryData.parse(rawData))
 const topology = rawTopology as unknown as MunicipalityTopology
 const adjacency = Adjacency.parse(rawAdjacency)
+const bubbles = Bubbles.parse(rawBubbles)
 
-const draw = (over: Partial<Parameters<typeof MapView>[0]> = {}) => {
+/**
+ * `MapCanvas` replaced `MapView` and `Cartogram`, which used to swap places. These are their
+ * two test suites, carried over rather than rewritten: everything both components did has to
+ * keep working, and a test that had to be reworded to pass would be the warning sign.
+ *
+ * Only what names a component changed. What names a behaviour did not.
+ *
+ * jsdom implements neither `getTotalLength` nor `getPointAtLength`, so `MapCanvas` finds no
+ * proxies here and falls back to cutting between the two ends — which is exactly the path an
+ * old browser takes, and means these tests exercise that fallback as a side effect. The morph
+ * itself is verified in `e2e/morph.spec.ts`, in three real engines.
+ */
+const draw = (over: Partial<Parameters<typeof MapCanvas>[0]> = {}) => {
   const onSelect = vi.fn()
+  const onNoMove = vi.fn()
   const result = render(
-    <MapView
+    <MapCanvas
       lk={lk}
       topology={topology}
       adjacency={adjacency}
+      bubbles={bubbles}
+      view="map"
       indicatorId="population"
       year={2024}
       selected={null}
       lang="en"
       onSelect={onSelect}
+      onNoMove={onNoMove}
       {...over}
     />,
   )
-  return { onSelect, ...result }
+  return { onSelect, onNoMove, ...result }
 }
 
 const shapes = () => screen.getAllByRole('button')
 
-describe('MapView', () => {
+describe('MapCanvas', () => {
   it('draws all 290 municipalities as content, not as one picture', () => {
     draw()
     expect(shapes()).toHaveLength(290)
@@ -131,7 +151,7 @@ describe('MapView', () => {
   })
 })
 
-describe('MapView keyboard navigation', () => {
+describe('MapCanvas keyboard navigation', () => {
   const enterMap = async (over: Parameters<typeof draw>[0] = {}) => {
     const rendered = draw(over)
     const start = screen.getAllByRole('button').find((b) => b.getAttribute('tabindex') === '0')!
@@ -193,7 +213,7 @@ describe('MapView keyboard navigation', () => {
   })
 })
 
-describe('MapView focus is visible', () => {
+describe('MapCanvas focus is visible', () => {
   /**
    * The defect these cover: the arrow keys moved focus correctly and the map drew nothing, so
    * from the outside keyboard navigation was indistinguishable from broken. A focus ring that
@@ -257,5 +277,152 @@ describe('strokes are measured in screen pixels, not map units', () => {
     for (const path of stroked) {
       expect(path.getAttribute('vector-effect')).toBe('non-scaling-stroke')
     }
+  })
+})
+
+/**
+ * The cartogram end. These were `Cartogram`'s own tests; the assertions that named a `<circle>`
+ * now name a `<path>`, because one element travels between the two layouts rather than two
+ * elements swapping — which is the whole change. Everything else is untouched.
+ */
+describe('MapCanvas as the cartogram', () => {
+  const bubbleDraw = (over: Partial<Parameters<typeof MapCanvas>[0]> = {}) =>
+    draw({ view: 'cartogram', ...over })
+
+  it('draws all 290 municipalities', () => {
+    bubbleDraw()
+    expect(screen.getAllByRole('button')).toHaveLength(290)
+  })
+
+  it('gives each one the same accessible name the map gives it', () => {
+    const { unmount } = bubbleDraw()
+    const atBubbles = screen.getByRole('button', { name: /^Stockholm,/ }).getAttribute('aria-label')
+    unmount()
+    draw()
+    const atMap = screen.getByRole('button', { name: /^Stockholm,/ }).getAttribute('aria-label')
+    expect(atBubbles).toBe(atMap)
+  })
+
+  it('colours a municipality exactly as the map would', () => {
+    bubbleDraw()
+    const stockholm = screen.getByRole('button', { name: /^Stockholm/ })
+    expect(stockholm.getAttribute('fill')).toBe(
+      fillFor(lk.indicator('population'), 995_574, 'present'),
+    )
+  })
+
+  it('patterns an absence the same way the map does', () => {
+    bubbleDraw({ indicatorId: 'house-prices', year: 1989 })
+    expect(screen.getByRole('button', { name: /^Salem/ }).getAttribute('fill')).toMatch(/^url\(#/)
+  })
+
+  it('is one tab stop with a roving tabindex inside', () => {
+    bubbleDraw()
+    expect(
+      screen.getAllByRole('button').filter((s) => s.getAttribute('tabindex') === '0'),
+    ).toHaveLength(1)
+  })
+
+  it('rings the selection the same way the map does', () => {
+    const { container } = bubbleDraw({ selected: '1280' })
+    expect(container.querySelector('[data-selection-ring]')).not.toBeNull()
+  })
+
+  it('clips nothing: every bubble fits inside the viewBox', () => {
+    const { container } = bubbleDraw()
+    const [minX, minY, width, height] = container
+      .querySelector('svg')!
+      .getAttribute('viewBox')!
+      .split(' ')
+      .map(Number) as [number, number, number, number]
+    for (const c of placeAll(bubbles.circles)) {
+      expect(c.x - c.r, c.code).toBeGreaterThanOrEqual(minX)
+      expect(c.y - c.r, c.code).toBeGreaterThanOrEqual(minY)
+      expect(c.x + c.r, c.code).toBeLessThanOrEqual(minX + width)
+      expect(c.y + c.r, c.code).toBeLessThanOrEqual(minY + height)
+    }
+  })
+
+  it('names the cartogram, not the map, for assistive technology', () => {
+    const { container } = bubbleDraw()
+    expect(container.querySelector('svg')!.getAttribute('aria-label')).toBe(
+      'Bubble chart of Sweden by municipality, sized by population',
+    )
+  })
+
+  it('moves focus with the arrow keys', async () => {
+    bubbleDraw({ selected: '0180' })
+    screen
+      .getAllByRole('button')
+      .find((b) => b.getAttribute('tabindex') === '0')!
+      .focus()
+    await userEvent.keyboard('{ArrowUp}')
+    expect(document.activeElement?.getAttribute('aria-label')).not.toMatch(/^Stockholm/)
+    expect(document.activeElement?.getAttribute('role')).toBe('button')
+  })
+
+  it('selects with a click', async () => {
+    const { onSelect } = bubbleDraw()
+    await userEvent.click(screen.getByRole('button', { name: /^Malmö/ }))
+    expect(onSelect).toHaveBeenCalledWith('1280')
+  })
+
+  it('uses the cartogram cone, not the map cone', async () => {
+    // The two were measured separately and the difference is real: at the map's 45 degrees the
+    // bubble layout strands Salem. Asserted through the component so that wiring the wrong
+    // cone into this end fails here rather than only in navigate.test.ts.
+    const { container } = bubbleDraw()
+    expect(container.querySelector('svg')!.getAttribute('data-view')).toBe('cartogram')
+  })
+})
+
+describe('arrow keys on the bubble layout', () => {
+  /**
+   * Plan 3 proved every municipality is arrow-reachable on the geographic layout. Moving every
+   * centroid breaks that proof, so it is re-established here rather than inherited. It genuinely
+   * needed a different cone: at the map's 45 degrees the bubble layout strands Salem, and 50
+   * reaches all 290 — measured by sweeping this exact assertion over the real positions.
+   *
+   * Run against the PLACED circles, which is where the component now navigates: placing the
+   * layout in the map's frame is a uniform scale and an offset, so it cannot change which
+   * municipality lies in which direction — and this asserts that rather than assuming it.
+   */
+  const nav: NavContext = {
+    neighbours: adjacency.neighbours,
+    centroids: new Map(placeAll(bubbles.circles).map((c) => [c.code, [c.x, c.y] as const])),
+    coneCos: CARTOGRAM_CONE_COS,
+  }
+  const codes = bubbles.circles.map((c) => c.code)
+
+  it('leaves no municipality that nothing can arrow onto', () => {
+    const reached = new Set<string>()
+    for (const code of codes) {
+      for (const d of DIRECTIONS) {
+        const to = step(code, d, nav)
+        if (to) reached.add(to)
+      }
+    }
+    expect(codes.filter((c) => !reached.has(c))).toEqual([])
+    expect(reached.size).toBe(290)
+  })
+
+  it('leaves every municipality by at least one key', () => {
+    for (const code of codes) {
+      expect(DIRECTIONS.map((d) => step(code, d, nav)).filter(Boolean).length).toBeGreaterThan(0)
+    }
+  })
+
+  it('shows that the map cone is not wide enough for this layout', () => {
+    // The measurement that chose the number, kept as a test so that narrowing the cartogram's
+    // cone back to the map's has to fail rather than quietly stranding somebody.
+    const narrow: NavContext = { ...nav, coneCos: Math.cos((45 * Math.PI) / 180) }
+    const reached = new Set<string>()
+    for (const code of codes) {
+      for (const d of DIRECTIONS) {
+        const to = step(code, d, narrow)
+        if (to) reached.add(to)
+      }
+    }
+    expect(codes.filter((c) => !reached.has(c))).toEqual(['0128'])
   })
 })
