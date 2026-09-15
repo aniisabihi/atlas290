@@ -9,7 +9,7 @@
   "packageManager": "yarn@4.18.0",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -p tsconfig.app.json --noEmit && vite build",
+    "build": "tsc -p tsconfig.app.json --noEmit && vite build && tsx tools/build-pages.mjs",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.kitchen.json --noEmit && tsc -p tsconfig.e2e.json --noEmit",
     "test": "vitest run",
@@ -19,7 +19,8 @@
     "kitchen": "tsx kitchen/src/cli.ts",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
-    "budget": "node tools/lighthouse-budget.mjs"
+    "budget": "node tools/lighthouse-budget.mjs",
+    "cards": "node tools/build-cards.mjs"
   },
   "dependencies": {
     "d3-geo": "^3.1.1",

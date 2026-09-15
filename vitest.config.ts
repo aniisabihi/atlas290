@@ -17,7 +17,9 @@ export default defineConfig({
         test: {
           name: 'kitchen',
           environment: 'node',
-          include: ['shared/**/*.test.ts', 'kitchen/**/*.test.ts'],
+          // `tools/` runs in Node too — the build-time page generator lives there, and its
+          // output is part of what ships.
+          include: ['shared/**/*.test.ts', 'kitchen/**/*.test.ts', 'tools/**/*.test.ts'],
         },
       },
       {
