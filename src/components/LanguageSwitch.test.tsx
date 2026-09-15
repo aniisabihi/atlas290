@@ -21,7 +21,7 @@ describe('LanguageSwitch', () => {
     render(<LanguageSwitch state={state} meta={meta} />)
     const link = screen.getByRole('link')
     expect(link.tagName).toBe('A')
-    expect(link.getAttribute('href')).toBe('/en/?i=house-prices&y=1990&m=1280')
+    expect(link.getAttribute('href')).toBe('/en/malmo-1280/?i=house-prices&y=1990')
   })
 
   it('carries the whole current view across, so nobody loses their place', () => {
@@ -29,12 +29,15 @@ describe('LanguageSwitch', () => {
     const href = screen.getByRole('link').getAttribute('href')!
     expect(href).toContain('i=house-prices')
     expect(href).toContain('y=1990')
-    expect(href).toContain('m=1280')
+    // The selection lives in the path now, not in a query key (Plan 9).
+    expect(href).toContain('malmo-1280')
   })
 
   it('goes back the other way from English', () => {
     render(<LanguageSwitch state={{ ...state, lang: 'en' }} meta={meta} />)
-    expect(screen.getByRole('link').getAttribute('href')).toBe('/sv/?i=house-prices&y=1990&m=1280')
+    expect(screen.getByRole('link').getAttribute('href')).toBe(
+      '/sv/malmo-1280/?i=house-prices&y=1990',
+    )
   })
 
   it('marks the link with the language it leads to, for a screen reader that switches voice', () => {

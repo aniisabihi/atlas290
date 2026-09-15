@@ -17,6 +17,7 @@ import {
 const meta: PantryMeta = {
   indicators: ['population', 'mean-age', 'tax-rate'],
   codes: ['0180', '0330', '1280'],
+  names: { '0180': 'Stockholm', '0330': 'Knivsta', '1280': 'Malmö' },
   years: { min: 1968, max: 2026 },
   defaultYear: 2025,
 }
@@ -100,14 +101,14 @@ describe('toUrl', () => {
   })
 
   it('writes only what differs from the default', () => {
-    expect(toUrl(state({ selected: '0180' }), meta)).toBe('/sv/?m=0180')
+    expect(toUrl(state({ selected: '0180' }), meta)).toBe('/sv/stockholm-0180/')
     expect(toUrl(state({ year: 2010 }), meta)).toBe('/sv/?y=2010')
     expect(toUrl(state({ indicator: 'mean-age' }), meta)).toBe('/sv/?i=mean-age')
   })
 
   it('writes keys in a fixed order, so the same state is always the same string', () => {
     const full = state({ indicator: 'mean-age', year: 2010, selected: '0180' })
-    expect(toUrl(full, meta)).toBe('/sv/?i=mean-age&y=2010&m=0180')
+    expect(toUrl(full, meta)).toBe('/sv/stockholm-0180/?i=mean-age&y=2010')
   })
 })
 
@@ -172,7 +173,7 @@ describe('metaFrom, against the real published pantry', () => {
   })
 
   it('round-trips a real deep link', () => {
-    const href = '/en/?i=house-prices&y=1990&m=0184'
+    const href = '/en/solna-0184/?i=house-prices&y=1990'
     expect(toUrl(parseHref(href, real), real)).toBe(href)
   })
 })
@@ -226,10 +227,81 @@ describe('the state Plan 4 adds', () => {
         state({ selected: '0180', compare: '1280', view: 'cartogram', table: true, year: 2010 }),
         meta,
       ),
-    ).toBe('/sv/?y=2010&m=0180&c=1280&v=cartogram&t=1')
+    ).toBe('/sv/stockholm-0180/?y=2010&c=1280&v=cartogram&t=1')
   })
 
   it('never writes a comparison without its subject', () => {
     expect(toUrl(state({ selected: null, compare: '1280' }), meta)).toBe('/sv/')
   })
 })
+
+/**
+ * Plan 9 pre-renders a page per municipality, so the selection has to live somewhere a static
+ * host can serve a different document for — which a query string is not. The path is a second
+ * way of saying `?m=`, never a replacement: every link already shared has to keep working, which
+ * is what DESIGN means by calling the URL grammar final.
+ */
+describe('a municipality in the path', () => {
+  it('reads the code out of the path', () => {
+    expect(parseState('/en/malmo-1280/', '', meta).selected).toBe('1280')
+  })
+
+  it('ignores the words, so a rename cannot break a link that exists', () => {
+    expect(parseState('/en/goteborg-1280/', '', meta).selected).toBe('1280')
+    expect(parseState('/en/1280/', '', meta).selected).toBe('1280')
+  })
+
+  it('still reads ?m= when the path names nobody', () => {
+    expect(parseState('/en/', '?m=1280', meta).selected).toBe('1280')
+  })
+
+  it('lets the path win over a conflicting ?m=', () => {
+    // Only a hand-written URL can have both. The path is what the server used to choose which
+    // document to send, so a page whose title says Malmö must not render Stockholm.
+    expect(parseState('/en/malmo-1280/', '?m=0180', meta).selected).toBe('1280')
+  })
+
+  it('falls back rather than throwing on a code the pantry does not have', () => {
+    expect(parseState('/en/atlantis-9999/', '', meta).selected).toBeNull()
+    expect(parseState('/en/nowhere/', '', meta).selected).toBeNull()
+  })
+
+  it('does not mistake a language segment for a municipality', () => {
+    expect(parseState('/en/', '', meta).selected).toBeNull()
+    expect(parseState('/', '', meta).selected).toBeNull()
+  })
+
+  it('writes the path form and never ?m=', () => {
+    const url = toUrl(state({ lang: 'en', selected: '1280' }), meta)
+    expect(url).toBe('/en/malmo-1280/')
+    expect(url).not.toContain('m=')
+  })
+
+  it('keeps everything else in the query, on top of the path', () => {
+    expect(toUrl(state({ lang: 'en', selected: '1280', compare: '0180', table: true }), meta)).toBe(
+      '/en/malmo-1280/?c=0180&t=1',
+    )
+  })
+
+  it('round-trips through the path', () => {
+    for (const code of meta.codes) {
+      const before = state({ lang: 'en', selected: code, year: 2010 })
+      expect(parseState(...(splitUrl(toUrl(before, meta)) as [string, string]), meta)).toEqual(
+        before,
+      )
+    }
+  })
+
+  it('reads back a link written in the old query form, unchanged', () => {
+    // The promise. These exist in the world already — in the facts file, in anything anybody
+    // has pasted anywhere — and they have to keep landing in the same place.
+    const fromQuery = parseState('/en/', '?i=mean-age&y=2010&m=1280', meta)
+    const fromPath = parseState('/en/malmo-1280/', '?i=mean-age&y=2010', meta)
+    expect(fromQuery).toEqual(fromPath)
+  })
+})
+
+function splitUrl(url: string): [string, string] {
+  const q = url.indexOf('?')
+  return q === -1 ? [url, ''] : [url.slice(0, q), url.slice(q)]
+}
