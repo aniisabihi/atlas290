@@ -49,20 +49,41 @@ export function pointsFor(series: IndicatorSeries, row: number): Point[] {
 }
 
 /**
+ * The noise bound in a given indicator's OWN unit.
+ *
+ * `CKM_MAX_NOISE` is three PEOPLE. It is the right bound for a count and completely wrong for
+ * anything else: applied to `share-65-plus` it would treat three percentage points as noise,
+ * which is roughly a third of the whole national spread. That is not hypothetical — it flipped
+ * a fact in this plan before the unit was taken into account, quietly turning "283 of 284" into
+ * "284 of 284" by discarding the one municipality that disagreed.
+ *
+ * For the derived indicators the perturbation does propagate, but tiny: a share of 65-and-over
+ * built from two counts near 20,000 moves by about 0.03 percentage points when each is nudged
+ * by three, which no claim in this project turns on. So the bound for those is zero — trust the
+ * figure — and the honest statement is that this project has a published bound for counts and
+ * an argued-negligible effect everywhere else, rather than one number pretending to fit all six
+ * units.
+ */
+export function noiseBoundFor(unit: string): number {
+  return unit === 'count' ? CKM_MAX_NOISE : 0
+}
+
+/**
  * Whether the direction of the step from `before` to `after` is a fact rather than noise.
  *
  * A step is trustworthy when neither end is perturbed, or when it is larger than the
- * perturbation could account for. Each perturbed end can move by up to `CKM_MAX_NOISE`, so a
- * step with one perturbed end needs to exceed that, and one with two perturbed ends needs to
- * exceed twice it.
+ * perturbation could account for. Each perturbed end can move by up to `maxNoise`, so a step
+ * with one perturbed end needs to exceed that, and one with two perturbed ends needs to exceed
+ * twice it.
  *
  * Strictly greater, not greater-or-equal: a step of exactly the bound could have been produced
- * entirely by the noise.
+ * entirely by the noise. A bound of zero therefore trusts every step, which is what
+ * `noiseBoundFor` returns for every unit but `count`.
  */
-export function stepIsReal(before: Point, after: Point): boolean {
+export function stepIsReal(before: Point, after: Point, maxNoise = CKM_MAX_NOISE): boolean {
   const perturbed = (before.status === 'perturbed' ? 1 : 0) + (after.status === 'perturbed' ? 1 : 0)
   if (perturbed === 0) return true
-  return Math.abs(after.value - before.value) > perturbed * CKM_MAX_NOISE
+  return Math.abs(after.value - before.value) > perturbed * maxNoise
 }
 
 export type Run = { years: number; from: number; to: number }

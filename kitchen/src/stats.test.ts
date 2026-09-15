@@ -3,6 +3,7 @@ import rawData from '../../public/pantry/data/indicators.json'
 import { PantryData, type ObservationStatus } from '../../shared/pantry'
 import {
   CKM_MAX_NOISE,
+  noiseBoundFor,
   extremesOf,
   longestRun,
   pointsFor,
@@ -50,6 +51,13 @@ describe('stepIsReal', () => {
     const [a, b] = points([100, 103], 2024, ['present', 'perturbed'])
     expect(b!.value - a!.value).toBe(CKM_MAX_NOISE)
     expect(stepIsReal(a!, b!)).toBe(false)
+  })
+
+  it('trusts every step when the bound is zero', () => {
+    // Which is what a non-count unit gets: the perturbation propagates into a derived share,
+    // but by about 0.03 percentage points, not by three.
+    const [a, b] = points([100, 100.5], 2024, ['present', 'perturbed'])
+    expect(stepIsReal(a!, b!, 0)).toBe(true)
   })
 
   it('doubles the bound when both ends are perturbed', () => {
@@ -322,5 +330,21 @@ describe('pointsFor', () => {
 
   it('returns nothing for a row that is not there', () => {
     expect(pointsFor(population, 9999)).toEqual([])
+  })
+})
+
+describe('noiseBoundFor', () => {
+  it('is three people for a count', () => {
+    expect(noiseBoundFor('count')).toBe(CKM_MAX_NOISE)
+  })
+
+  it('is zero for every other unit', () => {
+    // Three PERCENTAGE POINTS is not a noise bound, it is about a third of the national
+    // spread of share-65-plus. Using the count bound on a derived share flipped a real fact
+    // in this plan — "283 of 284" silently became "284 of 284" — before the unit was taken
+    // into account, by discarding the one municipality that disagreed.
+    for (const unit of ['percent', 'sek', 'years', 'per-thousand', 'per-km2']) {
+      expect(noiseBoundFor(unit), unit).toBe(0)
+    }
   })
 })
