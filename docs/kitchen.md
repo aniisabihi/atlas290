@@ -5,7 +5,7 @@ The kitchen is the offline data pipeline. It is the only code that talks to SCB.
 | Command                | Network | What it does                                                                                                                                                       |
 | ---------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `yarn kitchen fetch`   | yes     | Downloads the tables the indicators need and freezes each response under `kitchen/raw/<table>/<lang>/`. Already-frozen chunks are skipped, so re-running is cheap. |
-| `yarn kitchen publish` | **no**  | Reads only `kitchen/raw/`, builds geometry, adjacency, bubbles and the indicator file into `public/pantry/`. Refuses to touch the network.                         |
+| `yarn kitchen publish` | **no**  | Reads only `kitchen/raw/`, builds geometry, adjacency, bubbles, the indicator file and the similarity file into `public/pantry/`. Refuses to touch the network.    |
 | `yarn kitchen all`     | yes     | Both, in order.                                                                                                                                                    |
 
 Running `publish` twice produces byte-identical files. If a pull request shows a pantry diff, a
@@ -649,3 +649,32 @@ both measured independently.
   unit allows. Both were confirmed red by reverting the fix they guard (the pretty-print
   argument restored, and separately the rounding step skipped) and republishing before being
   confirmed green again — see this task's own commit/report for the captured failing output.
+
+## Places like this: the similarity stage (Plan 6, 2026-09-15)
+
+`publish()` writes a fifth pantry file, `data/similar.json`, holding each municipality's five
+nearest neighbours across all ten indicators. 13,091 bytes, 3,836 gzipped, against a 1,045,616-byte
+`data/indicators.json`.
+
+**It is computed from the published, rounded data**, not from `buildAll()`'s full-precision
+output — the opposite of the rule `roundPantryData` follows for derived indicators, and
+deliberately. A derived indicator is a number the site displays, so it must be computed before
+rounding or the error compounds invisibly. This is a claim _about_ the published file — "of the
+290, these five are closest to Lund" — and a reader checking it has only the published file to
+check it against.
+
+**The window is read from the data, not written down.** It ends at the last year every indicator
+covers and runs ten years back: 2015–2024 today, because median income stops at 2024 while the
+tax rate reaches 2026. The day SCB publishes 2025 median income the window moves on its own.
+
+**Three guards refuse to publish**, all of them for failures that would be invisible on the
+rendered page rather than loud:
+
+| Guard                      | Refuses when                                                              |
+| -------------------------- | ------------------------------------------------------------------------- |
+| neighbour count            | any municipality ends with other than five — it would just render shorter |
+| missing dimensions         | any pair shares fewer than eight of the ten — it would render identically |
+| window length and coverage | the window is under ten years or starts before an indicator does          |
+
+Why these particular choices, and the measurements behind each, are in
+[docs/decisions/0002-similarity-metric.md](decisions/0002-similarity-metric.md).

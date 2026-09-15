@@ -3,13 +3,14 @@ import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSy
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import type { ZodType } from 'zod'
-import { Adjacency, Bubbles, Manifest, PantryData } from '../../shared/pantry'
+import { Adjacency, Bubbles, Manifest, PantryData, Similar } from '../../shared/pantry'
 import type { Indicator, IndicatorSeries, Municipality } from '../../shared/pantry'
 import { check } from './check'
 import { cmp } from './cmp'
 import { roundIndicatorBreaks, roundSeriesValues } from './round'
 import { buildAdjacency, curatedEdgePairs, type CuratedEdge } from './geometry/adjacency'
 import { buildBubbles } from './geometry/bubbles'
+import { buildSimilar } from './similar/build'
 import { buildTopology, centroids, GEOMETRY_SOURCE } from './geometry/build'
 import { municipalityProps } from './geometry/props'
 import { CKM_FROM, POPULATION } from './indicators/population'
@@ -384,13 +385,28 @@ export async function publish(
     })
 
     const rounded = roundPantryData(indicators, series)
-    writePantryFile(join(pantryDir, 'data/indicators.json'), PantryData, {
+    const published = PantryData.parse({
       schemaVersion: 1,
       municipalities,
       indicators: rounded.indicators,
       series: rounded.series,
       priceIndex: toPriceIndex(cpiIndex),
     })
+    writePantryFile(join(pantryDir, 'data/indicators.json'), PantryData, published)
+
+    /**
+     * Plan 6: "places like this", computed from the PUBLISHED data rather than the full-
+     * precision build output — the opposite of the rule `roundPantryData`'s own comment sets
+     * out for derived indicators, and deliberately so.
+     *
+     * A derived INDICATOR is a number the site displays, so it must be computed off the real
+     * value before rounding or the error compounds invisibly. This is not that. It is a claim
+     * ABOUT the published file — "of the 290, these five are closest to Lund" — and a reader
+     * who wants to check it has only the published file to check it against. Computing it off
+     * numbers nobody can see would make it unverifiable for a difference far below the
+     * measured 0.032 median gap between the fifth and sixth nearest.
+     */
+    writePantryFile(join(pantryDir, 'data/similar.json'), Similar, buildSimilar(published))
     writePantryFile(
       join(pantryDir, 'manifest.json'),
       Manifest,

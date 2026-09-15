@@ -1,6 +1,6 @@
 # Sweden Data Explorer — design
 
-Date: 2026-09-10, revised 2026-09-13 after design review, revised 2026-09-14 after Plans 2 and 3.
+Date: 2026-09-10, revised 2026-09-13 after design review, revised 2026-09-14 after Plans 2 and 3, revised 2026-09-15 after Plan 6.
 Status: **the first slice is complete** — all five plans are implemented. The kitchen fetches, freezes, checks and publishes all
 ten indicators for 290 municipalities, with map geometry, keyboard adjacency and the bubble
 layout; the published pantry is 1.04 MB, 275 kB gzipped, and rebuilds byte-identically from
@@ -10,13 +10,21 @@ diacritic-folding search, arrow-key navigation over the map, and a debounced liv
 profile with ten small histories and, for money, what the figure was at the time; an explicit
 compare puts a second beside it with no verdict; a sortable table is the twin of every view; the
 bubble cartogram is a view anyone can switch to and the default on a phone; and five
-hand-written facts each link into the view that proves them. Continuous integration runs 745 unit tests, 99 browser tests
-across Chromium, Firefox and WebKit, an axe scan of eight page states and a measured performance
+hand-written facts each link into the view that proves them.
+
+**Plan 6, the first of the second slice, is also done.** The profile now names the five
+municipalities most like the one on screen, from a distance metric computed in the kitchen over
+all ten indicators and a ten-year window, and opens with two or three sentences telling that
+municipality's own story — how much it has grown or shrunk since its first published year, when
+it turned, and the one measure it sits furthest out on. Every sentence re-derives its own claim
+from the pantry in the tests.
+
+Continuous integration runs 868 unit tests, 121 browser tests
+across Chromium, Firefox and WebKit, an axe scan of nine page states and a measured performance
 budget on every pull request; a monthly job refreshes from SCB and opens a pull request; and the
 deploy runs only when all of that is green. What has not been done is written down in
 [accessibility.md](accessibility.md) — chiefly that no screen-reader pass has been run. The
-cartogram morph, the automatic facts engine, similar-municipality search, profile prose and
-pre-rendered pages remain increments beyond the first slice.
+cartogram morph, the automatic facts engine and pre-rendered pages remain increments ahead.
 Research behind every factual claim: [docs/research/](research/README.md).
 
 ## 1. What we are building
@@ -171,7 +179,7 @@ The code lives on GitHub, CI runs on GitHub Actions, which is free for public re
 
 **First slice, about six weeks of evenings and weekends.** Map of 290 municipalities, the ten indicators above, year slider with play, fixed colour scales, profile panel, search, explicit compare, a hand-written strip of five deep-linked facts, static cartogram as the phone view, URL state with correct titles, both languages, WCAG 2.2 AA, deployed on Cloudflare Pages.
 
-**Then, each as its own increment with a recorded decision.** The automatic facts engine. The animated cartogram morph. Similar-municipality search. Rule-generated profile prose. Pre-rendered municipality pages with preview images.
+**Then, each as its own increment with a recorded decision.** Similar-municipality search and rule-generated profile prose — both **done**, in [Plan 6](plans/2026-09-15-06-similar-municipalities-and-a-profile-that-reads.md), with [decision 0002](decisions/0002-similarity-metric.md). Still ahead: the automatic facts engine, the animated cartogram morph, and pre-rendered municipality pages with preview images.
 
 **Explicitly deferred.** Neighbourhood-level zoom into SCB's 6,160 small areas. A preference-based "where should I live". A daily guessing game. Animated migration flows. Any of these may never be built.
 
@@ -184,6 +192,8 @@ The code lives on GitHub, CI runs on GitHub Actions, which is free for public re
 - Rent data is survey-based and likely has gaps for small municipalities.
 - House prices in small municipalities rest on few sales in some years and are flagged rather than smoothed.
 - SCB provides no crime, school quality, nature or weather data, so those questions are out of scope by construction.
+- **"Places like this" weights age and growth twice.** The distance metric behind it uses all ten indicators with one vote each, and two of those pairs measure nearly the same thing: mean age and share aged 65+ correlate at 0.991, net migration and population change at 0.902. So a municipality's age and its growth each carry about two tenths of the weight rather than one. The alternatives — dropping indicators, reweighting, whitening the covariance — were all built and measured, and all change the answer very little (the same nearest municipality for 233 of 290) while replacing a rule anyone can check with one nobody can. Recorded rather than corrected; see [decision 0002](decisions/0002-similarity-metric.md).
+- **"Places like this" does not move with the year slider.** It is measured once over the last ten complete years, because a single year's neighbours survive a data refresh only 89 times in 290, and because the tax rate series starts in 2000 — so a per-year version would simply have no answer for 42 of the site's 58 years. The panel states the years it was measured over.
 
 ### Sources considered and deliberately not used
 

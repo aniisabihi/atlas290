@@ -1,8 +1,8 @@
-import { Adjacency, Bubbles, PantryData } from '../../shared/pantry'
+import { Adjacency, Bubbles, PantryData, Similar } from '../../shared/pantry'
 import type { MunicipalityTopology } from '../../shared/geometry'
 
 /**
- * Loads the two pantry files the render check needs, straight from the public/pantry
+ * Loads the five pantry files the site needs, straight from the public/pantry
  * directory (served at /pantry by Vite's publicDir).
  *
  * The indicator data is validated against the shared `PantryData` zod schema, so a
@@ -19,24 +19,27 @@ export async function loadPantry(): Promise<{
   topology: MunicipalityTopology
   adjacency: Adjacency
   bubbles: Bubbles
+  similar: Similar
 }> {
-  const [dataRes, topoRes, adjRes, bubbleRes] = await Promise.all([
+  const [dataRes, topoRes, adjRes, bubbleRes, similarRes] = await Promise.all([
     fetch('/pantry/data/indicators.json'),
     fetch('/pantry/geometry/municipalities.topo.json'),
     fetch('/pantry/geometry/adjacency.json'),
     fetch('/pantry/layout/bubbles.json'),
+    fetch('/pantry/data/similar.json'),
   ])
-  if (!dataRes.ok || !topoRes.ok || !adjRes.ok || !bubbleRes.ok) {
+  if (!dataRes.ok || !topoRes.ok || !adjRes.ok || !bubbleRes.ok || !similarRes.ok) {
     throw new Error('pantry files missing; run yarn kitchen publish')
   }
   const data = PantryData.parse(await dataRes.json())
   const adjacency = Adjacency.parse(await adjRes.json())
   const bubbles = Bubbles.parse(await bubbleRes.json())
+  const similar = Similar.parse(await similarRes.json())
   const topology = (await topoRes.json()) as MunicipalityTopology
   if (!Array.isArray(topology?.objects?.municipalities?.geometries)) {
     throw new Error(
       'public/pantry/geometry/municipalities.topo.json has no objects.municipalities.geometries array; run yarn kitchen publish',
     )
   }
-  return { data, topology, adjacency, bubbles }
+  return { data, topology, adjacency, bubbles, similar }
 }

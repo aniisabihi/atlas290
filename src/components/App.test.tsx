@@ -5,7 +5,8 @@ import rawData from '../../public/pantry/data/indicators.json'
 import rawTopology from '../../public/pantry/geometry/municipalities.topo.json'
 import rawAdjacency from '../../public/pantry/geometry/adjacency.json'
 import rawBubbles from '../../public/pantry/layout/bubbles.json'
-import { Adjacency, Bubbles, PantryData } from '../../shared/pantry'
+import rawSimilar from '../../public/pantry/data/similar.json'
+import { Adjacency, Bubbles, PantryData, Similar } from '../../shared/pantry'
 import type { MunicipalityTopology } from '../../shared/geometry'
 import { App } from './App'
 import { SETTLE_MS } from './LiveRegion'
@@ -14,6 +15,7 @@ const data = PantryData.parse(rawData)
 const topology = rawTopology as unknown as MunicipalityTopology
 const adjacency = Adjacency.parse(rawAdjacency)
 const bubbles = Bubbles.parse(rawBubbles)
+const similar = Similar.parse(rawSimilar)
 
 /**
  * Integration, at the level where the pieces are wired to each other. The unit tests all passed
@@ -23,7 +25,15 @@ const bubbles = Bubbles.parse(rawBubbles)
  */
 const open = (url: string) => {
   window.history.replaceState(null, '', url)
-  return render(<App data={data} topology={topology} adjacency={adjacency} bubbles={bubbles} />)
+  return render(
+    <App
+      data={data}
+      topology={topology}
+      adjacency={adjacency}
+      bubbles={bubbles}
+      similar={similar}
+    />,
+  )
 }
 
 const live = () => document.querySelector('[data-live-region]')!

@@ -89,6 +89,12 @@ const sv = {
   showCartogram: 'Bubblor',
   showTable: 'Visa tabell',
   hideTable: 'Visa karta',
+  similarHeading: 'Platser som liknar den här',
+  similarMethod: (n: number, from: number, to: number) =>
+    `Närmast över ${n} mått, ${from}–${to}. Ingen inbördes ordning — skillnaden mellan den femte och den sjätte är för liten för att betyda något.`,
+  similarNone: 'Inga jämförbara platser i den här utgåvan.',
+  goTo: (name: string) => `Gå till ${name}`,
+  storyHeading: 'Kort om kommunen',
   announcement: (name: string, indicator: string, year: number, reading: string) =>
     `${name}, ${indicator} ${year}: ${reading}.`,
 } satisfies Record<string, string | ((...args: never[]) => string)>
@@ -178,6 +184,12 @@ const en: Strings = {
   showCartogram: 'Bubbles',
   showTable: 'Show table',
   hideTable: 'Show map',
+  similarHeading: 'Places like this one',
+  similarMethod: (n: number, from: number, to: number) =>
+    `Closest across ${n} measures, ${from}–${to}. In no particular order — the gap between the fifth and the sixth is too small to mean anything.`,
+  similarNone: 'No comparable places in this release.',
+  goTo: (name: string) => `Go to ${name}`,
+  storyHeading: 'In short',
   announcement: (name: string, indicator: string, year: number, reading: string) =>
     `${name}, ${indicator} ${year}: ${reading}.`,
 }

@@ -3,6 +3,7 @@ import {
   Indicator,
   IndicatorSeries,
   Municipality,
+  Similar,
   OBSERVATION_STATUS,
   PantryData,
   statusCode,
@@ -128,5 +129,61 @@ describe('pantry schemas', () => {
         priceIndex,
       }),
     ).toThrow(/missing-indicator/)
+  })
+})
+
+describe('Similar', () => {
+  const valid = {
+    schemaVersion: 1 as const,
+    method: {
+      indicators: ['population', 'density', 'mean-age'],
+      logged: ['population', 'density'],
+      window: { from: 2015, to: 2024 },
+      neighbours: 2,
+    },
+    nearest: { '0180': ['1280', '1480'], '1280': ['0180', '1480'] },
+  }
+
+  it('accepts a well-formed file', () => {
+    expect(Similar.parse(valid).nearest['0180']).toEqual(['1280', '1480'])
+  })
+
+  it('refuses a backwards window', () => {
+    expect(() =>
+      Similar.parse({ ...valid, method: { ...valid.method, window: { from: 2024, to: 2015 } } }),
+    ).toThrow(/2024-2015, which is backwards/)
+  })
+
+  it('refuses a logged indicator that is not one of the indicators compared', () => {
+    // The real hazard: dropping an indicator from the metric and forgetting to drop it from
+    // the logged list leaves the published method describing a transform applied to nothing,
+    // and the site renders that description to the visitor as fact.
+    expect(() =>
+      Similar.parse({ ...valid, method: { ...valid.method, logged: ['house-prices'] } }),
+    ).toThrow(/'house-prices' is listed as log-transformed/)
+  })
+
+  it('refuses a municipality with no neighbours', () => {
+    expect(() => Similar.parse({ ...valid, nearest: { ...valid.nearest, '0180': [] } })).toThrow(
+      /no neighbours, which is not a result/,
+    )
+  })
+
+  it('refuses a municipality listed as its own neighbour', () => {
+    expect(() =>
+      Similar.parse({ ...valid, nearest: { ...valid.nearest, '0180': ['0180', '1280'] } }),
+    ).toThrow(/is listed as its own neighbour/)
+  })
+
+  it('refuses a duplicated neighbour', () => {
+    expect(() =>
+      Similar.parse({ ...valid, nearest: { ...valid.nearest, '0180': ['1280', '1280'] } }),
+    ).toThrow(/appears twice among its neighbours/)
+  })
+
+  it('refuses a neighbour that is not a four-digit municipality code', () => {
+    expect(() =>
+      Similar.parse({ ...valid, nearest: { ...valid.nearest, '0180': ['180', '1280'] } }),
+    ).toThrow(/four digits/)
   })
 })
