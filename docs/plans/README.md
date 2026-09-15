@@ -31,8 +31,8 @@ you already had. The second slice is about the questions you did not think to as
 
 Of the three things the original vision claimed nobody else in Sweden had — time depth to 1968, a
 shape-changing map, and auto-surfaced facts — the first shipped, the second shipped as a static
-view without its transition, and the third is still five sentences written by hand. Plans 6 and 8
-finish the vision; 7 and 9 are what the vision was for.
+view without its transition, and the third is still five sentences written by hand. Plans 7 and 8
+finish the vision; 6 and 9 are what the vision was for.
 
 Same rule as before: **each plan is written in full only just before it is executed**, so each can
 learn from the last. The table is intent, not specification.
@@ -43,10 +43,18 @@ ships through it as it lands.
 
 | #   | Plan                                             | Ends with                                                                                                                                                                                                                                                                                                                                    | Status      |
 | --- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| 6   | Statistics, and facts that find themselves       | A shared statistics module in the kitchen — rank, standardised score, trend, longest run, sharpest reversal, distance from neighbours — and a generated facts file that replaces the five hand-written sentences. Ranked by how surprising a fact is, not merely how true, and each one still carries a check that re-derives its own claim. | not started |
-| 7   | Similar municipalities, and a profile that reads | A distance metric across standardised indicators, published as each municipality's nearest neighbours; "places like this" in the profile; and rule-generated prose telling a municipality's own story in both languages, every sentence traceable to the figures behind it.                                                                  | not started |
+| 6   | Similar municipalities, and a profile that reads | A distance metric across standardised indicators, published as each municipality's nearest neighbours; "places like this" in the profile; and rule-generated prose telling a municipality's own story in both languages, every sentence traceable to the figures behind it.                                                                  | not started |
+| 7   | Statistics, and facts that find themselves       | A shared statistics module in the kitchen — rank, standardised score, trend, longest run, sharpest reversal, distance from neighbours — and a generated facts file that replaces the five hand-written sentences. Ranked by how surprising a fact is, not merely how true, and each one still carries a check that re-derives its own claim. | not started |
 | 8   | The morph                                        | The 290 map shapes animating into their bubble positions and back, holding frame rate on a mid-range phone, cross-fading instead when reduced motion is asked for. Settles the two questions section 9 of DESIGN parks: whether a Canvas layer is needed beneath the SVG, and whether the target is bubbles or a hexagon grid.               | not started |
 | 9   | A page per municipality                          | 580 pre-rendered pages, 290 municipalities in two languages, each with its own title, description and preview image — so a link to Malmö shows Malmö when it is pasted into a chat rather than the site's front page.                                                                                                                        | not started |
+
+**Why similarity comes before facts.** The facts engine was the obvious first plan and is
+deliberately second. A fact is only interesting relative to something: a naive engine ranking by
+how extreme a value is produces ten variations of "Stockholm is the biggest", because the largest
+place is extreme on almost every measure. The two useful baselines are a municipality's own past,
+which the pantry already holds, and places like it, which it does not. Plan 6 computes that
+second baseline, so Plan 7 can ask "unusual _for a place like this_" rather than only "unusual".
+Decided by the architect, 2026-09-15.
 
 ### What each plan has to decide
 
@@ -54,14 +62,11 @@ These are open in [DESIGN section 9](../DESIGN.md#9-still-open) and are not deci
 belongs to the plan that reaches it, and each gets a record in
 [docs/decisions/](../decisions/README.md).
 
-- **Plan 6.** What makes a fact interesting rather than merely true. The failure mode is obvious
-  and worth naming now: a naive engine produces ten variations of "Stockholm is the biggest",
-  because the largest place is extreme on almost every measure. Surprise has to be relative —
-  against the municipality's own past, or against places like it — which is why Plan 7's distance
-  metric may want to come first.
-- **Plan 7.** Whether "similar" means all ten indicators or a chosen few, and what to do about
+- **Plan 6.** Whether "similar" means all ten indicators or a chosen few, and what to do about
   indicators whose coverage does not overlap. Mean age starts in 1998 and median income in 1999;
   a distance computed over different years for different pairs is not a distance.
+- **Plan 7.** What makes a fact interesting rather than merely true — now with Plan 6's
+  neighbours available as a baseline, which is the reason for the order.
 - **Plan 8.** Canvas under the SVG or not, and bubbles or hexagons. Both are performance
   questions that a prototype answers and an argument does not. Whatever is chosen, the SVG focus
   and ARIA layer stays — a Canvas would sit beneath it, never replace it.
