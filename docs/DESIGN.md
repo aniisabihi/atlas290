@@ -214,8 +214,7 @@ SCB's own land use and area statistics give a partial nature picture without lea
 
 ## 9. Still open
 
-Deliberately undecided until we prototype or reach them. Two questions that stood here — whether the morph needs a Canvas layer, and bubbles versus a hexagon grid — were closed by [Plan 8](plans/2026-09-15-08-the-morph.md) and [decision 0004](decisions/0004-the-morph.md): no Canvas, and bubbles.
+Deliberately undecided until we prototype or reach them. Two questions that stood here — whether the morph needs a Canvas layer, and bubbles versus a hexagon grid — were closed by [Plan 8](plans/2026-09-15-08-the-morph.md) and [decision 0004](decisions/0004-the-morph.md): no Canvas, and bubbles. The project name is settled too: **Atlas 290**, chosen by the architect on 2026-09-15 and recorded in [decision 0006](decisions/0006-the-name.md).
 
 - Indicators beyond the first ten.
 - Visual design language.
-- Project name, with one hard constraint: it must not suggest affiliation with SCB.

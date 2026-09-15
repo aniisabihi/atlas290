@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import rawData from '../public/pantry/data/indicators.json'
 import { PantryData } from '../shared/pantry'
 import { segmentFor } from '../shared/slug'
-import { pageFor } from './build-pages.mjs'
+import { entryPageFor, pageFor } from './build-pages.mjs'
 
 const data = PantryData.parse(rawData)
 
@@ -18,7 +18,7 @@ describe('pageFor', () => {
   const html = render()
 
   it('gives the page the municipality’s own title', () => {
-    expect(html).toContain("<title>Malmö · Sweden's municipalities in data</title>")
+    expect(html).toContain('<title>Malmö · Atlas 290</title>')
   })
 
   it('replaces the site description rather than adding a second one', () => {
@@ -115,5 +115,63 @@ describe('across all 290', () => {
       expect(read, m.code).not.toThrow()
       expect(read().length, m.code).toBeGreaterThan(1000)
     }
+  })
+})
+
+describe('with SITE_ORIGIN set', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  const withOrigin = (origin: string) => {
+    vi.stubEnv('SITE_ORIGIN', origin)
+    return render()
+  }
+
+  it('makes every tag a crawler follows absolute', () => {
+    // The whole point of the variable. A crawler cannot resolve a root-relative og:image, so
+    // without this a pasted link shows no card at all — the failure the cards were built for.
+    const html = withOrigin('https://atlas290.pages.dev')
+    expect(html).toContain('og:image" content="https://atlas290.pages.dev/share/1280.png"')
+    expect(html).toContain('rel="canonical" href="https://atlas290.pages.dev/en/malmo-1280/"')
+    expect(html).toContain('og:url" content="https://atlas290.pages.dev/en/malmo-1280/"')
+    expect(html).toContain('hreflang="sv" href="https://atlas290.pages.dev/sv/malmo-1280/"')
+  })
+
+  it('does not double the slash when the origin carries one', () => {
+    expect(withOrigin('https://atlas290.pages.dev/')).toContain(
+      'content="https://atlas290.pages.dev/share/1280.png"',
+    )
+  })
+})
+
+describe('entryPageFor', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  const entrySv = readFileSync(new URL('../sv/index.html', import.meta.url), 'utf8')
+
+  it('leaves the page alone when there is no origin', () => {
+    // A local build has no domain and must not invent one. Unchanged, not almost unchanged.
+    expect(entryPageFor(entrySv, '/sv/')).toBe(entrySv)
+  })
+
+  it('makes hreflang absolute, which is what the specification requires', () => {
+    vi.stubEnv('SITE_ORIGIN', 'https://atlas290.pages.dev')
+    const html = entryPageFor(entrySv, '/sv/')
+    expect(html).toContain('hreflang="sv" href="https://atlas290.pages.dev/sv/"')
+    expect(html).toContain('hreflang="en" href="https://atlas290.pages.dev/en/"')
+    expect(html).toContain('hreflang="x-default" href="https://atlas290.pages.dev/"')
+    expect(html).not.toMatch(/href="\/(sv|en)?\/?"/)
+  })
+
+  it('names itself canonical, exactly once', () => {
+    vi.stubEnv('SITE_ORIGIN', 'https://atlas290.pages.dev')
+    const once = entryPageFor(entrySv, '/sv/')
+    expect(once.match(/rel="canonical"/g)).toHaveLength(1)
+    // Running twice must not stack a second one, which is what a rebuild over a dirty dist does.
+    expect(entryPageFor(once, '/sv/').match(/rel="canonical"/g)).toHaveLength(1)
+    expect(once).toContain('rel="canonical" href="https://atlas290.pages.dev/sv/"')
   })
 })

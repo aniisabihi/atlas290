@@ -185,14 +185,14 @@ describe('App', () => {
 
   it('names the view in the page title', () => {
     open('/en/?i=mean-age&y=2010&m=1280')
-    expect(document.title).toBe("Malmö · Mean age 2010 · Sweden's municipalities in data")
+    expect(document.title).toBe('Malmö · Mean age 2010 · Atlas 290')
   })
 
   it('updates the title when the view changes', async () => {
     open('/en/?y=2024')
-    expect(document.title).toBe("Population 2024 · Sweden's municipalities in data")
+    expect(document.title).toBe('Population 2024 · Atlas 290')
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Measure' }), 'mean-age')
-    expect(document.title).toBe("Mean age 2024 · Sweden's municipalities in data")
+    expect(document.title).toBe('Mean age 2024 · Atlas 290')
   })
 
   it('offers the other language as a link carrying the current view', () => {

@@ -26,6 +26,10 @@ describe('the string tables', () => {
       // 'Data' is the same word in Swedish and English, and inventing a difference to satisfy a
       // test would be worse copy than the honest repetition.
       'noticesData',
+      // The project's name, and being identical in both languages is why it was chosen over the
+      // four other candidates — docs/decisions/0006-the-name.md. A site that is equally Swedish
+      // and English cannot have a name that reads as foreign in half of it.
+      'siteName',
     ])
     const same = keys.filter((k) => {
       if (identicalOnPurpose.has(String(k))) return false

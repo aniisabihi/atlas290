@@ -11,7 +11,7 @@ import { SHIPPED_PACKAGES } from '../notices/packages'
  * manifest, which labels every raw value as SCB's and every derived one as this project's
  * calculation; this says so where a visitor can read it.
  */
-const REPOSITORY = 'https://github.com/aniisabihi/sweden-data-explorer'
+const REPOSITORY = 'https://github.com/aniisabihi/atlas290'
 
 const TEXT = {
   sv: {

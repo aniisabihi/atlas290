@@ -18,7 +18,7 @@ test.describe('a municipality page', () => {
     expect(response?.status()).toBe(200)
 
     const head = await page.evaluate(() => document.head.innerHTML)
-    expect(head).toContain("Malmö · Sweden's municipalities in data")
+    expect(head).toContain('Malmö · Atlas 290')
     expect(head).toContain('Malmö in ten measures')
     expect(head).toContain('/share/1280.png')
     expect(head).toContain('summary_large_image')
