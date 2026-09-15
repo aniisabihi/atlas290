@@ -20,6 +20,7 @@ import { ComparePanel } from './ComparePanel'
 import { DataTable } from './DataTable'
 import { FactsStrip } from './FactsStrip'
 import { ProfilePanel } from './ProfilePanel'
+import { ProfileStory } from './ProfileStory'
 import { SimilarPlaces } from './SimilarPlaces'
 import { NoDataPatterns } from './NoDataPatterns'
 import { Notices } from './Notices'
@@ -305,6 +306,9 @@ export function App({
             code={state.selected}
             year={state.year}
             lang={state.lang}
+            story={
+              <ProfileStory lk={lk} code={state.selected} year={state.year} lang={state.lang} />
+            }
             similar={
               <SimilarPlaces
                 lk={lk}

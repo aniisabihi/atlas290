@@ -446,6 +446,29 @@ button {
 }
 
 /*
+ * The municipality in words. Constrained to the reading measure like any prose, and separated
+ * from the ten rows below it by space rather than a rule, so it reads as an introduction to
+ * the figures rather than as another row among them.
+ */
+.story {
+  margin-top: var(--space);
+}
+
+.story h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+}
+
+.story p {
+  margin: 0 0 0.4rem;
+  max-width: var(--measure);
+}
+
+.story p:last-child {
+  margin-bottom: 0;
+}
+
+/*
  * "Places like this". Laid out as a wrapping row of chips rather than a vertical list, because
  * a numbered-looking column invites the reader to take the order seriously — and the measured
  * gap between the fifth and sixth nearest is 0.032 against distances near 1.0, so there is no
