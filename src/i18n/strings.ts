@@ -23,6 +23,12 @@ const sv = {
   otherLanguage: 'English',
   switchLanguage: 'English — byt språk till engelska',
 
+  // The label says what pressing it DOES, not what the page currently is.
+  themeToDark: 'Mörkt',
+  themeToLight: 'Ljust',
+  switchToDark: 'Byt till mörkt utseende',
+  switchToLight: 'Byt till ljust utseende',
+
   mapLabel: 'Karta över Sveriges kommuner',
   cartogramLabel: 'Bubbeldiagram över Sveriges kommuner, storlek efter folkmängd',
   mapHint: 'Använd piltangenterna för att gå mellan grannkommuner. Enter väljer, Escape rensar.',
@@ -117,6 +123,11 @@ const en: Strings = {
 
   otherLanguage: 'Svenska',
   switchLanguage: 'Svenska — switch language to Swedish',
+
+  themeToDark: 'Dark',
+  themeToLight: 'Light',
+  switchToDark: 'Switch to the dark theme',
+  switchToLight: 'Switch to the light theme',
 
   mapLabel: 'Map of Sweden by municipality',
   cartogramLabel: 'Bubble chart of Sweden by municipality, sized by population',

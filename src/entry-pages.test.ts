@@ -82,7 +82,12 @@ describe("the root page's language choice", () => {
    * Swedish page — `navigator.languages` is ordered by preference and `.some` throws that
    * ordering away. It passed every other assertion in this file.
    */
-  const script = /<script>([\s\S]*?)<\/script>/.exec(rootHtml)![1]!
+  // The page carries two inline scripts — the theme applied before first paint, and this one.
+  // Selected by what it does rather than by being first, so adding another cannot silently point
+  // these assertions at the wrong code.
+  const script = [...rootHtml.matchAll(/<script>([\s\S]*?)<\/script>/g)]
+    .map((m) => m[1]!)
+    .find((body) => body.includes('location.replace'))!
 
   const choose = (languages: string[], search = '', hash = '') => {
     let target = ''
