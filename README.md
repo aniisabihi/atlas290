@@ -1,5 +1,7 @@
 # Atlas 290
 
+**Live at <https://atlas290.pages.dev>**
+
 [![CI](https://github.com/aniisabihi/atlas290/actions/workflows/ci.yml/badge.svg)](https://github.com/aniisabihi/atlas290/actions/workflows/ci.yml)
 
 An interactive atlas of Sweden's 290 municipalities — the number is the name — built entirely from
