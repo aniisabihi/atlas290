@@ -41,6 +41,30 @@ a {
   color: inherit;
 }
 
+/*
+ * Every button starts from the site's own colours, never the platform's.
+ *
+ * A button with no rule of its own inherits the user agent's, and those differ between macOS and
+ * Linux — which is how the compare panel's Close button passed axe on a laptop and failed the
+ * contrast scan in CI. The rules further down override this where a control wants a different
+ * shape; nothing is left to a default.
+ */
+button {
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 :where(a, button, select, input, summary, [tabindex]):focus-visible {
   outline: 2px solid var(--focus-core);
   box-shadow: 0 0 0 4px var(--focus-halo);

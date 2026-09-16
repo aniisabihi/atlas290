@@ -64,7 +64,18 @@ for (const [name, url] of STATES) {
       await page.goto(url)
       await ready(page)
 
-      const results = await scan(page).analyze()
+      /*
+       * Light scans everything; dark scans colour only.
+       *
+       * The two themes render identical DOM — same roles, same names, same structure — so every
+       * rule but contrast must reach the same verdict on both, and running them twice costs CI
+       * time to re-derive an answer it already has. Contrast is the one that genuinely differs,
+       * and it is the one that has earned this: it caught the compare header at 4.15:1, and the
+       * Close buttons that inherited the platform's own colours.
+       */
+      const results = await (
+        theme === 'dark' ? new AxeBuilder({ page }).withRules(['color-contrast']) : scan(page)
+      ).analyze()
       const summary = results.violations.map(
         (v) =>
           `${v.id} (${v.impact}): ${v.help} — ${v.nodes.length} node(s): ${v.nodes[0]?.target.join(' ')}`,
