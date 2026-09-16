@@ -104,9 +104,9 @@ The second slice made the data speak. This one is about the voice it speaks in. 
 has carried **visual design language** as open since the first day, and it is now the largest gap
 between how well this project is built and how well it reads.
 
-| #   | Plan                                                        | Ends with                                                                                                                                                                                                                                                                                                  | Status      |
-| --- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| 10  | [The design language](2026-09-16-10-the-design-language.md) | An editorial treatment settled from four mockups drawn on the real pantry: light as standard with both themes and a control, one sticky bar carrying the controls, the map as the hero, self-hosted type, sparklines on one shared axis, and the generated prose and facts given the prominence they earn. | **planned** |
+| #   | Plan                                                        | Ends with                                                                                                                                                                                                                                                                                                  | Status   |
+| --- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 10  | [The design language](2026-09-16-10-the-design-language.md) | An editorial treatment settled from four mockups drawn on the real pantry: light as standard with both themes and a control, one sticky bar carrying the controls, the map as the hero, self-hosted type, sparklines on one shared axis, and the generated prose and facts given the prominence they earn. | **done** |
 
 ## Not plans, but next
 
@@ -128,9 +128,8 @@ between how well this project is built and how well it reads.
   three constructs where the accessibility tree looks right and the experience often is not — the
   search combobox, the roving tabindex across 290 shapes, and the debounced live region.
 
-One small item is queued behind it: the map is the last tab stop, so a keyboard visitor passes
-ten controls to reach it (the skip link works, but the source order belongs with a layout change
-rather than a release). The `hreflang` item that stood beside it is closed — the generated
+~~One small item is queued behind it: the map is the last tab stop.~~ **Closed by Plan 10** — the
+controls moved into the sticky bar and the map is now the first thing in the main region. The `hreflang` item that stood beside it is closed — the generated
 municipality pages take their absolute URLs from `SITE_ORIGIN`, which the deploy now sets.
 
 ## Later, and possibly never

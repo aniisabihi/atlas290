@@ -42,9 +42,10 @@ a {
 }
 
 :where(a, button, select, input, summary, [tabindex]):focus-visible {
-  outline: 3px solid var(--focus-core);
-  box-shadow: 0 0 0 6px var(--focus-halo);
+  outline: 2px solid var(--focus-core);
+  box-shadow: 0 0 0 4px var(--focus-halo);
   outline-offset: 1px;
+  border-radius: var(--radius);
 }
 
 .visually-hidden {
@@ -568,7 +569,7 @@ main {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(21rem, 1fr));
   column-gap: 2.5rem;
 }
 
@@ -850,8 +851,8 @@ main {
   font-variant-numeric: tabular-nums;
 }
 
-.data-table th,
-.compare-table th {
+.data-table thead th,
+.compare-table thead th {
   font-family: var(--font-mono);
   font-size: 0.68rem;
   font-weight: 500;
@@ -872,9 +873,18 @@ main {
 }
 
 .data-table td:first-child,
-.compare-table td:first-child {
+.compare-table td:first-child,
+.data-table tbody th,
+.compare-table tbody th {
   font-family: var(--font-sans);
   font-weight: 500;
+  font-size: 0.95rem;
+  text-align: left;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text);
+  padding: 0.6rem 1rem 0.6rem 0;
+  border-bottom: 1px solid var(--border);
 }
 
 .data-table tbody tr:hover,
