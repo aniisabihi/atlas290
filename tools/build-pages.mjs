@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 /**
- * The 580 municipality pages, written into `dist/` after Vite has built.
+ * Everything written into `dist/` after Vite has built: the 580 municipality pages, the sitemap,
+ * the `Sitemap:` line in robots.txt, and the response headers Cloudflare serves.
  *
- * Each is that language's entry page with its head rewritten: its own title, its own description,
- * a canonical link, the two `hreflang` alternates, and the Open Graph and X card tags that make a
- * pasted link show the place rather than the front page.
+ * Each municipality page is that language's entry page with its head rewritten: its own title,
+ * its own description, a canonical link, the two `hreflang` alternates, and the Open Graph and X
+ * card tags that make a pasted link show the place rather than the front page.
  *
  * **Written here rather than by Vite.** Vite would need 580 entries in `rollupOptions.input`,
  * each producing a document identical to its language's except for three strings, and the build
@@ -13,6 +14,7 @@
  * The bundle is untouched: every page loads the same JavaScript and the same pantry, and
  * `src/state/url.ts` reads the municipality out of the path exactly as it reads `?m=`.
  */
+import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -131,6 +133,139 @@ export function entryPageFor(html, path) {
   return out.replace('</head>', `  <link rel="canonical" href="${absolute(path)}" />\n  </head>`)
 }
 
+const escapeXml = (s) =>
+  s.replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c],
+  )
+
+/**
+ * The sitemap: 582 URLs, each declaring the other language as its alternate.
+ *
+ * **Why this has to exist at all.** Every page this site serves is a shell — `<div id="root">`
+ * and a bundle — so a crawler that does not run JavaScript sees no links anywhere, and the 580
+ * municipality pages have nothing pointing at them from anywhere on the web. The preview cards
+ * Plan 9 built make a PASTED link show the place; they do nothing to make an unpasted one
+ * findable. A sitemap is the only discovery path a static site of shells has.
+ *
+ * `xhtml:link` rather than only `hreflang` in the head, because the sitemap protocol wants the
+ * pair declared reciprocally and the two pages are genuinely the same page in two languages.
+ *
+ * Returns null without an origin: the protocol requires fully-qualified URLs, and a sitemap of
+ * relative paths is not a lenient sitemap but an invalid one. A local build writes none.
+ */
+export function sitemapFor(municipalities) {
+  if (!origin()) return null
+  const urls = []
+  // The language roots first, in the order a reader would meet them, then the municipalities.
+  for (const lang of ['sv', 'en']) {
+    urls.push({ loc: `/${lang}/`, alternates: { sv: '/sv/', en: '/en/' } })
+  }
+  for (const m of municipalities) {
+    const alternates = {
+      sv: `/sv/${segmentFor(m.name.sv, m.code)}/`,
+      en: `/en/${segmentFor(m.name.en, m.code)}/`,
+    }
+    for (const lang of ['sv', 'en']) urls.push({ loc: alternates[lang], alternates })
+  }
+
+  const entries = urls.map(({ loc, alternates }) => {
+    const links = ['sv', 'en'].map(
+      (lang) =>
+        `    <xhtml:link rel="alternate" hreflang="${lang}" href="${escapeXml(absolute(alternates[lang]))}" />`,
+    )
+    return ['  <url>', `    <loc>${escapeXml(absolute(loc))}</loc>`, ...links, '  </url>'].join(
+      '\n',
+    )
+  })
+
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">',
+    ...entries,
+    '</urlset>',
+    '',
+  ].join('\n')
+}
+
+/**
+ * robots.txt with the sitemap named, or unchanged when there is no origin to name it with.
+ *
+ * The line is appended at build time rather than committed, for the same reason the sitemap is
+ * generated: `Sitemap:` takes an absolute URL, and the checked-in file has no domain to write.
+ */
+export function robotsFor(robots) {
+  if (!origin()) return robots
+  const withoutSitemap = robots.replace(/^Sitemap:.*$/gm, '').trimEnd()
+  return `${withoutSitemap}\n\nSitemap: ${absolute('/sitemap.xml')}\n`
+}
+
+/**
+ * The Content Security Policy, built around whatever inline script the root page actually ships.
+ *
+ * The site is an unusually easy CSP target: one self-hosted bundle, one self-hosted stylesheet,
+ * no third-party origin, no `data:` URI, nothing fetched cross-origin. So the policy denies
+ * everything by default and names the four things that are real.
+ *
+ * Two entries are not obvious:
+ *
+ * - **The hash.** `/index.html` is a static language picker with an inline script, which is the
+ *   one thing on the site that `script-src 'self'` would block — and it would break the bare
+ *   domain for every visitor while every other page kept working, which is the worst shape a
+ *   failure can have. The hash is computed from the built file rather than written down, so
+ *   editing the picker cannot silently lock it out.
+ * - **`'unsafe-inline'` for styles, and only styles.** Two components set a React `style` prop
+ *   (`Legend`'s colour swatch and `NoDataPatterns`' offscreen SVG), which becomes a `style`
+ *   attribute. There is no hash for an attribute, and the alternative is moving a per-item colour
+ *   into a stylesheet that cannot know it. Scripts are not given the same licence.
+ */
+export function cspFor(hashes) {
+  const script = ["'self'", ...hashes.map((h) => `'${h}'`)].join(' ')
+  return [
+    "default-src 'none'",
+    "base-uri 'none'",
+    "form-action 'none'",
+    "frame-ancestors 'none'",
+    `script-src ${script}`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self'",
+    "connect-src 'self'",
+    "font-src 'self'",
+  ].join('; ')
+}
+
+/** Every inline `<script>` in a document, hashed the way `script-src` wants it. */
+export function inlineScriptHashes(html) {
+  const hashes = []
+  for (const [, attrs, body] of html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)) {
+    if (/\ssrc=/.test(attrs)) continue
+    if (body.trim() === '') continue
+    hashes.push(`sha256-${createHash('sha256').update(body, 'utf8').digest('base64')}`)
+  }
+  return hashes
+}
+
+/**
+ * `_headers`, which Cloudflare Pages reads from the root of the deployment.
+ *
+ * Written at build time rather than committed because the policy contains a hash of a built file.
+ * A committed `_headers` would be a copy of this that drifts the first time the picker changes.
+ */
+export function headersFor(hashes) {
+  return [
+    '# Generated by tools/build-pages.mjs. Do not edit: the policy carries a hash of the built',
+    '# root page, so a hand-written copy goes stale the moment that page changes.',
+    '/*',
+    '  X-Content-Type-Options: nosniff',
+    '  Referrer-Policy: no-referrer',
+    '  X-Frame-Options: DENY',
+    '  Cross-Origin-Opener-Policy: same-origin',
+    '  Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()',
+    `  Content-Security-Policy: ${cspFor(hashes)}`,
+    '',
+  ].join('\n')
+}
+
 export function buildPages({ distDir = join(root, 'dist'), dataFile } = {}) {
   const data = JSON.parse(
     readFileSync(dataFile ?? join(root, 'public/pantry/data/indicators.json'), 'utf8'),
@@ -164,22 +299,41 @@ export function buildPages({ distDir = join(root, 'dist'), dataFile } = {}) {
     writeFileSync(full, entryPageFor(readFileSync(full, 'utf8'), path))
   }
 
-  return written
+  // The policy is built from what the build actually produced, so it cannot describe a page that
+  // is no longer there. Every document is checked, not just the root: an inline script appearing
+  // anywhere else would otherwise be blocked in production and nowhere else.
+  const hashes = new Set()
+  for (const file of ['index.html', 'sv/index.html', 'en/index.html']) {
+    const full = join(distDir, file)
+    if (!existsSync(full)) continue
+    for (const hash of inlineScriptHashes(readFileSync(full, 'utf8'))) hashes.add(hash)
+  }
+  writeFileSync(join(distDir, '_headers'), headersFor([...hashes]))
+
+  const sitemap = sitemapFor(data.municipalities)
+  if (sitemap) writeFileSync(join(distDir, 'sitemap.xml'), sitemap)
+
+  const robots = join(distDir, 'robots.txt')
+  if (existsSync(robots)) writeFileSync(robots, robotsFor(readFileSync(robots, 'utf8')))
+
+  return { written, sitemapUrls: sitemap ? (sitemap.match(/<loc>/g) ?? []).length : 0 }
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const written = buildPages()
+  const { written, sitemapUrls } = buildPages()
   console.log(`${written.length} municipality pages written`)
+  console.log('  _headers written, with a policy covering the inline script the root page ships')
   if (origin()) {
     console.log(`  preview tags absolute against ${origin()}`)
+    console.log(`  sitemap.xml written, ${sitemapUrls} URLs, and named in robots.txt`)
   } else {
     // Not a failure, and normal for a local build. But a crawler cannot resolve a root-relative
     // og:image, so no preview will appear unless SITE_ORIGIN is set. Said plainly rather than
     // left for somebody to discover by pasting a link into a chat and seeing nothing.
     console.log(
       '  SITE_ORIGIN is not set, so og:image, canonical and hreflang are root-relative — correct\n' +
-        '  for the site, but link previews will not render. The deploy sets it; a local build\n' +
-        '  does not need to.',
+        '  for the site, but link previews will not render, and no sitemap is written because the\n' +
+        '  protocol requires absolute URLs. The deploy sets it; a local build does not need to.',
     )
   }
 }
