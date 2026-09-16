@@ -1,0 +1,365 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "haus guard file-access --from-hook"
+          }
+        ],
+        "matcher": "Read|Edit|Write|NotebookEdit"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "haus guard bash --from-hook"
+          }
+        ],
+        "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "haus decisions guard --from-hook"
+          }
+        ],
+        "matcher": "Bash"
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "haus decisions suggest --from-hook"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "haus update --from-hook"
+          }
+        ],
+        "matcher": "*"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "haus workspace worktree doctor --from-hook"
+          }
+        ],
+        "matcher": "*"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "haus workspace worktree autohydrate --from-hook"
+          }
+        ],
+        "matcher": "*"
+      }
+    ]
+  },
+  "_haus": {
+    "hooks": [
+      "haus.guard-file",
+      "haus.guard-bash",
+      "haus.decisions-guard",
+      "haus.decisions-suggest",
+      "haus.update-check",
+      "hook.workspace.worktree-check",
+      "hook.workspace.worktree-autohydrate"
+    ],
+    "hookCommands": [
+      "haus guard file-access --from-hook",
+      "haus guard bash --from-hook",
+      "haus decisions guard --from-hook",
+      "haus decisions suggest --from-hook",
+      "haus update --from-hook",
+      "haus workspace worktree doctor --from-hook",
+      "haus workspace worktree autohydrate --from-hook"
+    ],
+    "denyRules": [
+      "Bash(sudo:*)",
+      "Bash(doas:*)",
+      "Bash(pkexec:*)",
+      "Bash(chmod -R 777:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push --force-with-lease:*)",
+      "Bash(git push -f:*)",
+      "Bash(git commit --no-verify:*)",
+      "Bash(git push --no-verify:*)",
+      "Bash(gh pr merge --admin:*)",
+      "Bash(npm publish:*)",
+      "Bash(yarn publish:*)",
+      "Bash(yarn npm publish:*)",
+      "Bash(pnpm publish:*)",
+      "Read(*.pem)",
+      "Edit(*.pem)",
+      "Write(*.pem)",
+      "NotebookEdit(*.pem)",
+      "Read(*.key)",
+      "Edit(*.key)",
+      "Write(*.key)",
+      "NotebookEdit(*.key)",
+      "Read(*.p12)",
+      "Edit(*.p12)",
+      "Write(*.p12)",
+      "NotebookEdit(*.p12)",
+      "Read(*.pfx)",
+      "Edit(*.pfx)",
+      "Write(*.pfx)",
+      "NotebookEdit(*.pfx)",
+      "Read(*.ppk)",
+      "Edit(*.ppk)",
+      "Write(*.ppk)",
+      "NotebookEdit(*.ppk)",
+      "Read(id_rsa)",
+      "Edit(id_rsa)",
+      "Write(id_rsa)",
+      "NotebookEdit(id_rsa)",
+      "Read(id_ed25519)",
+      "Edit(id_ed25519)",
+      "Write(id_ed25519)",
+      "NotebookEdit(id_ed25519)",
+      "Read(id_ecdsa)",
+      "Edit(id_ecdsa)",
+      "Write(id_ecdsa)",
+      "NotebookEdit(id_ecdsa)",
+      "Read(id_dsa)",
+      "Edit(id_dsa)",
+      "Write(id_dsa)",
+      "NotebookEdit(id_dsa)",
+      "Read(customer-data/**)",
+      "Edit(customer-data/**)",
+      "Write(customer-data/**)",
+      "NotebookEdit(customer-data/**)",
+      "Read(secrets/**)",
+      "Edit(secrets/**)",
+      "Write(secrets/**)",
+      "NotebookEdit(secrets/**)",
+      "Read(certs/**)",
+      "Edit(certs/**)",
+      "Write(certs/**)",
+      "NotebookEdit(certs/**)"
+    ],
+    "allowRules": [
+      "Bash(haus init:*)",
+      "Bash(haus apply:*)",
+      "Bash(haus doctor:*)",
+      "Bash(haus scan:*)",
+      "Bash(haus recommend:*)",
+      "Bash(haus explain-recommendation:*)",
+      "Bash(haus fetch-refs:*)",
+      "Bash(haus rescan:*)",
+      "Bash(haus clone:*)",
+      "Bash(haus new:*)",
+      "Bash(haus update:*)",
+      "Bash(haus install:*)",
+      "Bash(haus configs:*)",
+      "Bash(haus ci-gate:*)",
+      "Bash(haus catalog-audit:*)",
+      "Bash(haus validate-catalog:*)",
+      "Bash(haus backups list:*)",
+      "Bash(haus guard file-access:*)",
+      "Bash(haus guard bash:*)",
+      "Bash(haus catalog bundle export:*)",
+      "Bash(haus catalog bundle import:*)",
+      "Bash(haus decisions check:*)",
+      "Bash(haus decisions suggest:*)",
+      "Bash(haus decisions next-number:*)",
+      "Bash(haus decisions guard:*)",
+      "Bash(haus decisions validate:*)",
+      "Bash(haus adr check:*)",
+      "Bash(haus adr suggest:*)",
+      "Bash(haus adr next-number:*)",
+      "Bash(haus adr guard:*)",
+      "Bash(haus adr validate:*)",
+      "Bash(haus workspace discover:*)",
+      "Bash(haus workspace scan:*)",
+      "Bash(haus workspace setup:*)",
+      "Bash(haus workspace doctor:*)",
+      "Bash(haus workspace link-context:*)",
+      "Bash(haus workspace worktree add:*)",
+      "Bash(haus workspace worktree hydrate:*)",
+      "Bash(haus workspace worktree autohydrate:*)",
+      "Bash(haus workspace worktree list:*)",
+      "Bash(haus workspace worktree doctor:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh run watch:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh repo view:*)",
+      "Bash(gh label list:*)",
+      "Bash(gh auth status:*)",
+      "Bash(gh search prs:*)",
+      "Bash(gh search issues:*)"
+    ],
+    "askRules": [
+      "Bash(su:*)",
+      "Bash(php artisan migrate --force:*)",
+      "Edit(.env)",
+      "Write(.env)",
+      "Edit(.env.*)",
+      "Write(.env.*)",
+      "Read(*.dump)",
+      "Read(*.backup)",
+      "Read(*.bak)",
+      "Read(wp-content/uploads/**)",
+      "Read(uploads/**)"
+    ]
+  },
+  "permissions": {
+    "deny": [
+      "Bash(sudo:*)",
+      "Bash(doas:*)",
+      "Bash(pkexec:*)",
+      "Bash(chmod -R 777:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push --force-with-lease:*)",
+      "Bash(git push -f:*)",
+      "Bash(git commit --no-verify:*)",
+      "Bash(git push --no-verify:*)",
+      "Bash(gh pr merge --admin:*)",
+      "Bash(npm publish:*)",
+      "Bash(yarn publish:*)",
+      "Bash(yarn npm publish:*)",
+      "Bash(pnpm publish:*)",
+      "Read(*.pem)",
+      "Edit(*.pem)",
+      "Write(*.pem)",
+      "NotebookEdit(*.pem)",
+      "Read(*.key)",
+      "Edit(*.key)",
+      "Write(*.key)",
+      "NotebookEdit(*.key)",
+      "Read(*.p12)",
+      "Edit(*.p12)",
+      "Write(*.p12)",
+      "NotebookEdit(*.p12)",
+      "Read(*.pfx)",
+      "Edit(*.pfx)",
+      "Write(*.pfx)",
+      "NotebookEdit(*.pfx)",
+      "Read(*.ppk)",
+      "Edit(*.ppk)",
+      "Write(*.ppk)",
+      "NotebookEdit(*.ppk)",
+      "Read(id_rsa)",
+      "Edit(id_rsa)",
+      "Write(id_rsa)",
+      "NotebookEdit(id_rsa)",
+      "Read(id_ed25519)",
+      "Edit(id_ed25519)",
+      "Write(id_ed25519)",
+      "NotebookEdit(id_ed25519)",
+      "Read(id_ecdsa)",
+      "Edit(id_ecdsa)",
+      "Write(id_ecdsa)",
+      "NotebookEdit(id_ecdsa)",
+      "Read(id_dsa)",
+      "Edit(id_dsa)",
+      "Write(id_dsa)",
+      "NotebookEdit(id_dsa)",
+      "Read(customer-data/**)",
+      "Edit(customer-data/**)",
+      "Write(customer-data/**)",
+      "NotebookEdit(customer-data/**)",
+      "Read(secrets/**)",
+      "Edit(secrets/**)",
+      "Write(secrets/**)",
+      "NotebookEdit(secrets/**)",
+      "Read(certs/**)",
+      "Edit(certs/**)",
+      "Write(certs/**)",
+      "NotebookEdit(certs/**)"
+    ],
+    "allow": [
+      "Bash(haus init:*)",
+      "Bash(haus apply:*)",
+      "Bash(haus doctor:*)",
+      "Bash(haus scan:*)",
+      "Bash(haus recommend:*)",
+      "Bash(haus explain-recommendation:*)",
+      "Bash(haus fetch-refs:*)",
+      "Bash(haus rescan:*)",
+      "Bash(haus clone:*)",
+      "Bash(haus new:*)",
+      "Bash(haus update:*)",
+      "Bash(haus install:*)",
+      "Bash(haus configs:*)",
+      "Bash(haus ci-gate:*)",
+      "Bash(haus catalog-audit:*)",
+      "Bash(haus validate-catalog:*)",
+      "Bash(haus backups list:*)",
+      "Bash(haus guard file-access:*)",
+      "Bash(haus guard bash:*)",
+      "Bash(haus catalog bundle export:*)",
+      "Bash(haus catalog bundle import:*)",
+      "Bash(haus decisions check:*)",
+      "Bash(haus decisions suggest:*)",
+      "Bash(haus decisions next-number:*)",
+      "Bash(haus decisions guard:*)",
+      "Bash(haus decisions validate:*)",
+      "Bash(haus adr check:*)",
+      "Bash(haus adr suggest:*)",
+      "Bash(haus adr next-number:*)",
+      "Bash(haus adr guard:*)",
+      "Bash(haus adr validate:*)",
+      "Bash(haus workspace discover:*)",
+      "Bash(haus workspace scan:*)",
+      "Bash(haus workspace setup:*)",
+      "Bash(haus workspace doctor:*)",
+      "Bash(haus workspace link-context:*)",
+      "Bash(haus workspace worktree add:*)",
+      "Bash(haus workspace worktree hydrate:*)",
+      "Bash(haus workspace worktree autohydrate:*)",
+      "Bash(haus workspace worktree list:*)",
+      "Bash(haus workspace worktree doctor:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh run watch:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh repo view:*)",
+      "Bash(gh label list:*)",
+      "Bash(gh auth status:*)",
+      "Bash(gh search prs:*)",
+      "Bash(gh search issues:*)"
+    ],
+    "ask": [
+      "Bash(su:*)",
+      "Bash(php artisan migrate --force:*)",
+      "Edit(.env)",
+      "Write(.env)",
+      "Edit(.env.*)",
+      "Write(.env.*)",
+      "Read(*.dump)",
+      "Read(*.backup)",
+      "Read(*.bak)",
+      "Read(wp-content/uploads/**)",
+      "Read(uploads/**)"
+    ]
+  }
+}
