@@ -124,6 +124,45 @@ The job now builds the way the deploy builds. The origin does not have to match 
 the files for Lighthouse to score it correctly, which was checked rather than assumed.
 `PAGES_PROJECT` moved to the top of the workflow because three things now need it.
 
+## Decision 5 — the budget stops passing by luck
+
+This branch's first CI run failed the budget at **performance 79 against a floor of 80**, which
+turned out to be the most useful thing in it.
+
+The first question was whether this change caused it. Two candidates: the `useMemo`, which can
+only help, and zod losing its JIT path. The second was measured rather than argued — parsing the
+real 1.05 MB pantry, five timed runs each:
+
+|         | median  | range     |
+| ------- | ------- | --------- |
+| JIT     | 20.1 ms | 19.1–21.6 |
+| jitless | 21.7 ms | 21.2–22.1 |
+
+**1.6 ms.** Nothing that moves a Lighthouse score by six points. So the next question was what the
+floor had actually been doing, and the answer is in the eight CI runs recorded between 2026-09-15
+and 2026-09-16: **79, 80, 80, 80, 81, 83, 84, 85.** Three landed exactly on the floor. One fell a
+single point through it.
+
+The floor was **inside the noise of the thing it measures**. It had been passing by luck, and this
+run was the first to be unlucky. The docstring in `tools/lighthouse-budget.mjs` had already
+written the rule this broke — _"a score that has to be exactly right is a score that fails for
+reasons nobody can act on"_ — which makes this a case of the number drifting away from its own
+stated intent rather than the intent being wrong.
+
+**Two changes, and the order matters.** Lowering the floor alone would have been fitting the
+budget to the failure. So first the measurement got better: Lighthouse's own guidance is to run
+several times and take the median, and the budget now runs three and does that — three being the
+compromise between that advice and a job nobody wants to wait for. **Then** the floor moved to 72,
+about ten points below anything yet observed, so it marks a regression somebody caused rather than
+a runner somebody drew.
+
+Every run's score is printed, not just the median. A median that passes while the spread beneath
+it widens is exactly what a single number hides, and hiding it is how this got here.
+
+The other three categories are held at exactly where they sit. They have returned the same figure
+on every run ever recorded, so unlike performance they are not samples, and one point of movement
+in any of them is a real change.
+
 ## Consequences
 
 - **`_headers` and `sitemap.xml` are build output, not source.** Neither can be edited by hand,
