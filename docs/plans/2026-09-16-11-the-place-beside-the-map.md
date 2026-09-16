@@ -182,10 +182,10 @@ disabled under `prefers-reduced-motion`, as everything else on the site already 
 
 | Gate                                | Result                                     |
 | ----------------------------------- | ------------------------------------------ |
-| Unit tests                          | 1,175 pass (1,122 before)                  |
-| Browser tests, 3 engines            | 274 pass, 2 skipped (241 before)           |
-| Lighthouse, median of 3             | 82 / 100 / 100 / 91, all within budget     |
-| Script bytes                        | 126,797 (budget 180,000)                   |
+| Unit tests                          | 1,176 pass (1,122 before)                  |
+| Browser tests, 3 engines            | 280 pass, 2 skipped (241 before)           |
+| Lighthouse, median of 3             | 83 / 100 / 100 / 91, all within budget     |
+| Script bytes                        | 126,904 (budget 180,000)                   |
 | Document height, table view at 1440 | 1,331 px, from 13,342 px                   |
 | `public/pantry/`                    | byte-identical                             |
 | Docs                                | decision 0010, DESIGN §3, accessibility.md |

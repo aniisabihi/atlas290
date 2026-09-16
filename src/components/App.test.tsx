@@ -248,4 +248,23 @@ describe('App', () => {
     await userEvent.hover(screen.getByRole('link', { name: 'Göteborg' }))
     expect(window.location.href).toBe(before)
   })
+
+  /*
+   * Plan 11 promised this and the plan's own checklist would have been ticked without it. The
+   * tooltip is a pointer catching up with what a screen reader already had; if hovering also
+   * announced something, it would be the value said twice.
+   */
+  it('says nothing new to a screen reader when the pointer moves over the map', async () => {
+    const { container } = open('/en/?y=2024&m=1280')
+    const region = container.querySelector('.live-region')!
+    // Let the selection's own announcement land first, or the baseline is the empty region and
+    // the test passes or fails on the debounce rather than on the hover.
+    await act(() => new Promise((r) => setTimeout(r, SETTLE_MS + 50)))
+    const before = region.textContent
+    expect(before).toMatch(/^Malmö/)
+
+    await userEvent.hover(screen.getByRole('button', { name: /^Göteborg,/ }))
+    await act(() => new Promise((r) => setTimeout(r, SETTLE_MS + 50)))
+    expect(region.textContent).toBe(before)
+  })
 })

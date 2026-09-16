@@ -130,6 +130,22 @@ export function MapCanvas({
     y: number
     view: View
   } | null>(null)
+  /**
+   * Whether the shapes are in flight, written by the frame loop rather than held in state.
+   *
+   * `useMorph` pushes frames straight to the DOM and returns nothing, so this is the only place
+   * that knows. A ref because a boolean in state would re-render the map sixty times a second to
+   * answer a question only an event handler ever asks.
+   */
+  const morphing = useRef(false)
+  /**
+   * The input behind the most recent press.
+   *
+   * Clicking a shape calls `focus()` on it, and a focus event says nothing about what caused it.
+   * Without this, a tap on a phone would flash a tooltip under the finger before the profile
+   * took focus away again — the one case the tooltip is supposed to stay out of.
+   */
+  const lastPointerType = useRef('')
 
   /** The bubbles, in the map's own coordinates, so a shape can travel between the two. */
   const circles = useMemo(() => placeAll(bubbles.circles), [bubbles])
@@ -188,6 +204,7 @@ export function MapCanvas({
    */
   const applyFrame = useCallback(
     (t: number) => {
+      morphing.current = t > 0 && t < 1
       for (const shape of shapes) {
         paths.current.get(shape.code)?.setAttribute('d', pathFor(shape.code, shape.d, t))
       }
@@ -301,21 +318,27 @@ export function MapCanvas({
    * be the same two strings: a tooltip that rounded differently from the label it duplicates
    * would be a second, quieter version of the truth.
    */
-  const readingOf = (code: string) => {
-    const name = lk.municipality(code)?.name[lang] ?? code
-    const { value, status } = observationAt(lk, indicatorId, code, year)
-    const reading =
-      value === null
-        ? statusPhrase(status, lang)
-        : status === 'present'
-          ? formatWithUnit(value, indicator, lang)
-          : `${formatWithUnit(value, indicator, lang)} — ${statusPhrase(status, lang)}`
-    return { name, reading, value }
-  }
+  const readingOf = useCallback(
+    (code: string) => {
+      const name = lk.municipality(code)?.name[lang] ?? code
+      const { value, status } = observationAt(lk, indicatorId, code, year)
+      const reading =
+        value === null
+          ? statusPhrase(status, lang)
+          : status === 'present'
+            ? formatWithUnit(value, indicator, lang)
+            : `${formatWithUnit(value, indicator, lang)} — ${statusPhrase(status, lang)}`
+      return { name, reading, value }
+    },
+    [lk, lang, indicatorId, year, indicator],
+  )
 
   const showHover = (code: string | null, x: number, y: number) => {
-    setHover(code === null ? null : { code, x, y, view })
-    onHover?.(code)
+    // Nothing is where it looks like it is until the shapes have finished moving, so a reading
+    // drawn beside one mid-flight would be pointing at the wrong place by the time it is read.
+    const target = code !== null && !morphing.current ? { code, x, y, view } : null
+    setHover(target)
+    onHover?.(target?.code ?? null)
   }
 
   /** The code a pointer or focus event landed on, or null if it landed on the plate. */
@@ -331,6 +354,9 @@ export function MapCanvas({
   }
 
   const onFocusShape = (event: React.FocusEvent<SVGSVGElement>) => {
+    // A tap selects, and the selection focuses the shape. That focus is not somebody asking to
+    // read it, and a box under a finger covers the thing it names.
+    if (lastPointerType.current === 'touch') return
     const code = codeAt(event.target)
     if (!code) return
     // Anchored to the shape rather than to a pointer that is not there: keyboard navigation is
@@ -348,6 +374,64 @@ export function MapCanvas({
    * view change already caused — a second render for a box that had stopped being true before
    * the first one started.
    */
+  /**
+   * The 290 shapes, rebuilt only when something about them changes.
+   *
+   * A pointer moving across the map sets a new position on every native `pointermove`, and
+   * without this each one of those rebuilt all 290 paths — 290 observation lookups and 290
+   * `Intl.NumberFormat` instances, to move a small box a few pixels. The elements are the same
+   * objects between hovers, so React skips them entirely.
+   *
+   * This is the same argument `applyFrame` makes for writing morph frames straight to the DOM,
+   * applied to the other thing that happens at pointer rate.
+   */
+  const shapeNodes = useMemo(
+    () =>
+      shapes.map((shape) => {
+        const { name, reading } = readingOf(shape.code)
+        const { value, status } = observationAt(lk, indicatorId, shape.code, year)
+        return (
+          <path
+            key={shape.code}
+            data-code={shape.code}
+            data-highlight={shape.code === highlight ? 'true' : undefined}
+            ref={(el) => {
+              if (el) paths.current.set(shape.code, el)
+              else paths.current.delete(shape.code)
+            }}
+            d={pathFor(shape.code, shape.d, resting)}
+            role="button"
+            aria-label={`${name}, ${reading}`}
+            aria-current={shape.code === selected ? 'true' : undefined}
+            tabIndex={shape.code === focusCode ? 0 : -1}
+            fill={fillFor(indicator, value, status)}
+            stroke="#ffffff"
+            strokeWidth={0.75}
+            vectorEffect="non-scaling-stroke"
+            onClick={() => {
+              move(shape.code)
+              onSelect(shape.code)
+            }}
+          />
+        )
+      }),
+    [
+      shapes,
+      readingOf,
+      lk,
+      indicatorId,
+      year,
+      indicator,
+      pathFor,
+      resting,
+      selected,
+      focusCode,
+      highlight,
+      move,
+      onSelect,
+    ],
+  )
+
   const live = hover && hover.view === view ? hover : null
   const hovered = live ? readingOf(live.code) : null
   const hoveredRank =
@@ -376,39 +460,15 @@ export function MapCanvas({
         // One listener on the SVG rather than 290 on the shapes: the morph holds 60fps because
         // nothing per-shape happens on a frame, and 290 handler pairs would be the first thing to
         // spend that margin on.
+        onPointerDown={(event) => {
+          lastPointerType.current = event.pointerType
+        }}
         onPointerMove={onPointerMove}
         onPointerLeave={() => showHover(null, 0, 0)}
         onFocus={onFocusShape}
         onBlur={() => showHover(null, 0, 0)}
       >
-        {shapes.map((shape) => {
-          const { name, reading } = readingOf(shape.code)
-          const { value, status } = observationAt(lk, indicatorId, shape.code, year)
-          return (
-            <path
-              key={shape.code}
-              data-code={shape.code}
-              data-highlight={shape.code === highlight ? 'true' : undefined}
-              ref={(el) => {
-                if (el) paths.current.set(shape.code, el)
-                else paths.current.delete(shape.code)
-              }}
-              d={pathFor(shape.code, shape.d, resting)}
-              role="button"
-              aria-label={`${name}, ${reading}`}
-              aria-current={shape.code === selected ? 'true' : undefined}
-              tabIndex={shape.code === focusCode ? 0 : -1}
-              fill={fillFor(indicator, value, status)}
-              stroke="#ffffff"
-              strokeWidth={0.75}
-              vectorEffect="non-scaling-stroke"
-              onClick={() => {
-                move(shape.code)
-                onSelect(shape.code)
-              }}
-            />
-          )
-        })}
+        {shapeNodes}
         {selectedD && (
           <g data-selection-ring="" pointerEvents="none" ref={collectRings(rings)}>
             <path

@@ -155,8 +155,11 @@ button:hover {
  * field keeps that shape wherever it appears, because it is the same control. Scoping this to
  * `.bar` is what made the compare search look like a stray browser default beside a profile.
  */
+/* Not `:where(.search, ...)` around the whole thing: that would score zero, and the shape of
+   the site's fields should not lose to the next rule that happens to name a class. */
 .bar :where(select, input, button),
-:where(.search, .indicator-picker) :where(select, input) {
+.search :where(select, input),
+.indicator-picker :where(select, input) {
   font: inherit;
   font-size: 0.9rem;
   color: var(--text);
@@ -550,10 +553,11 @@ main {
   padding-top: 0.9rem;
 }
 
-/* The marker belongs beside the label, not above it: a block inside <summary> pushes the text
-   onto its own line and leaves a lone triangle floating above the heading. */
 /*
  * The marker, drawn rather than inherited.
+ *
+ * It belongs beside the label, not above it: a block inside <summary> pushes the text onto its
+ * own line and leaves a lone triangle floating above the heading.
  *
  * A <summary> only paints the native triangle while it is `display: list-item`, and this one is
  * a flex row so the heading sits beside the mark instead of under it. Taking the flex and

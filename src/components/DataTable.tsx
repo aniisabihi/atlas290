@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import { observationAt, ranksFor, type Lookup } from '../data/select'
 import { formatWithUnit, statusPhrase } from '../i18n/format'
 import { t } from '../i18n/strings'
@@ -18,7 +18,14 @@ import type { Lang } from '../state/url'
  */
 type Column = 'name' | 'value' | 'rank'
 
-export function DataTable({
+/**
+ * Memoised, because the page re-renders on every hover.
+ *
+ * Pointing at a neighbour chip or a fact sets the page's highlight, and the table takes none of
+ * it — but it sorts all 290 municipalities and formats every cell on each render, so without
+ * this it redid all of that for a state change it has no interest in.
+ */
+export const DataTable = memo(function DataTable({
   lk,
   indicatorId,
   year,
@@ -132,4 +139,4 @@ export function DataTable({
       </table>
     </div>
   )
-}
+})

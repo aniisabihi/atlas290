@@ -145,6 +145,92 @@ test.describe('pointing at a shape', () => {
     await expect(page.getByTestId('map-tooltip')).toHaveCount(0)
   })
 
+  /*
+   * These two watch for the box APPEARING rather than looking for it afterwards.
+   *
+   * Both defects are flashes: the tooltip comes back mid-morph and then goes when the pointer
+   * settles, and a tap shows it for the moment between focusing the shape and the profile taking
+   * focus away. A check after the fact finds nothing either time and passes while the bug is
+   * still there, which is what the first version of both of these did.
+   */
+  const watchForTooltip = (page: import('@playwright/test').Page) =>
+    page.evaluate(() => {
+      const w = window as unknown as { __sawTooltip?: boolean }
+      w.__sawTooltip = false
+      new MutationObserver(() => {
+        if (document.querySelector('[data-testid="map-tooltip"]')) w.__sawTooltip = true
+      }).observe(document.body, { childList: true, subtree: true })
+    })
+
+  const sawTooltip = (page: import('@playwright/test').Page) =>
+    page.evaluate(() => (window as unknown as { __sawTooltip?: boolean }).__sawTooltip === true)
+
+  test('stays away for the whole morph, not just the moment it starts', async ({ page }) => {
+    await page.setViewportSize(DESKTOP)
+    await page.goto('/en/?y=2024&v=map')
+    await page.locator('svg.map').waitFor()
+
+    await page.locator(KIRUNA).hover({ force: true })
+    await expect(page.getByTestId('map-tooltip')).toBeVisible()
+
+    // The view flips the instant the button is pressed; the shapes take 650 ms to get there.
+    await page.getByRole('button', { name: 'Bubbles' }).click()
+    await expect(page.getByTestId('map-tooltip')).toHaveCount(0)
+
+    /*
+     * Driven inside the page rather than over the wire.
+     *
+     * Following the shape with `mouse.move` needs a round trip per frame, and in Firefox and
+     * WebKit those round trips outlast the 650 ms morph — so the last few moves landed after the
+     * shapes had arrived, the tooltip correctly reappeared, and the test failed for being slow
+     * rather than for finding anything.
+     */
+    const saw = await page.evaluate(async () => {
+      const path = document.querySelector('svg.map path[data-code="2584"]')!
+      let seen = false
+      const started = performance.now()
+      while (performance.now() - started < 300) {
+        const r = path.getBoundingClientRect()
+        path.dispatchEvent(
+          new PointerEvent('pointermove', {
+            bubbles: true,
+            pointerType: 'mouse',
+            clientX: r.x + r.width / 2,
+            clientY: r.y + r.height / 2,
+          }),
+        )
+        await new Promise(requestAnimationFrame)
+        if (document.querySelector('[data-testid="map-tooltip"]')) seen = true
+      }
+      return seen
+    })
+    expect(saw).toBe(false)
+
+    // And it comes back once they have arrived, or the guard has broken the feature instead.
+    await page.waitForTimeout(500)
+    const box = (await page.locator(KIRUNA).boundingBox())!
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await expect(page.getByTestId('map-tooltip')).toBeVisible()
+  })
+
+  test('says nothing under a finger, because a tap already opens the profile', async ({
+    browser,
+  }) => {
+    // A tap selects, and selecting focuses the shape. A focus event does not say what caused it,
+    // so without the guard the box appeared under the finger already covering the shape — for
+    // the one render before the profile took focus away.
+    const context = await browser.newContext({ hasTouch: true, viewport: DESKTOP })
+    const page = await context.newPage()
+    await page.goto('/en/?y=2024&v=map')
+    await page.locator('svg.map').waitFor()
+
+    await watchForTooltip(page)
+    await page.locator(KIRUNA).tap({ force: true })
+    await expect(page.getByRole('heading', { level: 2, name: 'Kiruna' })).toBeVisible()
+    expect(await sawTooltip(page)).toBe(false)
+    await context.close()
+  })
+
   test('rings the municipality a neighbour chip names', async ({ page }) => {
     await page.setViewportSize(DESKTOP)
     await page.goto('/en/?y=2024&m=1280&v=map')

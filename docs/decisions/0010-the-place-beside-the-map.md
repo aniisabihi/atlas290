@@ -81,19 +81,60 @@ exactly the overprinting first seen at 390 px. The threshold is 40 rem.
 shape and the first many people will point at. The box flips below the pointer within 120 px of
 the top of the window.
 
+## What the review found
+
+An adversarial review of the finished diff found two real defects in the tooltip, both of them
+flashes, and both of them cases the first round of tests could not have caught.
+
+**The guard against the morph was the wrong guard.** D5 says the tooltip must not be drawn while
+the shapes are travelling. What was written only cleared a hover taken in the _previous_ view —
+and `view` flips the instant the button is pressed, 650 ms before the shapes arrive. A pointer
+moved during the animation took a fresh hover, in the new view, and the box came straight back
+over shapes that were nowhere near where it said they were. `useMorph` exposes no progress at all
+— it writes frames to the DOM and returns nothing — so the frame loop now records whether it is
+mid-flight in a ref, which is free, and the event handler reads it.
+
+**A tap flashed the tooltip.** D5 says there is none on touch, and `onPointerMove` ignored touch
+correctly. But selecting a municipality calls `focus()` on its shape, and a focus event says
+nothing about what caused it — so a tap raised the box under the finger already covering the
+shape, for the one render before the profile took focus away. The kind of press is now recorded
+on `pointerdown` and a touch-caused focus draws nothing.
+
+**Both of the tests written for these passed against the unfixed code.** They looked for the box
+after the fact, and by then it had already gone in both cases. They now watch for it _appearing_
+— a mutation observer for the tap, and a loop driven inside the page for the morph, because
+driving the pointer over the wire took longer than the animation in Firefox and WebKit and the
+test was failing for being slow rather than for finding anything. Both were re-run against the
+unfixed code and fail in all three engines.
+
+**A pointer move was re-rendering all 290 shapes.** `showHover` stores a new position object on
+every native `pointermove`, so React could not bail out, and the render rebuilt every shape —
+290 observation lookups and 290 `Intl.NumberFormat` constructions — to move a small box a few
+pixels. The docstring claiming locality avoided this was wrong about its own component. The
+shapes are now built in a `useMemo` that a pointer position is not a dependency of. `DataTable`,
+which takes no part in any of this but re-sorts and re-formats 290 rows on every render, is
+memoised for the same reason.
+
+Two smaller things: the widened field selector was wrapped entirely in `:where()`, which scores
+zero specificity and would have lost silently to the next rule naming a class; and the
+stylesheet test asserted that _some_ selector hides the native marker and _some_ selector draws
+one, never that they are the same selector — so it would have gone on passing through a repeat of
+the exact defect it was written for. It now checks each markerless summary has a marker rule of
+its own, and that was proven by planting one.
+
 ## Consequences
 
 |                                      | before         | after                 |
 | ------------------------------------ | -------------- | --------------------- |
-| Lighthouse performance               | 84             | **82** (81, 83, 82)   |
+| Lighthouse performance               | 84             | **83** (81, 83, 83)   |
 | accessibility / best practices / SEO | 100 / 100 / 91 | 100 / 100 / 91        |
-| script bytes                         | 125,410        | 126,797 (budget 180k) |
+| script bytes                         | 125,410        | 126,904 (budget 180k) |
 | document height, table view at 1440  | 13,342 px      | **1,331 px**          |
-| unit tests                           | 1,122          | 1,175                 |
-| browser tests, 3 engines             | 241            | 274                   |
+| unit tests                           | 1,122          | 1,176                 |
+| browser tests, 3 engines             | 241            | 280                   |
 
-`public/pantry/` is untouched — not one figure changed. Performance moved two points inside a
-measured spread of 81–83 against a floor of 72.
+`public/pantry/` is untouched — not one figure changed. Performance moved a point inside a
+measured spread of 81–83, against a floor of 72.
 
 ## Where this is re-derived
 
