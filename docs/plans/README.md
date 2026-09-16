@@ -15,9 +15,11 @@ The first slice from [docs/DESIGN.md](../DESIGN.md) is delivered as five plans. 
 **Complete.** All five plans are implemented: the kitchen fetches, freezes,
 checks and publishes ten indicators for 290 municipalities; the site reads them with a map, a
 cartogram, time travel, search, profiles, comparison, a table twin and five deep-linked facts, in
-both languages; and CI runs 745 unit tests, 99 browser tests across three engines, an
+both languages; and CI runs the unit tests, the browser tests across three engines, an
 accessibility scan and a performance budget on every pull request, with a monthly refresh job and
-a deploy gated behind all of it.
+a deploy gated behind all of it. That was 745 unit tests and 99 browser tests at the end of Plan
+5; the second slice has since taken it to 1,091 and 201, and a count written into prose goes
+stale the week after it is written, so it is not repeated anywhere else.
 
 Increments after the first slice (facts engine, animated morph, similar municipalities, profile prose, pre-rendered pages) each get their own plan and a decision record.
 

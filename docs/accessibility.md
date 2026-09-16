@@ -71,8 +71,10 @@ the reason the list below is not empty.
   About disclosure and the map. The same WebKit build on Linux reaches everything, so this is a
   platform setting rather than something the page can change. It is asserted by the keyboard
   suite in whichever configuration the host is in, so it will be noticed if it changes.
-- **`hreflang` uses relative URLs**, which Lighthouse flags. Absolute URLs need a domain, and
-  there is not one yet. To be fixed when the site has an address.
+- ~~**`hreflang` uses relative URLs**, which Lighthouse flags.~~ **Fixed.** The name decision gave
+  the project an address, and the deploy now builds against it, so the alternates a deployed page
+  carries are absolute. A local build still writes relative ones, deliberately: it has no domain
+  and must not invent one.
 
 ### Not done, and not claimed
 
