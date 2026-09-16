@@ -1,7 +1,8 @@
 import { useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import type { MunicipalityTopology } from '../../shared/geometry'
 import type { Adjacency, Bubbles } from '../../shared/pantry'
-import { observationAt, type Lookup } from '../data/select'
+import { observationAt, rankOf, type Lookup } from '../data/select'
+import { MapTooltip } from './MapTooltip'
 import { formatWithUnit, statusPhrase } from '../i18n/format'
 import { t as strings } from '../i18n/strings'
 import type { Lang, View } from '../state/url'
@@ -84,6 +85,8 @@ export function MapCanvas({
   onSelect,
   onNoMove,
   onMoved,
+  highlight = null,
+  onHover,
   animate = true,
   ref,
 }: {
@@ -97,6 +100,14 @@ export function MapCanvas({
   selected: string | null
   lang: Lang
   onSelect: (code: string) => void
+  /**
+   * A municipality the page is pointing at from somewhere else — a neighbour chip, a fact — so
+   * the shape it names can be found on the map without the visitor hunting for it. Transient
+   * pointer feedback, deliberately not URL state.
+   */
+  highlight?: string | null
+  /** Reports what the pointer or keyboard is on, so the legend can mark the class it falls in. */
+  onHover?: (code: string | null) => void
   onNoMove?: (direction: Direction) => void
   onMoved?: (code: string) => void
   /** False when the visitor has asked for less movement: colours snap, and so does the morph. */
@@ -107,6 +118,18 @@ export function MapCanvas({
   const shapes = shapesFor(topology)
   const paths = useRef(new Map<string, SVGPathElement>())
   const [focused, setFocused] = useState<string | null>(null)
+  /**
+   * What the pointer or the keyboard is on, and where to draw the tooltip.
+   *
+   * Local to this component rather than lifted: the position changes with every pointer move,
+   * and putting it in the page's state would re-render 290 shapes to move one small box.
+   */
+  const [hover, setHover] = useState<{
+    code: string
+    x: number
+    y: number
+    view: View
+  } | null>(null)
 
   /** The bubbles, in the map's own coordinates, so a shape can travel between the two. */
   const circles = useMemo(() => placeAll(bubbles.circles), [bubbles])
@@ -271,97 +294,198 @@ export function MapCanvas({
     height: lerp(FRAME[1], cartogramBox.height, resting),
   }
 
+  /**
+   * One municipality's name and reading, in one place.
+   *
+   * The same two strings are the shape's accessible name and the tooltip's text, and they must
+   * be the same two strings: a tooltip that rounded differently from the label it duplicates
+   * would be a second, quieter version of the truth.
+   */
+  const readingOf = (code: string) => {
+    const name = lk.municipality(code)?.name[lang] ?? code
+    const { value, status } = observationAt(lk, indicatorId, code, year)
+    const reading =
+      value === null
+        ? statusPhrase(status, lang)
+        : status === 'present'
+          ? formatWithUnit(value, indicator, lang)
+          : `${formatWithUnit(value, indicator, lang)} — ${statusPhrase(status, lang)}`
+    return { name, reading, value }
+  }
+
+  const showHover = (code: string | null, x: number, y: number) => {
+    setHover(code === null ? null : { code, x, y, view })
+    onHover?.(code)
+  }
+
+  /** The code a pointer or focus event landed on, or null if it landed on the plate. */
+  const codeAt = (target: EventTarget | null): string | null => {
+    const el = target instanceof Element ? target.closest('path[data-code]') : null
+    return el?.getAttribute('data-code') ?? null
+  }
+
+  const onPointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
+    // Touch already selects on tap, and a tooltip under a finger covers the thing it names.
+    if (event.pointerType === 'touch') return
+    showHover(codeAt(event.target), event.clientX, event.clientY)
+  }
+
+  const onFocusShape = (event: React.FocusEvent<SVGSVGElement>) => {
+    const code = codeAt(event.target)
+    if (!code) return
+    // Anchored to the shape rather than to a pointer that is not there: keyboard navigation is
+    // how most of this map is read, and the reading should follow the ring.
+    const rect = paths.current.get(code)?.getBoundingClientRect()
+    showHover(code, rect ? rect.right : 0, rect ? rect.top : 0)
+  }
+
+  /**
+   * The morph moves every shape out from under the pointer, so whatever was hovered is no longer
+   * where the tooltip points.
+   *
+   * Derived, not cleared in an effect: the hover remembers the view it was taken in, and a hover
+   * from the other view is simply not a hover. An effect would set state during the render the
+   * view change already caused — a second render for a box that had stopped being true before
+   * the first one started.
+   */
+  const live = hover && hover.view === view ? hover : null
+  const hovered = live ? readingOf(live.code) : null
+  const hoveredRank =
+    live && hovered?.value !== null ? rankOf(lk, indicatorId, year, live.code) : null
+
   const selectedD = selected ? pathFor(selected, shapeD(shapes, selected), resting) : undefined
+  const highlightD =
+    highlight && highlight !== selected
+      ? pathFor(highlight, shapeD(shapes, highlight), resting)
+      : undefined
   const focusedD =
     focused && focused !== selected ? pathFor(focused, shapeD(shapes, focused), resting) : undefined
 
   return (
-    <svg
-      viewBox={`${box.x.toFixed(1)} ${box.y.toFixed(1)} ${box.width.toFixed(1)} ${box.height.toFixed(1)}`}
-      role="group"
-      aria-label={atCartogram ? strings(lang).cartogramLabel : strings(lang).mapLabel}
-      aria-describedby="map-hint"
-      className="map"
-      data-animate={animate ? 'true' : 'false'}
-      data-view={atCartogram ? 'cartogram' : 'map'}
-      ref={svgRef}
-      onKeyDown={onKeyDown}
-    >
-      {shapes.map((shape) => {
-        const municipality = lk.municipality(shape.code)
-        const name = municipality?.name[lang] ?? shape.code
-        const { value, status } = observationAt(lk, indicatorId, shape.code, year)
-        const reading =
-          value === null
-            ? statusPhrase(status, lang)
-            : status === 'present'
-              ? formatWithUnit(value, indicator, lang)
-              : `${formatWithUnit(value, indicator, lang)} — ${statusPhrase(status, lang)}`
-        return (
-          <path
-            key={shape.code}
-            ref={(el) => {
-              if (el) paths.current.set(shape.code, el)
-              else paths.current.delete(shape.code)
-            }}
-            d={pathFor(shape.code, shape.d, resting)}
-            role="button"
-            aria-label={`${name}, ${reading}`}
-            aria-current={shape.code === selected ? 'true' : undefined}
-            tabIndex={shape.code === focusCode ? 0 : -1}
-            fill={fillFor(indicator, value, status)}
-            stroke="#ffffff"
-            strokeWidth={0.75}
-            vectorEffect="non-scaling-stroke"
-            onClick={() => {
-              move(shape.code)
-              onSelect(shape.code)
-            }}
-          />
-        )
-      })}
-      {selectedD && (
-        <g data-selection-ring="" pointerEvents="none" ref={collectRings(rings)}>
-          <path
-            data-ring-for={selected ?? undefined}
-            d={selectedD}
-            fill="none"
-            stroke={FOCUS_RING.halo}
-            strokeWidth={6}
-            vectorEffect="non-scaling-stroke"
-          />
-          <path
-            data-ring-for={selected ?? undefined}
-            d={selectedD}
-            fill="none"
-            stroke={FOCUS_RING.core}
-            strokeWidth={3}
-            vectorEffect="non-scaling-stroke"
-          />
-        </g>
+    <>
+      <svg
+        viewBox={`${box.x.toFixed(1)} ${box.y.toFixed(1)} ${box.width.toFixed(1)} ${box.height.toFixed(1)}`}
+        role="group"
+        aria-label={atCartogram ? strings(lang).cartogramLabel : strings(lang).mapLabel}
+        aria-describedby="map-hint"
+        className="map"
+        data-animate={animate ? 'true' : 'false'}
+        data-view={atCartogram ? 'cartogram' : 'map'}
+        ref={svgRef}
+        onKeyDown={onKeyDown}
+        // One listener on the SVG rather than 290 on the shapes: the morph holds 60fps because
+        // nothing per-shape happens on a frame, and 290 handler pairs would be the first thing to
+        // spend that margin on.
+        onPointerMove={onPointerMove}
+        onPointerLeave={() => showHover(null, 0, 0)}
+        onFocus={onFocusShape}
+        onBlur={() => showHover(null, 0, 0)}
+      >
+        {shapes.map((shape) => {
+          const { name, reading } = readingOf(shape.code)
+          const { value, status } = observationAt(lk, indicatorId, shape.code, year)
+          return (
+            <path
+              key={shape.code}
+              data-code={shape.code}
+              data-highlight={shape.code === highlight ? 'true' : undefined}
+              ref={(el) => {
+                if (el) paths.current.set(shape.code, el)
+                else paths.current.delete(shape.code)
+              }}
+              d={pathFor(shape.code, shape.d, resting)}
+              role="button"
+              aria-label={`${name}, ${reading}`}
+              aria-current={shape.code === selected ? 'true' : undefined}
+              tabIndex={shape.code === focusCode ? 0 : -1}
+              fill={fillFor(indicator, value, status)}
+              stroke="#ffffff"
+              strokeWidth={0.75}
+              vectorEffect="non-scaling-stroke"
+              onClick={() => {
+                move(shape.code)
+                onSelect(shape.code)
+              }}
+            />
+          )
+        })}
+        {selectedD && (
+          <g data-selection-ring="" pointerEvents="none" ref={collectRings(rings)}>
+            <path
+              data-ring-for={selected ?? undefined}
+              d={selectedD}
+              fill="none"
+              stroke={FOCUS_RING.halo}
+              strokeWidth={6}
+              vectorEffect="non-scaling-stroke"
+            />
+            <path
+              data-ring-for={selected ?? undefined}
+              d={selectedD}
+              fill="none"
+              stroke={FOCUS_RING.core}
+              strokeWidth={3}
+              vectorEffect="non-scaling-stroke"
+            />
+          </g>
+        )}
+        {focusedD && (
+          <g data-focus-ring="" pointerEvents="none" ref={collectRings(rings)}>
+            <path
+              data-ring-for={focused ?? undefined}
+              d={focusedD}
+              fill="none"
+              stroke={FOCUS_RING.halo}
+              strokeWidth={6}
+              vectorEffect="non-scaling-stroke"
+            />
+            <path
+              data-ring-for={focused ?? undefined}
+              d={focusedD}
+              fill="none"
+              stroke={FOCUS_RING.core}
+              strokeWidth={3}
+              strokeDasharray="5 4"
+              vectorEffect="non-scaling-stroke"
+            />
+          </g>
+        )}
+        {/*
+         * A ring rather than a thicker stroke on the shape itself: a stroke is drawn half inside
+         * its own path and the neighbours painted after it cover the outer half, so the mark a
+         * visitor is following from a chip would fade into whatever happens to be beside it.
+         */}
+        {highlightD && (
+          <g data-highlight-ring="" pointerEvents="none" ref={collectRings(rings)}>
+            <path
+              data-ring-for={highlight ?? undefined}
+              d={highlightD}
+              fill="none"
+              stroke={FOCUS_RING.halo}
+              strokeWidth={6}
+              vectorEffect="non-scaling-stroke"
+            />
+            <path
+              data-ring-for={highlight ?? undefined}
+              d={highlightD}
+              fill="none"
+              stroke={FOCUS_RING.core}
+              strokeWidth={2}
+              vectorEffect="non-scaling-stroke"
+            />
+          </g>
+        )}
+      </svg>
+      {live && hovered && (
+        <MapTooltip
+          name={hovered.name}
+          reading={hovered.reading}
+          rank={hoveredRank ? strings(lang).rank(hoveredRank.rank, hoveredRank.outOf) : null}
+          x={live.x}
+          y={live.y}
+        />
       )}
-      {focusedD && (
-        <g data-focus-ring="" pointerEvents="none" ref={collectRings(rings)}>
-          <path
-            data-ring-for={focused ?? undefined}
-            d={focusedD}
-            fill="none"
-            stroke={FOCUS_RING.halo}
-            strokeWidth={6}
-            vectorEffect="non-scaling-stroke"
-          />
-          <path
-            data-ring-for={focused ?? undefined}
-            d={focusedD}
-            fill="none"
-            stroke={FOCUS_RING.core}
-            strokeWidth={3}
-            strokeDasharray="5 4"
-            vectorEffect="non-scaling-stroke"
-          />
-        </g>
-      )}
-    </svg>
+    </>
   )
 }
 

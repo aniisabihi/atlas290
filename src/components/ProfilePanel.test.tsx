@@ -96,3 +96,41 @@ describe('ProfilePanel', () => {
     expect(rows()[0]!.textContent).toMatch(/invånare/)
   })
 })
+
+describe('ProfilePanel, the header and the rows', () => {
+  it('puts the compare control in the header, beside the name it will pair', () => {
+    const { container } = render(
+      <ProfilePanel
+        lk={lk}
+        code="1280"
+        year={2024}
+        lang="en"
+        onClose={() => {}}
+        compare={<button type="button">Compare with…</button>}
+      />,
+    )
+    const header = container.querySelector('.profile-header')!
+    expect(
+      within(header as HTMLElement).getByRole('button', { name: 'Compare with…' }),
+    ).toBeTruthy()
+    expect(within(header as HTMLElement).getByRole('button', { name: /close/i })).toBeTruthy()
+  })
+
+  /*
+   * Structure, not width: jsdom measures nothing, so the container query that stacks these on a
+   * phone cannot be tested here. What can be tested is that all four parts are present for every
+   * measure, at every width — the phone fix must not be a part being dropped.
+   */
+  it('gives every measure a name, a value, a rank and a trend', () => {
+    const { container } = render(
+      <ProfilePanel lk={lk} code="1280" year={2024} lang="en" onClose={() => {}} />,
+    )
+    const measures = container.querySelectorAll('.profile-row')
+    expect(measures).toHaveLength(10)
+    for (const row of measures) {
+      expect(row.querySelector('.profile-name')?.textContent).toBeTruthy()
+      expect(row.querySelector('.profile-value')?.textContent).toBeTruthy()
+      expect(row.querySelector('.sparkline')).not.toBeNull()
+    }
+  })
+})

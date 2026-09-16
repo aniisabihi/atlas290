@@ -27,6 +27,7 @@ export function SimilarPlaces({
   meta,
   state,
   lang,
+  onHighlight,
 }: {
   lk: Lookup
   similar: Similar
@@ -34,6 +35,12 @@ export function SimilarPlaces({
   /** The current state, so each link keeps the indicator and year the visitor is looking at. */
   state: AppState
   lang: AppState['lang']
+  /**
+   * Points the map at the neighbour under the pointer. Five names are five places a visitor has
+   * no way to find on a map of 290 shapes; this is how the list and the map become one thing.
+   * Transient, and deliberately not URL state.
+   */
+  onHighlight?: (code: string | null) => void
 }) {
   const strings = t(lang)
   const codes = similarTo(similar, state.selected ?? '')
@@ -53,7 +60,14 @@ export function SimilarPlaces({
                * would leave the new municipality compared against whatever the previous one
                * was compared against, which is a statement nobody asked for.
                */}
-              <a href={toUrl({ ...state, selected: code, compare: null }, meta)}>
+              <a
+                href={toUrl({ ...state, selected: code, compare: null }, meta)}
+                // Focus as well as hover, so the keyboard gets the same answer as the pointer.
+                onMouseEnter={() => onHighlight?.(code)}
+                onMouseLeave={() => onHighlight?.(null)}
+                onFocus={() => onHighlight?.(code)}
+                onBlur={() => onHighlight?.(null)}
+              >
                 {municipality.name[lang]}
               </a>
             </li>

@@ -120,3 +120,29 @@ describe('DataTable', () => {
     expect(screen.getByRole('button', { name: 'Kommun' })).toBeTruthy()
   })
 })
+
+/**
+ * The table is the map's twin, so it takes the map's box.
+ *
+ * All 290 rows stay in the document — find-in-page, a screen reader's table mode and the reflow
+ * test all read the same table — and the box scrolls. Laid out in the page instead, the 290 rows
+ * made the document thirteen thousand pixels tall and turned a view into a scroll.
+ */
+describe('DataTable, as a view rather than a page', () => {
+  it('keeps every municipality in the document, not just the visible ones', () => {
+    const { container } = draw()
+    expect(container.querySelectorAll('tbody tr')).toHaveLength(290)
+  })
+
+  it('sits in the scroll container the stage height is applied to', () => {
+    const { container } = draw()
+    const table = container.querySelector('table.data-table')
+    expect(table?.closest('.table-scroll')).not.toBeNull()
+  })
+
+  it('keeps the sort controls in the header, so scrolling cannot take them away', () => {
+    const { container } = draw()
+    const head = container.querySelector('thead')!
+    expect(head.querySelectorAll('button').length).toBeGreaterThan(0)
+  })
+})

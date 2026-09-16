@@ -201,4 +201,51 @@ describe('App', () => {
       '/sv/malmo-1280/?i=mean-age&y=2010',
     )
   })
+
+  /**
+   * The defect these exist for: clicking a municipality used to render its profile after the
+   * facts strip, below the fold, so the visible page did not change at all. The reading column
+   * beside the map was empty from "about this measure" downwards, which is where it goes now.
+   */
+  it('puts the municipality in the column beside the map, not after the facts', () => {
+    const { container } = open('/en/?y=2024&m=1280')
+    const heading = screen.getByRole('heading', { level: 2, name: 'Malmö' })
+    expect(heading.closest('.reading-column')).not.toBeNull()
+    expect(heading.closest('.facts')).toBeNull()
+    // The map is still the first thing in the main region — Plan 10 D6, which this must not undo.
+    const main = container.querySelector('main')!
+    expect(main.querySelector('.view-column, .reading-column')?.className).toContain('view-column')
+  })
+
+  it('keeps the facts below the two columns, where they are somewhere to go next', () => {
+    const { container } = open('/en/?y=2024&m=1280')
+    const layout = container.querySelector('.layout')!
+    const strip = container.querySelector('.facts')!
+    expect(layout.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('offers the compare search inside the profile header, beside the name', () => {
+    open('/en/?y=2024&m=1280')
+    const search = screen.getByRole('combobox', { name: 'Compare with…' })
+    expect(search.closest('.profile-header')).not.toBeNull()
+  })
+
+  it('still moves focus to the name when a municipality is chosen', async () => {
+    open('/en/?y=2024')
+    await userEvent.click(screen.getByRole('button', { name: /^Malmö,/ }))
+    expect(document.activeElement?.textContent).toBe('Malmö')
+  })
+
+  it('swaps the search for the comparison once a partner is chosen', () => {
+    open('/en/?y=2024&m=1280&c=0180')
+    expect(screen.queryByRole('combobox', { name: 'Compare with…' })).toBeNull()
+    expect(screen.getByRole('heading', { level: 2, name: 'Malmö and Stockholm' })).toBeTruthy()
+  })
+
+  it('keeps a hover out of the URL, which is where everything shareable lives', async () => {
+    open('/en/?y=2024&m=1280')
+    const before = window.location.href
+    await userEvent.hover(screen.getByRole('link', { name: 'Göteborg' }))
+    expect(window.location.href).toBe(before)
+  })
 })

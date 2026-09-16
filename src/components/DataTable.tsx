@@ -86,7 +86,20 @@ export function DataTable({
   }
 
   return (
-    <div className="table-scroll">
+    /*
+     * A named, focusable scroll region.
+     *
+     * The table takes the map's box and scrolls inside it, and a box that scrolls has to be
+     * reachable with a keyboard — WCAG 2.1.1, and Firefox adds the tab stop by itself whether we
+     * ask for it or not. Declaring it is what gives that stop a name instead of leaving a
+     * keyboard visitor on an anonymous div.
+     */
+    <div
+      className="table-scroll"
+      role="region"
+      aria-label={strings.tableCaption(indicator.name[lang], year)}
+      tabIndex={0}
+    >
       <table className="data-table">
         <caption>{strings.tableCaption(indicator.name[lang], year)}</caption>
         <thead>

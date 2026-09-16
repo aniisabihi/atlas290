@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import rawFacts from '../../public/pantry/data/facts.json'
 import { Facts } from '../../shared/pantry'
-import { FactsStrip } from './FactsStrip'
+import { FactsStrip, municipalityInHref } from './FactsStrip'
 
 const facts = Facts.parse(rawFacts)
 const FACTS = facts.facts
@@ -36,5 +36,20 @@ describe('FactsStrip', () => {
     for (const link of screen.getAllByRole('link')) {
       expect(link.textContent!.length).toBeGreaterThan(20)
     }
+  })
+})
+
+describe('the municipality a fact is about', () => {
+  it('is the one its own link selects', () => {
+    expect(municipalityInHref('/?i=population&y=2024&m=1280')).toBe('1280')
+  })
+
+  it('is nobody, for a fact about the whole country', () => {
+    expect(municipalityInHref('/?i=education&y=2024')).toBeNull()
+  })
+
+  it('survives a compare link, which names two', () => {
+    // The subject is `m`; `c` is what it is being held against.
+    expect(municipalityInHref('/?i=population&y=2024&m=1280&c=0180')).toBe('1280')
   })
 })

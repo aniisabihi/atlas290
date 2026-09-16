@@ -7,7 +7,42 @@ import type { Lang } from '../state/url'
 import { SearchBox } from './SearchBox'
 
 /**
+ * Choosing the second municipality.
+ *
+ * Its own export because it belongs in the profile's header, beside the name it will put a
+ * second name next to — not in a panel above the profile, which is where it was and where it
+ * read as a stray text field. It is the same `SearchBox` the bar carries, so it looks like the
+ * bar's: one control, two placements.
+ */
+export function CompareSearch({
+  lk,
+  selected,
+  lang,
+  onCompare,
+}: {
+  lk: Lookup
+  selected: string
+  lang: Lang
+  onCompare: (code: string | null) => void
+}) {
+  const strings = t(lang)
+  return (
+    <SearchBox
+      // The same list, minus the municipality already chosen: offering it would produce a
+      // panel of identical columns, and the URL parser drops it anyway.
+      municipalities={lk.data.municipalities.filter((m) => m.code !== selected)}
+      lang={lang}
+      onSelect={onCompare}
+      label={strings.compareWith}
+      placeholder={strings.comparePlaceholder}
+    />
+  )
+}
+
+/**
  * Two municipalities side by side. No verdict, by design — see `src/data/compare.ts`.
+ *
+ * Rendered only once a partner has been chosen; picking one is `CompareSearch`'s job.
  */
 export function ComparePanel({
   lk,
@@ -19,29 +54,13 @@ export function ComparePanel({
 }: {
   lk: Lookup
   selected: string
-  compare: string | null
+  compare: string
   year: number
   lang: Lang
   onCompare: (code: string | null) => void
 }) {
   const strings = t(lang)
   const nameOf = (code: string) => lk.municipality(code)?.name[lang] ?? code
-
-  if (compare === null) {
-    return (
-      <div className="compare panel">
-        <SearchBox
-          // The same list, minus the municipality already chosen: offering it would produce a
-          // panel of identical columns, and the URL parser drops it anyway.
-          municipalities={lk.data.municipalities.filter((m) => m.code !== selected)}
-          lang={lang}
-          onSelect={onCompare}
-          label={strings.compareWith}
-          placeholder={strings.comparePlaceholder}
-        />
-      </div>
-    )
-  }
 
   const rows = compareOf(lk, selected, compare, year)
   const summary = summarise(rows)

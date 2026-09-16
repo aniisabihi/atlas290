@@ -96,6 +96,12 @@ Lantmäteriet's authoritative boundaries are the documented upgrade path if we e
 
 **The URL is the application's memory.** Indicator, year, selected municipality, comparison partner, map or cartogram, colour mode, table view, and language all live in the address bar. Everything rendered is a function of that. Consequences: every view is shareable, the back button behaves, reloads keep your place, and the state logic is testable as pure text in and view description out. Municipalities are identified by their stable four-digit code with a readable name added for humans.
 
+**Three things are deliberately kept out of it**, and only three: whether the year is playing, how
+far through the morph the shapes are, and which municipality the pointer is on. Each is where an
+input happens to be at an instant rather than a view anybody chose, and writing any of them down
+would put a history entry behind a mouse movement and make a shared link carry something nobody
+picked. The third was added by [decision 0010](decisions/0010-the-place-beside-the-map.md).
+
 **One state, many views.** Map, profile panel, comparison, facts strip and the plain data table all read the same state. New views plug into the same socket.
 
 **The map is 290 SVG paths.** Small enough that the browser treats it as ordinary content, which is where the accessibility comes from. The cartogram layout is precomputed in the kitchen; on desktop the browser slides shapes between two known sets of positions, on phones the bubbles are simply the default view with the panel as a bottom sheet.

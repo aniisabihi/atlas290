@@ -4,10 +4,10 @@ import userEvent from '@testing-library/user-event'
 import rawData from '../../public/pantry/data/indicators.json'
 import { PantryData } from '../../shared/pantry'
 import { lookup } from '../data/select'
-import { ComparePanel } from './ComparePanel'
+import { ComparePanel, CompareSearch } from './ComparePanel'
 
 const lk = lookup(PantryData.parse(rawData))
-const draw = (compare: string | null, year = 2024, lang: 'sv' | 'en' = 'en') => {
+const draw = (compare: string, year = 2024, lang: 'sv' | 'en' = 'en') => {
   const onCompare = vi.fn()
   const result = render(
     <ComparePanel
@@ -22,22 +22,45 @@ const draw = (compare: string | null, year = 2024, lang: 'sv' | 'en' = 'en') => 
   return { onCompare, ...result }
 }
 
-describe('ComparePanel before a partner is chosen', () => {
+const search = (lang: 'sv' | 'en' = 'en') => {
+  const onCompare = vi.fn()
+  const result = render(<CompareSearch lk={lk} selected="0180" lang={lang} onCompare={onCompare} />)
+  return { onCompare, ...result }
+}
+
+describe('CompareSearch, before a partner is chosen', () => {
   it('offers a search box asking for one', () => {
-    draw(null)
+    search()
     expect(screen.getByRole('combobox', { name: 'Compare with…' })).toBeTruthy()
   })
 
   it('does not offer the municipality already chosen', async () => {
-    draw(null)
+    search()
     await userEvent.type(screen.getByRole('combobox'), 'stockholm')
     expect(screen.queryByRole('option', { name: 'Stockholm' })).toBeNull()
   })
 
   it('reports the partner that was picked', async () => {
-    const { onCompare } = draw(null)
+    const { onCompare } = search()
     await userEvent.type(screen.getByRole('combobox'), 'malmo{Enter}')
     expect(onCompare).toHaveBeenCalledWith('1280')
+  })
+
+  it('speaks Swedish', () => {
+    search('sv')
+    expect(screen.getByRole('combobox', { name: 'Jämför med…' })).toBeTruthy()
+  })
+
+  /*
+   * The defect this test exists for: the compare box is the same control as the bar's, and it
+   * used to render without the wrapper that carries the field's shape, so it looked like a
+   * browser default beside a profile set in Newsreader.
+   */
+  it('is the same control as the one in the bar, wrapper and all', () => {
+    const { container } = search()
+    const input = screen.getByRole('combobox')
+    expect(input.closest('.search')).not.toBeNull()
+    expect(container.querySelector('.search > label')).not.toBeNull()
   })
 })
 

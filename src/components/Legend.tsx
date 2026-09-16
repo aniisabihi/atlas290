@@ -34,11 +34,18 @@ export function Legend({
   indicatorId,
   year,
   lang,
+  highlightClass = null,
 }: {
   lk: Lookup
   indicatorId: string
   year: number
   lang: Lang
+  /**
+   * The class the municipality under the pointer falls in, marked so the ramp answers "how big
+   * is that, then" without the visitor reading seven break values. Visual only: the class is
+   * already in the shape's accessible name and in the live region.
+   */
+  highlightClass?: number | null
 }) {
   const indicator = lk.indicator(indicatorId)
   const strings = t(lang)
@@ -76,7 +83,7 @@ export function Legend({
                 ? strings.legendOver(label(from))
                 : strings.legendRange(label(from), label(to))
           return (
-            <li key={fill}>
+            <li key={fill} data-highlight={klass === highlightClass ? 'true' : undefined}>
               <span className="legend-swatch" style={{ background: fill }} aria-hidden="true" />
               {text}
               {klass === zeroClass && <em className="legend-zero"> — {strings.legendZero}</em>}
