@@ -1,6 +1,7 @@
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { existsSync, readFileSync } from 'node:fs'
+import type { ServerResponse } from 'node:http'
 import { resolve } from 'node:path'
 import { parseSegment } from './shared/slug.ts'
 
@@ -30,6 +31,22 @@ function municipalityRequest(url: string): { lang: string; code: string | null }
   return { lang: match[1], code: parseSegment(match[2]) }
 }
 
+/**
+ * Answers exactly as Cloudflare Pages does for a path that matches no file: status 404, with the
+ * `404.html` document. Falls back to plain text only if that file is missing, which on a real
+ * deploy is the failure this whole file exists to catch.
+ */
+function notFound(res: ServerResponse, file: string): void {
+  res.statusCode = 404
+  if (existsSync(file)) {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    res.end(readFileSync(file, 'utf8'))
+    return
+  }
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+  res.end('Not found, and 404.html is missing from the build')
+}
+
 function municipalityPages(): Plugin {
   return {
     name: 'municipality-pages',
@@ -56,9 +73,7 @@ function municipalityPages(): Plugin {
         const path = (req.url ?? '').split('?')[0] ?? ''
         const file = resolve(import.meta.dirname, `dist${path.replace(/\/?$/, '/')}index.html`)
         if (existsSync(file)) return next()
-        res.statusCode = 404
-        res.setHeader('Content-Type', 'text/plain; charset=utf-8')
-        res.end(`No municipality page at ${path}`)
+        notFound(res, resolve(import.meta.dirname, 'dist/404.html'))
       })
     },
 
@@ -70,12 +85,10 @@ function municipalityPages(): Plugin {
         codes ??= knownCodes()
 
         if (!request.code || !codes.has(request.code)) {
-          // Not `next()`. Vite's SPA fallback would answer 200 with the root page, while
-          // production has no such file and answers 404 — and a route that only fails once
-          // deployed is the hardest kind to notice.
-          res.statusCode = 404
-          res.setHeader('Content-Type', 'text/plain; charset=utf-8')
-          res.end(`No municipality page at ${req.url}`)
+          // Not `next()`. Vite's SPA fallback would answer 200 with the root page — and so, it
+          // turned out, does Cloudflare unless `public/404.html` exists. It does now, and this
+          // serves the same document so the two agree on the body as well as the status.
+          notFound(res, resolve(import.meta.dirname, 'public/404.html'))
           return
         }
 
