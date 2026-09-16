@@ -1,0 +1,55 @@
+/*
+ * The three faces, served from this origin.
+ *
+ * Generated and subset by `yarn fonts` (tools/build-fonts.mjs) and committed to
+ * `public/fonts/`, beside the SIL Open Font License 1.1 texts that licence requires to travel
+ * with them. Nothing here reaches a third party: the README promises no server, no runtime API
+ * and no tracking, and a font CDN would be a request to somebody else on every page view.
+ *
+ * The two variable faces carry a weight axis of 400-600 only, because that is the range the
+ * design uses. The unused ends cost 35 kB.
+ *
+ * `font-display: swap` throughout: the fallback stacks below are close enough in metrics that a
+ * swap is a small shift, and a visitor on a slow connection reads the figures immediately rather
+ * than staring at nothing.
+ */
+
+@font-face {
+  font-family: 'Newsreader';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/newsreader-normal.woff2') format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'Newsreader';
+  font-style: italic;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/newsreader-italic.woff2') format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'Plex Sans';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/plex-sans-normal.woff2') format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/plex-mono-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/plex-mono-500.woff2') format('woff2');
+}

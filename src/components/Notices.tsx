@@ -19,6 +19,8 @@ const TEXT = {
     boundaries:
       'Kommungränserna kommer från SCB:s egen CC0-fil med förenklade gränser. SCB påpekar att filerna innehåller enkla kommun- och länsgränser anpassade för tematisering av statistik, och att gränserna inte är lämpliga för analyser. De används här enbart för att rita kartan.',
     libraries: 'Webbplatsen levererar dessa bibliotek till din webbläsare:',
+    fonts:
+      'Typsnitten levereras från den här webbplatsen, inte från någon typsnittstjänst — inga förfrågningar går till tredje part. Newsreader och IBM Plex är båda licensierade under SIL Open Font License 1.1, och licenstexterna ligger bredvid filerna under /fonts/. Filerna är nedbantade till de tecken som faktiskt kan visas här.',
     code: 'Koden är MIT-licensierad. Datafilerna under public/pantry är CC0.',
   },
   en: {
@@ -26,6 +28,8 @@ const TEXT = {
     boundaries:
       "Municipal boundaries come from Statistics Sweden's own CC0 file of simplified borders. They note that the files contain simple municipal and county boundaries adapted for thematic mapping, and that the boundaries are not suitable for analysis. They are used here only to draw the map.",
     libraries: 'The site delivers these libraries to your browser:',
+    fonts:
+      'The typefaces are served from this site, not from a font service — no request goes to a third party. Newsreader and IBM Plex are both licensed under the SIL Open Font License 1.1, and the licence texts sit beside the files under /fonts/. The files are subset to the characters this site can actually render.',
     code: 'The code is MIT licensed. The data files under public/pantry are CC0.',
   },
 } as const
@@ -55,6 +59,9 @@ export function Notices({ lang }: { lang: Lang }) {
             </li>
           ))}
         </ul>
+
+        <h3>{strings.noticesFonts}</h3>
+        <p>{text.fonts}</p>
 
         <h3>{strings.noticesCode}</h3>
         <p>
