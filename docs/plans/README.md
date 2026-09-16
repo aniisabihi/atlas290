@@ -98,6 +98,16 @@ belongs to the plan that reaches it, and each gets a record in
   figure in [decision 0005](../decisions/0005-a-page-per-municipality.md) is what was measured
   that day.) [Decision 0005](../decisions/0005-a-page-per-municipality.md).
 
+## The third slice — how it looks
+
+The second slice made the data speak. This one is about the voice it speaks in. DESIGN section 9
+has carried **visual design language** as open since the first day, and it is now the largest gap
+between how well this project is built and how well it reads.
+
+| #   | Plan                                                        | Ends with                                                                                                                                                                                                                                                                                                  | Status      |
+| --- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| 10  | [The design language](2026-09-16-10-the-design-language.md) | An editorial treatment settled from four mockups drawn on the real pantry: light as standard with both themes and a control, one sticky bar carrying the controls, the map as the hero, self-hosted type, sparklines on one shared axis, and the generated prose and facts given the prominence they earn. | **planned** |
+
 ## Not plans, but next
 
 **One thing is left.** The other two closed on 2026-09-15 and 2026-09-16.
