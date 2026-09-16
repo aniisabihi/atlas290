@@ -112,6 +112,11 @@ not wear a permanently red badge for a step nobody has asked it to take yet.
 
 ## Documentation
 
+- **Start here:** [docs/SUMMARY.md](docs/SUMMARY.md) — the documentation index
+- Working on the code: [CLAUDE.md](CLAUDE.md), [docs/setup.md](docs/setup.md),
+  [docs/development-workflow.md](docs/development-workflow.md), [docs/codebase.md](docs/codebase.md)
+- How it fits together: [docs/architecture.md](docs/architecture.md), [docs/conventions.md](docs/conventions.md)
+- Deploying: [docs/deployment.md](docs/deployment.md)
 - Design and decisions: [docs/DESIGN.md](docs/DESIGN.md)
 - Research record: [docs/research/](docs/research/README.md)
 - Build plans: [docs/plans/](docs/plans/README.md)

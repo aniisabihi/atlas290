@@ -1,0 +1,729 @@
+[
+  {
+    "id": "haus.adr-decisions",
+    "type": "skill",
+    "source": "haus",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-9050734644ec496ce0b988e768a5de3d8da2d6fa2a35b8f97653f36ccbad0a64",
+    "installMode": "copied",
+    "paths": [
+      ".claude/skills/adr-decisions"
+    ]
+  },
+  {
+    "id": "haus.agentic-workflow-standard",
+    "type": "template",
+    "source": "haus",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-489f47bd0e3ec11a6f7399d29cfc484400c09eacf4028caeec211ac8d3795eb3",
+    "installMode": "copied",
+    "paths": [
+      ".claude/templates/agentic-workflow-standard.md"
+    ]
+  },
+  {
+    "id": "haus.antfu-vite",
+    "type": "skill",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-2dd41ba1ef3c8e357839329b3bce800a761d5b001a89089320eacb738813d02d",
+    "installMode": "copied",
+    "paths": [
+      ".claude/skills/vite"
+    ],
+    "originSourceId": "antfu-skills",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.currents-dev-playwright-best-practices",
+    "type": "skill",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-459eb3cde19c2c9ba316b1081f3e128c2efcba6e16eda9e3c7c5af2c5053f06b",
+    "installMode": "copied",
+    "paths": [
+      ".claude/skills/playwright-best-practices"
+    ],
+    "originSourceId": "currents-dev-playwright-best-practices-skill",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.decisions-ci-gate",
+    "type": "template",
+    "source": "haus",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-9d2debf1ae247227fd75d2518178cd03748f2dacae699ff90c7d7d6e610fff92",
+    "installMode": "copied",
+    "paths": [
+      ".claude/templates/decisions-ci-gate.yml"
+    ]
+  },
+  {
+    "id": "haus.ecc-a11y-architect",
+    "type": "agent",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-42d86f657070552b7b9c8dd6a59f0002525ad1b04027d7f408eeb14e2dbd08da",
+    "installMode": "copied",
+    "paths": [
+      ".claude/agents/a11y-architect.md"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-accessibility",
+    "type": "skill",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-85ac6a6f0cb6eaa8b0d58e6b21485e6e867747e532679b896be6be94d7d2bed3",
+    "installMode": "copied",
+    "paths": [
+      ".claude/skills/accessibility"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-common-coding-style-rule",
+    "type": "rule",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-8e8caffc67b4531e3beff348d59221ca365e62fcb20e9e6f3f3b1704519a88b0",
+    "installMode": "copied",
+    "paths": [
+      ".claude/rules/common/coding-style.md"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-common-hooks-rule",
+    "type": "rule",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-6a44b171176081553cbcb6b15411d2e52a1a5d12be33e6b4debf176a65d64b3c",
+    "installMode": "copied",
+    "paths": [
+      ".claude/rules/common/hooks.md"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-common-patterns-rule",
+    "type": "rule",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-a87c5ceec6d4e971a00950045fdbe9aa4591163ea2230bc007c9432a6788d331",
+    "installMode": "copied",
+    "paths": [
+      ".claude/rules/common/patterns.md"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-common-security-rule",
+    "type": "rule",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-3b2eadb1f8dd4e253587f6c065c39cd092e4693bb339b654e35c2bb067c6d3d4",
+    "installMode": "copied",
+    "paths": [
+      ".claude/rules/common/security.md"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-common-testing-rule",
+    "type": "rule",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-d1b2bb7f7ed68bea155e9ef8ba05e58cce087e21453bbd16c670d60bb94f9f63",
+    "installMode": "copied",
+    "paths": [
+      ".claude/rules/common/testing.md"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-documentation-lookup",
+    "type": "skill",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-f640c11f7361a5fb3cb3ba9ce78bd84b3ad8dda9259877ad1ee92035c952a20e",
+    "installMode": "copied",
+    "paths": [
+      ".claude/skills/documentation-lookup"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-e2e-testing",
+    "type": "skill",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-0f582a9f641338906cf7c132b9dc13fccfefe248257fa619bce7fd41cfe6988c",
+    "installMode": "copied",
+    "paths": [
+      ".claude/skills/e2e-testing"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-frontend-patterns",
+    "type": "skill",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-12344cedfff03ad15e484933aa6b9ac3d924a3f578b58569ecf707b5656521ec",
+    "installMode": "copied",
+    "paths": [
+      ".claude/skills/frontend-patterns"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-performance-optimizer",
+    "type": "agent",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-2ab4032cefd80c805c07387a26961d87e0eaf5d6d747e579179539fe6041a546",
+    "installMode": "copied",
+    "paths": [
+      ".claude/agents/performance-optimizer.md"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-react-build-resolver",
+    "type": "agent",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-ea65774a85845d794e39b1dacf4b614e02fd4a920a4184c4a0e541d5ca784dba",
+    "installMode": "copied",
+    "paths": [
+      ".claude/agents/react-build-resolver.md"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-react-coding-style-rule",
+    "type": "rule",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-d5984e15160babcbd76bdd9535416d98870b0483d8145d12cbb035ac8360ab26",
+    "installMode": "copied",
+    "paths": [
+      ".claude/rules/react/coding-style.md"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-react-hooks-rule",
+    "type": "rule",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-912bc1f7b740f09d6578bf7707c3ff806fe05fa05120796480d093f49cc6257a",
+    "installMode": "copied",
+    "paths": [
+      ".claude/rules/react/hooks.md"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-react-patterns",
+    "type": "skill",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-2d68d83f01dfac08e37ee0f950c2da814209d49a6df91a65668345856387ce5b",
+    "installMode": "copied",
+    "paths": [
+      ".claude/skills/react-patterns"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-react-patterns-rule",
+    "type": "rule",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-82b399c8b579a69fc2ede31cf2daf6e0908fbe3f86c4490b9d5a81cff7e44c27",
+    "installMode": "copied",
+    "paths": [
+      ".claude/rules/react/patterns.md"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-react-performance",
+    "type": "skill",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-067eadcf318a99aa46db0573a25a0351f4aa0e5dedf33a38cbccdb6d62817b7f",
+    "installMode": "copied",
+    "paths": [
+      ".claude/skills/react-performance"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-react-reviewer",
+    "type": "agent",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-0c52bcdeec65b0b3f127ad006225516d584e451a1253aaf0908b18f3acf38a45",
+    "installMode": "copied",
+    "paths": [
+      ".claude/agents/react-reviewer.md"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-react-security-rule",
+    "type": "rule",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-5f5be4bd9ad23a58c9e00467c110b471894274bd380624f6aaf5260f36f522be",
+    "installMode": "copied",
+    "paths": [
+      ".claude/rules/react/security.md"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-react-testing",
+    "type": "skill",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-c9e6d7c6895d9cf92c1e3c725316a637d097a8895df9653068b507a75d60b92c",
+    "installMode": "copied",
+    "paths": [
+      ".claude/skills/react-testing"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-react-testing-rule",
+    "type": "rule",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-35f5d60d6be1290d76c3b3b349e5b684fde724f9cb2c01a0bbdc5e37fe8ba491",
+    "installMode": "copied",
+    "paths": [
+      ".claude/rules/react/testing.md"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-refactor-cleaner",
+    "type": "agent",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-60030bb9176b3280c7289ec60fb0c3211c0fcb22ce147e448da990b29dbf0aaf",
+    "installMode": "copied",
+    "paths": [
+      ".claude/agents/refactor-cleaner.md"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-security-reviewer",
+    "type": "agent",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-e85ecf6504f029332c18553c73bf6bab26471a44dbec30f8347b2bee661e6f1c",
+    "installMode": "copied",
+    "paths": [
+      ".claude/agents/security-reviewer.md"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-tdd-guide",
+    "type": "agent",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-cb5b44d3785efaafe0bfc5382675eca90717de104b11859a5b6b8f3e923e38c5",
+    "installMode": "copied",
+    "paths": [
+      ".claude/agents/tdd-guide.md"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-tdd-workflow",
+    "type": "skill",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-e438ecf658258ec96880949df900f5bcfe24d4d8cc18af5982b36a472cea51b6",
+    "installMode": "copied",
+    "paths": [
+      ".claude/skills/tdd-workflow"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-typescript-coding-style-rule",
+    "type": "rule",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-35a32451262d01d23f331997423b242dd1064177a72c5086a6ad4cb89a66f2d3",
+    "installMode": "copied",
+    "paths": [
+      ".claude/rules/typescript/coding-style.md"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-typescript-patterns-rule",
+    "type": "rule",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-089d474664e12bfa38afc643732760b7007cd10359e7292c648332c510ee5ce5",
+    "installMode": "copied",
+    "paths": [
+      ".claude/rules/typescript/patterns.md"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-typescript-security-rule",
+    "type": "rule",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-564d130bf3ba35468f6689151dc2313e5df1e879caf625fb6b4a6adc3ff080c6",
+    "installMode": "copied",
+    "paths": [
+      ".claude/rules/typescript/security.md"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.ecc-vite-patterns",
+    "type": "skill",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-62bdd2d12931991a49611942dba1f4488691efe54d6f31b496036242ed5ef59f",
+    "installMode": "copied",
+    "paths": [
+      ".claude/skills/vite-patterns"
+    ],
+    "originSourceId": "ecc-affaanm",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.issue-authoring",
+    "type": "skill",
+    "source": "haus",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-cd68cd4600682614efa5fcda6bcef7f4ae21d31330fe0a7641e9852f6ce29976",
+    "installMode": "copied",
+    "paths": [
+      ".claude/skills/issue-authoring"
+    ]
+  },
+  {
+    "id": "haus.issue-creator",
+    "type": "agent",
+    "source": "haus",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-d9de7728523afc3d7cc37e30e8d6130622d017068d5c79ae35fadf5fc8c4d919",
+    "installMode": "copied",
+    "paths": [
+      ".claude/agents/issue-creator.md"
+    ]
+  },
+  {
+    "id": "haus.lefthook-branch-guard",
+    "type": "template",
+    "source": "haus",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-18f7204043b5ec3e7e689698f1fb933cfbd333af48e70eaad9f85ab0adf5dd81",
+    "installMode": "copied",
+    "paths": [
+      ".claude/templates/lefthook-branch-guard.yml"
+    ]
+  },
+  {
+    "id": "haus.lefthook-security",
+    "type": "template",
+    "source": "haus",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-4ebcc6893d83af9dad68df2dd6fc34a7887de2c787a78e41dbf9dbe87363c5b4",
+    "installMode": "copied",
+    "paths": [
+      ".claude/templates/lefthook-security.yml"
+    ]
+  },
+  {
+    "id": "haus.oh-my-claudecode-designer",
+    "type": "agent",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-4320b1e587577c4550ae13d122059f5633ea2d913e847c5488f8c468b4d8b393",
+    "installMode": "copied",
+    "paths": [
+      ".claude/agents/designer.md"
+    ],
+    "originSourceId": "omcc-yeachanheo",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.package-manager-yarn4-pnpm89",
+    "type": "skill",
+    "source": "haus",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-8db81cebf871257943a9c4e96ba45b9685aec1439c9432165f2951f9d9d4147a",
+    "installMode": "copied",
+    "paths": [
+      ".claude/skills/package-manager-yarn4-pnpm89"
+    ]
+  },
+  {
+    "id": "haus.start-here",
+    "type": "template",
+    "source": "haus",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-3276724b2f7108a7e055d7f76a934c4bc03e3e0bfb0691e09a4f28642564f562",
+    "installMode": "copied",
+    "paths": [
+      ".claude/templates/start-here.md"
+    ]
+  },
+  {
+    "id": "haus.vercel-labs-react-best-practices",
+    "type": "skill",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-b4a04843b1bd8e87842124af2116b7b7db12d67597f01c68c926bc22a865c14c",
+    "installMode": "copied",
+    "paths": [
+      ".claude/skills/react-best-practices"
+    ],
+    "originSourceId": "vercel-labs-agent-skills",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.vercel-labs-react-view-transitions",
+    "type": "skill",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-80c913125838d5713350b2665e58021a90b0ed4c41d4722e3055b41687398254",
+    "installMode": "copied",
+    "paths": [
+      ".claude/skills/react-view-transitions"
+    ],
+    "originSourceId": "vercel-labs-agent-skills",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  },
+  {
+    "id": "haus.whats-installed",
+    "type": "skill",
+    "source": "haus",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-63e2d48d54cee8372c480395bcf2c64114f4462292a1e06d0b49e39f293c401e",
+    "installMode": "copied",
+    "paths": [
+      ".claude/skills/whats-installed"
+    ]
+  },
+  {
+    "id": "haus.writing-documentation",
+    "type": "skill",
+    "source": "haus",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-710b54f3e85165085715b240becd7e70e82d6354d1da68dfbfd3d73f6eacf738",
+    "installMode": "copied",
+    "paths": [
+      ".claude/skills/writing-documentation"
+    ]
+  },
+  {
+    "id": "haus.wshobson-typescript-advanced-types",
+    "type": "skill",
+    "source": "curated",
+    "version": "5.6.1",
+    "catalogRef": "v6.5.1",
+    "hash": "sha256-5bfd74d0b3fb973e35a6738eb2e4c7f4cad6fc555b9a4d9e71a3f2c648c4740b",
+    "installMode": "copied",
+    "paths": [
+      ".claude/skills/typescript-advanced-types"
+    ],
+    "originSourceId": "wshobson-agents",
+    "useMode": "copy",
+    "license": "MIT",
+    "riskLevel": "low",
+    "reviewStatus": "approved"
+  }
+]
