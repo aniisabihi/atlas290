@@ -42,15 +42,29 @@ yarn cards             # redraw the 290 preview cards (rarely; see below)
 yarn budget            # Lighthouse against the built site, with a budget
 ```
 
-`yarn build` also writes the 580 municipality pages. `yarn cards` redraws the preview images in
-`public/share/` and is deliberately **not** part of the build: text renders differently on macOS
-and Linux, so running it in CI would produce a diff on every run. The cards carry no figures, so a
-data refresh never invalidates them — run it when the design changes or a municipality is added.
+`yarn build` also writes the 580 municipality pages, the `_headers` file Cloudflare serves, and —
+when there is an origin to write them against — `sitemap.xml` and the `Sitemap:` line in
+robots.txt. `yarn cards` redraws the preview images in `public/share/` and is deliberately **not**
+part of the build: text renders differently on macOS and Linux, so running it in CI would produce
+a diff on every run. The cards carry no figures, so a data refresh never invalidates them — run it
+when the design changes or a municipality is added.
 
-**Link previews need an absolute origin.** `og:image` only resolves for a crawler when it is
-absolute. The deploy sets `SITE_ORIGIN=https://atlas290.pages.dev` for you; build locally without
-it and the tags stay root-relative, which is correct for the site and invisible to a crawler. The
-build says which it did on every run.
+**Link previews and the sitemap need an absolute origin.** `og:image` only resolves for a crawler
+when it is absolute, and the sitemap protocol will not accept a relative URL at all. The deploy
+sets `SITE_ORIGIN=https://atlas290.pages.dev` for you; build locally without it and the tags stay
+root-relative and no sitemap is written, which is correct for a local build. The build says which
+it did on every run.
+
+**The sitemap is the only way these pages are findable.** Every page the site serves is a shell
+that fills itself in with JavaScript, so a crawler that does not run scripts finds no links
+anywhere and nothing points at the 580 municipality pages. The preview cards make a _pasted_ link
+show the place; the sitemap is what makes an unpasted one exist at all.
+
+**The site ships a Content Security Policy**, generated into `dist/_headers` rather than committed,
+because it carries a hash of the root page's inline language-picker script. `yarn preview` serves
+the same file, so `yarn e2e` exercises the real policy in three engines — a policy that blocks the
+site's own bundle looks exactly like a correct one until something tries to load, and there is no
+staging environment here to find that out in.
 
 Accessibility, including what has _not_ been checked: [docs/accessibility.md](docs/accessibility.md).
 

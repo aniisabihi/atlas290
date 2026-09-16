@@ -3,5 +3,34 @@
   "plugins": ["typescript", "react", "import"],
   "categories": { "correctness": "error", "suspicious": "warn" },
   "ignorePatterns": ["dist", "public/pantry", "kitchen/raw", "node_modules"],
-  "rules": { "react/react-in-jsx-scope": "off" }
+  "rules": {
+    "react/react-in-jsx-scope": "off",
+    // `import './styles/app.css'` is how a stylesheet enters a Vite bundle; there is nothing to
+    // assign it to. Narrowed to CSS rather than turned off, so an unassigned import of a MODULE
+    // — which usually means a leftover — is still an error.
+    "import/no-unassigned-import": [
+      "error",
+      {
+        "allow": ["**/*.css"]
+      }
+    ]
+  },
+  // Both of these fire only in the browser suite, and both are wrong there rather than tolerated.
+  //
+  // `no-named-as-default`: @axe-core/playwright really does export AxeBuilder as its default, and
+  // `import AxeBuilder from '@axe-core/playwright'` is the form its own documentation uses. The
+  // rule sees the matching named export and assumes a mistake.
+  //
+  // `no-underscore-dangle`: `window.__frames` is a deliberate marker the morph spec writes from
+  // inside the page to collect animation frames. The dangle is the point — it says "not part of
+  // the application" to anyone reading it in a debugger.
+  "overrides": [
+    {
+      "files": ["e2e/**"],
+      "rules": {
+        "import/no-named-as-default": "off",
+        "eslint/no-underscore-dangle": "off"
+      }
+    }
+  ]
 }
