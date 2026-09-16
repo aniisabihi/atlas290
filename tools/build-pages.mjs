@@ -300,10 +300,14 @@ export function buildPages({ distDir = join(root, 'dist'), dataFile } = {}) {
   }
 
   // The policy is built from what the build actually produced, so it cannot describe a page that
-  // is no longer there. Every document is checked, not just the root: an inline script appearing
-  // anywhere else would otherwise be blocked in production and nowhere else.
+  // is no longer there. Every hand-written document is checked, not just the root: an inline
+  // script appearing anywhere else would otherwise be blocked in production and nowhere else.
+  //
+  // `404.html` is in the list although it currently has no script, and decision 0007 says it must
+  // never gain one. If it ever does, this covers it rather than letting the not-found page be the
+  // single document on the site that silently breaks under the policy.
   const hashes = new Set()
-  for (const file of ['index.html', 'sv/index.html', 'en/index.html']) {
+  for (const file of ['index.html', 'sv/index.html', 'en/index.html', '404.html']) {
     const full = join(distDir, file)
     if (!existsSync(full)) continue
     for (const hash of inlineScriptHashes(readFileSync(full, 'utf8'))) hashes.add(hash)

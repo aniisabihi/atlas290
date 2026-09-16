@@ -29,7 +29,11 @@ test.describe('the security headers', () => {
     // Requested rather than navigated to. `page.goto('/')` returns null in Firefox, because the
     // language picker replaces the location before the navigation settles and Playwright has no
     // response left to hand back — so the assertions would read headers off nothing.
-    for (const path of ['/', '/en/', '/sv/', '/en/malmo-1280/']) {
+    //
+    // The 404 is in the list on purpose: it is the one document served for every address that
+    // matches nothing, so it is the page most likely to be reached by someone following a hostile
+    // link, and the least likely to be checked.
+    for (const path of ['/', '/en/', '/sv/', '/en/malmo-1280/', '/en/atlantis-9999/']) {
       const response = await request.get(path)
       const headers = response.headers()
       expect(headers['x-content-type-options'], path).toBe('nosniff')
@@ -72,6 +76,16 @@ test.describe('the security headers', () => {
     // connect-src 'self'. Six files are fetched on load; a blocked one throws inside loadPantry
     // and the map never appears.
     await expect(page.getByRole('group', { name: /map of sweden/i })).toBeVisible()
+    expect(refused).toEqual([])
+  })
+
+  test('do not stop the not-found page rendering', async ({ page }) => {
+    // It is a hand-written document with an inline <style> and, by decision 0007, deliberately no
+    // script. Under style-src that stylesheet is allowed and under script-src there is nothing to
+    // allow — so this asserts the page a visitor actually sees, not just its status.
+    const refused = violations(page)
+    await page.goto('/en/atlantis-9999/')
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Page not found')
     expect(refused).toEqual([])
   })
 

@@ -1,4 +1,4 @@
-# 0007 — Response headers, and how these pages get found
+# 0008 — Response headers, and how these pages get found
 
 **Date:** 2026-09-16
 **Status:** accepted
@@ -9,12 +9,36 @@ A review of the repository after [decision 0006](0006-the-name.md) found three g
 root: the project had spent two plans making individual municipality pages _work_, and none making
 them _reachable_ or _defended_.
 
-- Nothing served a single security header. Cloudflare Pages reads a `_headers` file from the root
-  of the deployment and there was not one.
+- No `_headers` file existed, so the site served only whatever Cloudflare adds by itself.
 - There was no sitemap, and `robots.txt` did not name one.
 - A documented optimisation in `src/data/select.ts` — "built once per load" — was not holding.
 
 None of these was breaking anything visible, which is why none had been noticed.
+
+### Checked against production, not against the build
+
+[Decision 0007](0007-the-404-that-was-not.md) had just finished demonstrating what it costs to
+reason about Cloudflare from a local simulation, so the deployed site was asked directly on
+2026-09-16, before any of this was written:
+
+```
+GET /en/              referrer-policy: strict-origin-when-cross-origin
+                      x-content-type-options: nosniff
+GET /sitemap.xml      404
+GET /robots.txt       no Sitemap: line
+GET /en/atlantis-9999/  404          ← 0007's fix, confirmed live
+```
+
+**This corrected the review that prompted it.** "Nothing served a single security header" was
+wrong: Cloudflare Pages sets `x-content-type-options` and `referrer-policy` on its own. What was
+missing was everything else — no Content Security Policy, no `X-Frame-Options`, no
+`Cross-Origin-Opener-Policy`, no `Permissions-Policy`.
+
+It also means this change **overrides** a default rather than filling a hole: `no-referrer`
+replaces Cloudflare's `strict-origin-when-cross-origin`. That is deliberate and it is a choice,
+not a tightening for its own sake. The site has exactly one outbound link, carries no analytics,
+and says on its own front page that it does not track anyone; sending an origin to a third party
+buys nothing that the project wants.
 
 ## Decision 1 — a sitemap, because nothing else can find these pages
 
@@ -105,7 +129,12 @@ the files for Lighthouse to score it correctly, which was checked rather than as
 - **`_headers` and `sitemap.xml` are build output, not source.** Neither can be edited by hand,
   and `_headers` carries a generated comment saying so.
 - **A new inline script anywhere gets hashed automatically**, because the generator reads every
-  built entry page rather than the root alone.
+  hand-written document rather than the root alone. `404.html` is in that list although
+  [0007](0007-the-404-that-was-not.md) D2 says it must never gain a script: if it ever does, it is
+  covered, rather than being the single page on the site that silently breaks under the policy.
+- **`Referrer-Policy` is now `no-referrer`**, replacing the `strict-origin-when-cross-origin`
+  Cloudflare sets by default. Anyone adding an outbound integration that needs a referrer will
+  find it here rather than wondering why it is absent.
 - **The rank cache now survives a render.** `ranksFor` caches into a `WeakMap` keyed on the
   `Lookup` object, and `App` was rebuilding that object on every render — so the cache was thrown
   away every render and all 290 municipalities re-sorted each time. The fix is a `useMemo`; the

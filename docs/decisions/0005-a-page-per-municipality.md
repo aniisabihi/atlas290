@@ -102,6 +102,12 @@ browser reports — it quietly uses one, and a crawler may use the other.
 
 ### D6 — Dev and preview 404 exactly where production will
 
+> **Corrected on 2026-09-16 by [decision 0007](0007-the-404-that-was-not.md).** This was true of
+> `vite preview` and false of production: with no top-level `404.html`, Cloudflare Pages answered
+> 200 with the root page for every unmatched path. The test that asserted this passed because it
+> was checking a middleware written from the same assumption. The paragraph below is left as
+> written, because the record of having believed it is the useful part.
+
 Without this, `/en/malmo-1280/` would 404 under `yarn dev` and work once deployed, which is the
 worst way round. Both servers now answer the same way.
 

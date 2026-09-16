@@ -18,7 +18,7 @@ cartogram, time travel, search, profiles, comparison, a table twin and five deep
 both languages; and CI runs the unit tests, the browser tests across three engines, an
 accessibility scan and a performance budget on every pull request, with a monthly refresh job and
 a deploy gated behind all of it. That was 745 unit tests and 99 browser tests at the end of Plan
-5; the second slice has since taken it to 1,091 and 201, and a count written into prose goes
+5; the second slice has since taken it to 1,095 and 216, and a count written into prose goes
 stale the week after it is written, so it is not repeated anywhere else.
 
 Increments after the first slice (facts engine, animated morph, similar municipalities, profile prose, pre-rendered pages) each get their own plan and a decision record.
@@ -102,24 +102,25 @@ belongs to the plan that reaches it, and each gets a record in
 
 ## Not plans, but next
 
-Two things are open that no plan can close. A third — the name — was closed on 2026-09-15.
+**One thing is left.** The other two closed on 2026-09-15 and 2026-09-16.
 
 - ~~**The name.**~~ **Settled: Atlas 290**, in [decision 0006](../decisions/0006-the-name.md). It
   had been read as blocking a paid custom domain; it was not. Cloudflare Pages serves the project
   at `<project-name>.pages.dev`, which is free and absolute, so the name alone unblocks the link
-  previews. The deploy now builds against `https://atlas290.pages.dev`.
-- **The deploy.** The site is built, tested and gated but has nowhere to go. It needs a Cloudflare
-  account and an API token, which only the repository owner can create —
-  [README.md](../../README.md) has the steps and the minimum permission. Until then the deploy
-  job skips with a note. **It is now the only thing between the project and a live site**, and the
-  Pages project must be created under the name `atlas290` or the previews will not render.
+  previews. The deploy builds against `https://atlas290.pages.dev`.
+- ~~**The deploy.**~~ **Live** at <https://atlas290.pages.dev>, deployed by Actions behind the
+  full gate. The first deploy immediately earned its keep by exposing something no test could
+  have caught: every unmatched path answered 200 with the root page, because Cloudflare Pages
+  treats a site with no top-level `404.html` as a single-page application.
+  [Decision 0007](../decisions/0007-the-404-that-was-not.md) records the fix and, more usefully,
+  why the passing test was checking our own simulation of Cloudflare rather than Cloudflare.
 - **A screen-reader pass.** [docs/accessibility.md](../accessibility.md) records that none has
   happened, and why: the agent that built this cannot run VoiceOver, NVDA or JAWS, and nothing was
   substituted for it. It is the largest quality gap in the project, and it is concentrated in the
   three constructs where the accessibility tree looks right and the experience often is not — the
   search combobox, the roving tabindex across 290 shapes, and the debounced live region.
 
-One small item is queued behind those: the map is the last tab stop, so a keyboard visitor passes
+One small item is queued behind it: the map is the last tab stop, so a keyboard visitor passes
 ten controls to reach it (the skip link works, but the source order belongs with a layout change
 rather than a release). The `hreflang` item that stood beside it is closed — the generated
 municipality pages take their absolute URLs from `SITE_ORIGIN`, which the deploy now sets.
