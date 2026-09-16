@@ -99,8 +99,12 @@ describe('the token palette', () => {
   it.each(THEMES)('keeps the two comparison series apart in %s', (_name, theme) => {
     // They are also distinguished by dash pattern, but they must not be the same colour.
     expect(theme['series-a']).not.toBe(theme['series-b'])
-    expect(contrast(theme['series-a']!, theme.surface!)).toBeGreaterThanOrEqual(3)
-    expect(contrast(theme['series-b']!, theme.surface!)).toBeGreaterThanOrEqual(3)
+    // 4.5, not the 3:1 a line would need: these colours also set the column headers naming each
+    // municipality, and axe caught the orange at 4.15 against the page.
+    for (const key of ['series-a', 'series-b'] as const) {
+      expect(contrast(theme[key]!, theme.bg!), key).toBeGreaterThanOrEqual(4.5)
+      expect(contrast(theme[key]!, theme.surface!), key).toBeGreaterThanOrEqual(4.5)
+    }
   })
 
   it.each(THEMES)('has a focus ring whose two tones are far apart in %s', (_name, theme) => {
@@ -117,6 +121,14 @@ describe('the token palette', () => {
     expect(light['map-ground']).toBe('#ffffff')
     expect(darkSystem['map-ground']).toBeUndefined()
     expect(darkChosen['map-ground']).toBeUndefined()
+  })
+
+  it('keeps text on the plate readable in both themes', () => {
+    // The plate is white whatever the theme, so its text cannot follow the theme either. A dark
+    // theme's muted grey on white is about 2.2:1 — this is the bug that catches.
+    expect(darkSystem['on-plate'], '--on-plate must not change with the theme').toBeUndefined()
+    expect(darkChosen['on-plate']).toBeUndefined()
+    expect(contrast(light['on-plate']!, light['map-ground']!)).toBeGreaterThanOrEqual(4.5)
   })
 
   it('names the three faces, each with a real fallback stack', () => {

@@ -24,6 +24,7 @@ import { SimilarPlaces } from './SimilarPlaces'
 import { NoDataPatterns } from './NoDataPatterns'
 import { Notices } from './Notices'
 import { SearchBox } from './SearchBox'
+import { ThemeToggle } from './ThemeToggle'
 import { YearSlider } from './YearSlider'
 
 /**
@@ -94,7 +95,12 @@ export function App({
     <div className="page">
       <NoDataPatterns />
 
-      <header className="page-header">
+      {/*
+       * One bar carrying the site's name and everything that drives it. Before this, the controls
+       * lived in a left-hand column that read as a settings form and meant a keyboard visitor
+       * passed ten of them before reaching the map. Plan 10, D5 and D6.
+       */}
+      <header className="bar">
         {/*
          * Inside the header so that no content sits outside a landmark, and pointing at #view
          * rather than #map because #map does not exist in the table view — where the skip link
@@ -104,19 +110,87 @@ export function App({
         <a className="skip-link" href="#view">
           {state.table ? strings.skipToTable : strings.skipToMap}
         </a>
-        <div>
-          <h1>{strings.siteName}</h1>
-          <p className="tagline">{strings.tagline}</p>
+
+        <h1 className="wordmark">{strings.siteName}</h1>
+
+        <IndicatorPicker
+          lk={lk}
+          selected={state.indicator}
+          lang={state.lang}
+          onChange={(chosen) => {
+            interrupt()
+            setNotice('')
+            // The year is deliberately kept. If the new indicator does not cover it, EmptyYear
+            // explains and offers a jump; moving the year silently would hide the fact that
+            // the ten indicators do not cover the same span.
+            update({ indicator: chosen })
+          }}
+        />
+
+        <SearchBox
+          municipalities={data.municipalities}
+          lang={state.lang}
+          onSelect={(code) => {
+            interrupt()
+            setNotice('')
+            update({ selected: code })
+          }}
+        />
+
+        <div className="view-switch" role="group" aria-label={strings.viewGroup}>
+          <button
+            type="button"
+            aria-pressed={!state.table && view === 'map'}
+            onClick={() => {
+              interrupt()
+              update({ view: 'map', table: false })
+            }}
+          >
+            {strings.showMap}
+          </button>
+          <button
+            type="button"
+            aria-pressed={!state.table && view === 'cartogram'}
+            onClick={() => {
+              interrupt()
+              update({ view: 'cartogram', table: false })
+            }}
+          >
+            {strings.showCartogram}
+          </button>
+          <button
+            type="button"
+            aria-pressed={state.table}
+            onClick={() => {
+              interrupt()
+              update({ table: !state.table })
+            }}
+          >
+            {strings.tableToggle}
+          </button>
         </div>
-        <LanguageSwitch state={state} meta={meta} />
+
+        <div className="bar-end">
+          <ThemeToggle lang={state.lang} />
+          <LanguageSwitch state={state} meta={meta} />
+        </div>
       </header>
 
       <main id="content">
         <div className="layout">
-          <div className="controls">
-            <div className="panel">
-              <SearchBox
-                municipalities={data.municipalities}
+          {/*
+           * The map comes FIRST in the main region, which is the whole point of moving the
+           * controls into the bar: it used to be the last tab stop on the page. The grid below
+           * places the reading column to its left, so what a visitor sees is unchanged and what
+           * a keyboard reaches first is the thing they came for.
+           */}
+          <div id="view" tabIndex={-1} className="view-column">
+            {state.table ? (
+              <DataTable
+                lk={lk}
+                indicatorId={state.indicator}
+                year={state.year}
+                selected={state.selected}
                 lang={state.lang}
                 onSelect={(code) => {
                   interrupt()
@@ -124,23 +198,54 @@ export function App({
                   update({ selected: code })
                 }}
               />
-            </div>
+            ) : (
+              <figure className="map-frame" id="map">
+                <MapCanvas
+                  ref={mapRef}
+                  lk={lk}
+                  topology={topology}
+                  adjacency={adjacency}
+                  bubbles={bubbles}
+                  view={view}
+                  indicatorId={state.indicator}
+                  year={state.year}
+                  selected={state.selected}
+                  lang={state.lang}
+                  animate={!reducedMotion}
+                  onNoMove={() => setNotice(strings.noNeighbour)}
+                  onMoved={() => setNotice('')}
+                  onSelect={(code) => {
+                    interrupt()
+                    setNotice('')
+                    update({ selected: code === state.selected ? null : code })
+                  }}
+                />
+                <figcaption id="map-hint">{strings.mapHint}</figcaption>
+              </figure>
+            )}
+          </div>
 
-            <IndicatorPicker
-              lk={lk}
-              selected={state.indicator}
-              lang={state.lang}
-              onChange={(chosen) => {
-                interrupt()
-                setNotice('')
-                // The year is deliberately kept. If the new indicator does not cover it, EmptyYear
-                // explains and offers a jump; moving the year silently would hide the fact that
-                // the ten indicators do not cover the same span.
-                update({ indicator: chosen })
-              }}
-            />
+          <div className="reading-column">
+            <p className="kicker">
+              {lk.indicator(state.indicator).name[state.lang]} · {meta.years.min}–{meta.years.max}
+            </p>
+            <p className="tagline">{strings.tagline}</p>
 
-            <div className="panel year-slider-panel">
+            {!covered && (
+              <EmptyYear
+                lk={lk}
+                indicatorId={state.indicator}
+                year={state.year}
+                lang={state.lang}
+                onYear={(year) => {
+                  interrupt()
+                  setNotice('')
+                  update({ year })
+                }}
+              />
+            )}
+
+            <div className="instrument">
               <YearSlider
                 lk={lk}
                 meta={meta}
@@ -156,107 +261,9 @@ export function App({
               />
             </div>
 
-            <div className="panel">
-              <Legend lk={lk} indicatorId={state.indicator} year={state.year} lang={state.lang} />
-            </div>
+            <Legend lk={lk} indicatorId={state.indicator} year={state.year} lang={state.lang} />
 
-            <div className="panel">
-              <AboutIndicator lk={lk} indicatorId={state.indicator} lang={state.lang} />
-            </div>
-          </div>
-
-          <div className="map-column">
-            <p id="map-hint" className="tagline">
-              {strings.mapHint}
-            </p>
-            {!covered && (
-              <EmptyYear
-                lk={lk}
-                indicatorId={state.indicator}
-                year={state.year}
-                lang={state.lang}
-                onYear={(year) => {
-                  interrupt()
-                  setNotice('')
-                  update({ year })
-                }}
-              />
-            )}
-            <div className="view-switch">
-              <button
-                type="button"
-                aria-pressed={state.table}
-                onClick={() => {
-                  interrupt()
-                  update({ table: !state.table })
-                }}
-              >
-                {state.table ? strings.hideTable : strings.showTable}
-              </button>
-            </div>
-
-            <div className="view-switch">
-              <button
-                type="button"
-                aria-pressed={view === 'map'}
-                onClick={() => {
-                  interrupt()
-                  update({ view: 'map' })
-                }}
-              >
-                {strings.showMap}
-              </button>
-              <button
-                type="button"
-                aria-pressed={view === 'cartogram'}
-                onClick={() => {
-                  interrupt()
-                  update({ view: 'cartogram' })
-                }}
-              >
-                {strings.showCartogram}
-              </button>
-            </div>
-
-            <div id="view" tabIndex={-1}>
-              {state.table ? (
-                <DataTable
-                  lk={lk}
-                  indicatorId={state.indicator}
-                  year={state.year}
-                  selected={state.selected}
-                  lang={state.lang}
-                  onSelect={(code) => {
-                    interrupt()
-                    setNotice('')
-                    update({ selected: code })
-                  }}
-                />
-              ) : (
-                <div className="map-frame" id="map">
-                  <MapCanvas
-                    ref={mapRef}
-                    lk={lk}
-                    topology={topology}
-                    adjacency={adjacency}
-                    bubbles={bubbles}
-                    view={view}
-                    indicatorId={state.indicator}
-                    year={state.year}
-                    selected={state.selected}
-                    lang={state.lang}
-                    animate={!reducedMotion}
-                    onNoMove={() => setNotice(strings.noNeighbour)}
-                    onMoved={() => setNotice('')}
-                    onSelect={(code) => {
-                      interrupt()
-                      setNotice('')
-                      update({ selected: code === state.selected ? null : code })
-                    }}
-                  />
-                </div>
-              )}
-            </div>
+            <AboutIndicator lk={lk} indicatorId={state.indicator} lang={state.lang} />
           </div>
         </div>
 

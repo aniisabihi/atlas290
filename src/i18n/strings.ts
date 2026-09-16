@@ -24,6 +24,21 @@ const sv = {
   switchLanguage: 'English — byt språk till engelska',
 
   // The label says what pressing it DOES, not what the page currently is.
+  viewGroup: 'Vy',
+  tableToggle: 'Tabell',
+  // Said out loud, not merely left undone: refusing to rank was a decision, and a design that
+  // only omits the arrows looks like one that forgot them.
+  noWinner:
+    'Ingen dom fälls här, och ingen kommer att fällas. Om en lägre skattesats passar dig framför en högre, eller en yngre befolkning framför en äldre, beror på vad du är ute efter. Båda siffrorna visas; bedömningen är din.',
+  bothOverTime: 'Båda, över tid',
+
+  // What each fact family looks for. Shown above the sentence it produced, because the five
+  // facts are not a sequence and numbering them would be decoration pretending to be structure.
+  familyCountry: 'hela landet',
+  familyRun: 'en obruten serie',
+  familyReversal: 'en vändning',
+  familyUnusual: 'mot sina likar',
+  familyExtreme: 'ytterkanterna',
   themeToDark: 'Mörkt',
   themeToLight: 'Ljust',
   switchToDark: 'Byt till mörkt utseende',
@@ -124,6 +139,17 @@ const en: Strings = {
   otherLanguage: 'Svenska',
   switchLanguage: 'Svenska — switch language to Swedish',
 
+  viewGroup: 'View',
+  tableToggle: 'Table',
+  noWinner:
+    'No verdict is offered here, and none will be. Whether a lower tax rate suits you more than a higher one, or a younger population more than an older one, depends on what you are for. Both figures are shown; the judgement is yours.',
+  bothOverTime: 'Both, over time',
+
+  familyCountry: 'the whole country',
+  familyRun: 'an unbroken run',
+  familyReversal: 'a turn',
+  familyUnusual: 'against its peers',
+  familyExtreme: 'the far ends',
   themeToDark: 'Dark',
   themeToLight: 'Light',
   switchToDark: 'Switch to the dark theme',

@@ -2,6 +2,21 @@ import type { Facts } from '../../shared/pantry'
 import { factsFrom } from '../facts/facts'
 import { t } from '../i18n/strings'
 import type { Lang } from '../state/url'
+import type { Strings } from '../i18n/strings'
+
+/**
+ * Each family gets its own label rather than a number. The five facts are not a sequence — there
+ * is deliberately no score ranking them against each other (decision 0003) — so `01 02 03` would
+ * be structure the content does not have. The family is true information, and it says out loud
+ * that something went looking.
+ */
+const FAMILY_LABEL: Record<string, keyof Strings> = {
+  country: 'familyCountry',
+  run: 'familyRun',
+  reversal: 'familyReversal',
+  unusual: 'familyUnusual',
+  extreme: 'familyExtreme',
+}
 
 /**
  * Five things nobody thought to ask, each one link away from the view that proves it.
@@ -21,6 +36,9 @@ export function FactsStrip({ lang, facts }: { lang: Lang; facts: Facts }) {
       <ul>
         {factsFrom(facts).map((fact) => (
           <li key={fact.id}>
+            {FAMILY_LABEL[fact.family] && (
+              <p className="fact-family">{t(lang)[FAMILY_LABEL[fact.family]!] as string}</p>
+            )}
             <a href={`/${lang}${fact.href}`}>{fact.text[lang]}</a>
           </li>
         ))}

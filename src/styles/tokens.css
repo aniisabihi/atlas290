@@ -55,7 +55,7 @@
      collapse, and it is already the project's diverging palette. Lines are dashed as well as
      coloured, so the distinction never rests on hue alone. */
   --series-a: #08519c;
-  --series-b: #b35806;
+  --series-b: #9a4c05;
   --series-fill: rgba(8, 81, 156, 0.13);
 
   /* The two-tone ring from src/map/colour.ts, so CSS and SVG cannot drift apart. */
@@ -63,6 +63,10 @@
   --focus-halo: #ffffff;
 
   --map-ground: #ffffff;
+  /* Text that sits ON the plate. The plate is white in both themes, so this cannot follow the
+     theme — a dark theme's muted grey on white is about 2.2:1. Declared once, overridden never,
+     exactly like --map-ground, and tokens.test.ts asserts it. */
+  --on-plate: #545f6a;
   --plate-shadow: 0 1px 1px rgba(17, 26, 34, 0.05), 0 18px 40px -26px rgba(17, 26, 34, 0.45);
 
   /* Faces. Self-hosted and subset; see src/styles/fonts.css. */
