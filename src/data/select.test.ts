@@ -145,6 +145,15 @@ describe('ranks', () => {
     expect(Math.max(...byRank)).toBeLessThanOrEqual(ranks.size)
     expect(new Set(byRank).size).toBeLessThan(byRank.length)
   })
+
+  it('caches per Lookup, which is why the Lookup has to outlive a render', () => {
+    // The cache is a WeakMap keyed on the Lookup OBJECT. That makes whoever builds the Lookup
+    // responsible for the cache surviving: `App` memoises it on the pantry, and when it did not,
+    // every render silently re-sorted all 290 municipalities. Asserted here rather than left as
+    // a comment, because the coupling is invisible from either file on its own.
+    expect(ranksFor(lk, 'population', 2024)).toBe(ranksFor(lk, 'population', 2024))
+    expect(ranksFor(lookup(data), 'population', 2024)).not.toBe(ranksFor(lk, 'population', 2024))
+  })
 })
 
 describe('coverage', () => {

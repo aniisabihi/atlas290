@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MunicipalityTopology } from '../../shared/geometry'
 import type { Adjacency, Bubbles, Facts, PantryData, Similar } from '../../shared/pantry'
 import { lookup, observationSentence } from '../data/select'
@@ -49,8 +49,13 @@ export function App({
   similar: Similar
   facts: Facts
 }) {
-  const meta = metaFrom(data)
-  const lk = lookup(data)
+  // Memoised on the pantry, which never changes after load, because `lookup` promises in its own
+  // docstring to be "built once per load" and rebuilding it here was quietly breaking that. The
+  // cost of the rebuild itself is small; the cost that mattered is that `ranksFor` caches into a
+  // WeakMap keyed on the Lookup OBJECT, so a fresh one every render threw the rank cache away
+  // every render and re-sorted all 290 municipalities each time.
+  const meta = useMemo(() => metaFrom(data), [data])
+  const lk = useMemo(() => lookup(data), [data])
   const [state, update] = useAppState(meta)
   const strings = t(state.lang)
   const [playing, setPlaying] = useState(false)
