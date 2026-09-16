@@ -27,6 +27,16 @@
         font-size: 1.25rem;
       }
     </style>
+    <script>
+      // Applies a stored theme choice BEFORE the first paint, so a visitor who chose dark never
+      // sees a white flash on the way in. Deliberately inline and tiny: a separate file would be
+      // one more request in front of the paint it exists to protect. The key matches THEME_KEY in
+      // src/state/theme.ts, and a test asserts the two never drift apart.
+      try {
+        var t = localStorage.getItem('atlas-theme')
+        if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t)
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <p>Välj språk · Choose a language</p>

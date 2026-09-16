@@ -1,54 +1,142 @@
 /*
- * Every colour, space and duration the page uses, in one place.
+ * Every colour, space, face and duration the page uses, in one place.
  *
- * Dark mode is a token swap rather than a second stylesheet, and reduced motion sets the one
- * duration every transition reads — so neither can be half-applied by forgetting a rule.
+ * THREE STATES, NOT TWO. A visitor is in one of three situations, and each needs its own block:
  *
- * The MAP keeps a light ground in both themes, deliberately. The sequential ramp is calibrated
- * against white, and `src/map/colour.ts` guarantees that every no-data pattern is at least as
- * light as the lightest class so an absence can never be misread as a low value. Re-tinting the
- * map for dark mode would break that guarantee and the contrast arithmetic behind the focus ring
- * with it. So the chrome goes dark and the map stays a light card inside it.
+ *   1. No choice made, no system preference — the bare `:root` block. **Light is the standard.**
+ *   2. No choice made, system asks for dark — the media query, guarded with
+ *      `:not([data-theme='light'])` so somebody who explicitly wants light on a dark system gets it.
+ *   3. A choice made — `[data-theme]`, which wins over the system in BOTH directions.
+ *
+ * Every token is declared in the bare block before anything redefines it. A colour whose only
+ * definition sits inside a media query simply does not exist in state 1, and the page renders one
+ * theme's text on the other theme's ground — which is the classic unreadable-page bug, and
+ * `tokens.test.ts` makes it impossible rather than something to notice by eye.
+ *
+ * The MAP keeps a white ground in both themes, deliberately. The sequential ramp is calibrated
+ * against white — its lightest class is #f7fbff — and `src/map/colour.ts` guarantees that every
+ * no-data pattern is at least as light as that class, so an absence can never be misread as a low
+ * value. Re-tinting the map for dark mode would break that guarantee and the contrast arithmetic
+ * behind the focus ring with it.
+ *
+ * That constraint decides the rest of the palette. A white plate on a white page is a hole; on a
+ * cool grey page it is a printed sheet on a desk, and on a near-black one it is a print under a
+ * lamp. The page ground is therefore never white, in either theme.
+ *
+ * TWO TEXT TIERS, NOT THREE. Everything on this site that is text is held to WCAG 1.4.3's 4.5:1,
+ * captions and tick labels included. Three greys that all clear 4.5:1 against the same ground are
+ * three greys that look alike, so hierarchy below `--text-muted` is carried by size and spacing
+ * instead of by a third colour.
  */
 
 :root {
   color-scheme: light;
 
-  --bg: #f7f7f5;
+  /* Ground and surfaces */
+  --bg: #edeff2;
   --surface: #ffffff;
-  --text: #16181a;
-  --text-muted: #55585c;
-  --border: #cfd0cd;
-  --accent: #17568f;
+  --bar: rgba(237, 239, 242, 0.88);
+
+  /* Text */
+  --text: #111a22;
+  --text-muted: #545f6a;
+
+  /* Lines. `--border` separates; `--rule` is the heavy editorial rule that leads a section. */
+  --border: #c9cfd6;
+  --rule: #111a22;
+
+  /* Accent: the darkest step of the map's own ColorBrewer ramp, so the page and the data are
+     one colour system rather than two that happen to sit together. */
+  --accent: #08519c;
   --accent-text: #ffffff;
+  --accent-quiet: #e3ecf6;
+
+  /* Comparison. Blue against orange is the one pair the two commonest colour deficiencies do not
+     collapse, and it is already the project's diverging palette. Lines are dashed as well as
+     coloured, so the distinction never rests on hue alone. */
+  --series-a: #08519c;
+  --series-b: #9a4c05;
+  --series-fill: rgba(8, 81, 156, 0.13);
 
   /* The two-tone ring from src/map/colour.ts, so CSS and SVG cannot drift apart. */
   --focus-core: #111111;
   --focus-halo: #ffffff;
 
   --map-ground: #ffffff;
+  /* Text that sits ON the plate. The plate is white in both themes, so this cannot follow the
+     theme — a dark theme's muted grey on white is about 2.2:1. Declared once, overridden never,
+     exactly like --map-ground, and tokens.test.ts asserts it. */
+  --on-plate: #545f6a;
+  --plate-shadow: 0 1px 1px rgba(17, 26, 34, 0.05), 0 18px 40px -26px rgba(17, 26, 34, 0.45);
+
+  /* Faces. Self-hosted and subset; see src/styles/fonts.css. */
+  --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
   --space: 1rem;
-  --radius: 6px;
+  --radius: 2px;
   --measure: 38rem;
   --motion: 250ms;
 }
 
+/* State 2: the system asks for dark and the visitor has not said otherwise. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     color-scheme: dark;
 
-    --bg: #15171a;
-    --surface: #1e2126;
-    --text: #f1f2f4;
-    --text-muted: #b9bfc7;
-    --border: #3a3f47;
-    --accent: #8ab8e8;
+    --bg: #0f141a;
+    --surface: #171e26;
+    --bar: rgba(15, 20, 26, 0.86);
+
+    --text: #e9eef4;
+    --text-muted: #9fabb8;
+
+    --border: #262f3a;
+    --rule: #e9eef4;
+
+    --accent: #7fb5e4;
     --accent-text: #0c0e11;
+    --accent-quiet: #17222e;
+
+    --series-a: #7fb5e4;
+    --series-b: #e08214;
+    --series-fill: rgba(127, 181, 228, 0.16);
 
     --focus-core: #ffffff;
     --focus-halo: #111111;
+
+    --plate-shadow: 0 0 0 1px rgba(233, 238, 244, 0.08), 0 26px 60px -30px rgba(0, 0, 0, 0.9);
   }
+}
+
+/* State 3: the visitor chose. Identical values to the block above — `tokens.test.ts` asserts
+   they never drift apart, because two copies of a palette is two palettes waiting to diverge. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #0f141a;
+  --surface: #171e26;
+  --bar: rgba(15, 20, 26, 0.86);
+
+  --text: #e9eef4;
+  --text-muted: #9fabb8;
+
+  --border: #262f3a;
+  --rule: #e9eef4;
+
+  --accent: #7fb5e4;
+  --accent-text: #0c0e11;
+  --accent-quiet: #17222e;
+
+  --series-a: #7fb5e4;
+  --series-b: #e08214;
+  --series-fill: rgba(127, 181, 228, 0.16);
+
+  --focus-core: #ffffff;
+  --focus-halo: #111111;
+
+  --plate-shadow: 0 0 0 1px rgba(233, 238, 244, 0.08), 0 26px 60px -30px rgba(0, 0, 0, 0.9);
 }
 
 /* One duration, read by every transition on the page, so reduced motion is never half-applied. */

@@ -258,17 +258,33 @@ describe('robotsFor', () => {
 })
 
 describe('the Content Security Policy', () => {
-  /** The real root page, which is the one document on the site with an inline script. */
+  /**
+   * The real root page. It ships TWO inline scripts since Plan 10: the theme applied before the
+   * first paint, and the language picker's redirect. Every hand-written document is scanned for
+   * exactly this reason — a script added to one of them would otherwise be blocked in production
+   * and nowhere else.
+   */
   const rootEntry = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
+  const langEntry = readFileSync(new URL('../en/index.html', import.meta.url), 'utf8')
 
-  it('finds the inline script the language picker ships', () => {
+  it('finds both inline scripts the root page ships', () => {
     const hashes = inlineScriptHashes(rootEntry)
-    expect(hashes).toHaveLength(1)
-    expect(hashes[0]).toMatch(/^sha256-[A-Za-z0-9+/]+=*$/)
+    expect(hashes).toHaveLength(2)
+    for (const hash of hashes) expect(hash).toMatch(/^sha256-[A-Za-z0-9+/]+=*$/)
+    // Two different scripts must not hash alike, or one of them is not really covered.
+    expect(new Set(hashes).size).toBe(2)
+  })
+
+  it('finds the theme script on a language page too', () => {
+    // These carry the pre-paint theme script but no redirect. Missing it would mean a visitor
+    // who chose dark gets a white flash in production and nowhere else.
+    expect(inlineScriptHashes(langEntry)).toHaveLength(1)
   })
 
   it('ignores a script that has a src, which needs no hash', () => {
-    expect(inlineScriptHashes(entry)).toHaveLength(0)
+    expect(inlineScriptHashes('<script type="module" src="/src/main.tsx"></script>')).toHaveLength(
+      0,
+    )
     expect(entry).toContain('<script type="module"')
   })
 

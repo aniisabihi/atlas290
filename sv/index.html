@@ -15,6 +15,16 @@
     <link rel="alternate" hreflang="sv" href="/sv/" vite-ignore />
     <link rel="alternate" hreflang="en" href="/en/" vite-ignore />
     <link rel="alternate" hreflang="x-default" href="/" vite-ignore />
+    <script>
+      // Applies a stored theme choice BEFORE the first paint, so a visitor who chose dark never
+      // sees a white flash on the way in. Deliberately inline and tiny: a separate file would be
+      // one more request in front of the paint it exists to protect. The key matches THEME_KEY in
+      // src/state/theme.ts, and a test asserts the two never drift apart.
+      try {
+        var t = localStorage.getItem('atlas-theme')
+        if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t)
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

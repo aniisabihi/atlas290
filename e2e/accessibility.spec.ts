@@ -40,10 +40,54 @@ const STATES: Array<[name: string, url: string]> = [
   ['the Swedish page', '/sv/?y=2024&m=1280&v=map'],
 ]
 
+/**
+ * Both themes, every state. Until Plan 10 this ran in one theme only, which is half a scan: the
+ * palettes are different colours on different grounds, and contrast is the rule axe catches most
+ * of. The dark run is what found the compare header at 4.15:1.
+ */
+const THEMES = ['light', 'dark'] as const
+
 for (const [name, url] of STATES) {
+  for (const theme of THEMES) {
+    test(`no accessibility violations in ${theme}: ${name}`, async ({ page }) => {
+      // An axe analysis is CPU-bound, and running every state in two themes doubled how many of
+      // them compete for the same cores. The default 30 s was comfortable for one theme and
+      // marginal for two — this is the work being slow, not the page.
+      test.slow()
+      await page.addInitScript((t) => {
+        try {
+          localStorage.setItem('atlas-theme', t)
+        } catch {
+          // A browser without storage still renders the default theme, which is worth scanning.
+        }
+      }, theme)
+      await page.goto(url)
+      await ready(page)
+
+      /*
+       * Light scans everything; dark scans colour only.
+       *
+       * The two themes render identical DOM — same roles, same names, same structure — so every
+       * rule but contrast must reach the same verdict on both, and running them twice costs CI
+       * time to re-derive an answer it already has. Contrast is the one that genuinely differs,
+       * and it is the one that has earned this: it caught the compare header at 4.15:1, and the
+       * Close buttons that inherited the platform's own colours.
+       */
+      const results = await (
+        theme === 'dark' ? new AxeBuilder({ page }).withRules(['color-contrast']) : scan(page)
+      ).analyze()
+      const summary = results.violations.map(
+        (v) =>
+          `${v.id} (${v.impact}): ${v.help} — ${v.nodes.length} node(s): ${v.nodes[0]?.target.join(' ')}`,
+      )
+      expect(summary, `axe found violations on ${name} in ${theme}`).toEqual([])
+    })
+  }
+}
+
+for (const [name, url] of [['the not-found page', '/en/nowhere/']] as const) {
   test(`no accessibility violations: ${name}`, async ({ page }) => {
     await page.goto(url)
-    await ready(page)
 
     const results = await scan(page).analyze()
 

@@ -320,13 +320,20 @@ export function buildPages({ distDir = join(root, 'dist'), dataFile } = {}) {
   const robots = join(distDir, 'robots.txt')
   if (existsSync(robots)) writeFileSync(robots, robotsFor(readFileSync(robots, 'utf8')))
 
-  return { written, sitemapUrls: sitemap ? (sitemap.match(/<loc>/g) ?? []).length : 0 }
+  return {
+    written,
+    inlineScripts: hashes.size,
+    sitemapUrls: sitemap ? (sitemap.match(/<loc>/g) ?? []).length : 0,
+  }
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const { written, sitemapUrls } = buildPages()
+  const { written, inlineScripts, sitemapUrls } = buildPages()
   console.log(`${written.length} municipality pages written`)
-  console.log('  _headers written, with a policy covering the inline script the root page ships')
+  console.log(
+    `  _headers written, with a policy covering the ${inlineScripts} inline scripts the ` +
+      `hand-written pages ship`,
+  )
   if (origin()) {
     console.log(`  preview tags absolute against ${origin()}`)
     console.log(`  sitemap.xml written, ${sitemapUrls} URLs, and named in robots.txt`)

@@ -55,7 +55,8 @@ describe('ComparePanel with a partner', () => {
   it('is a real table with row and column headers', () => {
     draw('1280')
     const table = screen.getByRole('table')
-    expect(within(table).getAllByRole('columnheader')).toHaveLength(3)
+    // Measure, each municipality, and the shared trend frame the two lines are drawn in.
+    expect(within(table).getAllByRole('columnheader')).toHaveLength(4)
     expect(within(table).getAllByRole('rowheader')).toHaveLength(10)
   })
 

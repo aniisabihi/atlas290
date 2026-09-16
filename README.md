@@ -39,8 +39,13 @@ yarn build       # production build into dist/
 yarn kitchen publish   # rebuild the pantry from frozen SCB responses, offline
 yarn e2e               # browser tests in Chromium, Firefox and WebKit
 yarn cards             # redraw the 290 preview cards (rarely; see below)
+yarn fonts             # re-subset the typefaces (rarely; only if the design or data changes)
 yarn budget            # Lighthouse against the built site, with a budget
 ```
+
+The site is light by default, carries a designed dark theme, and a control in the bar lets a
+visitor choose either — beating their operating system in both directions. The typefaces are
+self-hosted and subset (`public/fonts/`), so no request leaves this origin.
 
 `yarn build` also writes the 580 municipality pages, the `_headers` file Cloudflare serves, and —
 when there is an origin to write them against — `sitemap.xml` and the `Sitemap:` line in

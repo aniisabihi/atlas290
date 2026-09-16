@@ -2,6 +2,7 @@ import { compareOf, summarise } from '../data/compare'
 import type { Lookup } from '../data/select'
 import { formatWithUnit, statusPhrase } from '../i18n/format'
 import { t } from '../i18n/strings'
+import { Sparkline } from './Sparkline'
 import type { Lang } from '../state/url'
 import { SearchBox } from './SearchBox'
 
@@ -61,6 +62,8 @@ export function ComparePanel({
         {summary.notComparable > 0 && <> · {strings.notComparable(summary.notComparable)}</>}
       </p>
 
+      <p className="no-winner">{strings.noWinner}</p>
+
       {/* A table may scroll in its own box; the page may not. WCAG 2.2 SC 1.4.10. */}
       <div className="table-scroll">
         <table className="compare-table">
@@ -76,6 +79,7 @@ export function ComparePanel({
               <th scope="col">{strings.indicatorLegend}</th>
               <th scope="col">{nameOf(selected)}</th>
               <th scope="col">{nameOf(compare)}</th>
+              <th scope="col">{strings.bothOverTime}</th>
             </tr>
           </thead>
           <tbody>
@@ -101,6 +105,15 @@ export function ComparePanel({
                         lang,
                       )
                     : formatWithUnit(row.b, row.indicator, lang)}
+                </td>
+                <td className="compare-trend">
+                  <Sparkline
+                    lk={lk}
+                    indicatorId={row.indicator.id}
+                    code={selected}
+                    compare={compare}
+                    year={year}
+                  />
                 </td>
               </tr>
             ))}
