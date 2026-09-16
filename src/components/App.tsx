@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MunicipalityTopology } from '../../shared/geometry'
 import type { Adjacency, Bubbles, Facts, PantryData, Similar } from '../../shared/pantry'
-import { lookup, observationSentence } from '../data/select'
+import { classOf, lookup, observationAt, observationSentence } from '../data/select'
 import { t } from '../i18n/strings'
 import { titleFor } from '../state/title'
 import { metaFrom } from '../state/url'
@@ -15,7 +15,7 @@ import { LanguageSwitch } from './LanguageSwitch'
 import { Legend } from './Legend'
 import { LiveRegion } from './LiveRegion'
 import { MapCanvas, type MapHandle } from './MapCanvas'
-import { ComparePanel } from './ComparePanel'
+import { ComparePanel, CompareSearch } from './ComparePanel'
 import { DataTable } from './DataTable'
 import { FactsStrip } from './FactsStrip'
 import { ProfilePanel } from './ProfilePanel'
@@ -60,9 +60,28 @@ export function App({
   const [state, update] = useAppState(meta)
   const strings = t(state.lang)
   const [playing, setPlaying] = useState(false)
+  /**
+   * The municipality the page is currently pointing at — from a shape under the pointer, a
+   * neighbour chip, or a fact that names one.
+   *
+   * **Deliberately not in the URL**, which is otherwise this application's whole memory. A
+   * highlight is where the pointer happens to be for as long as it happens to be there; writing
+   * it down would put a history entry behind every mouse movement and make a shared link carry
+   * something nobody chose. Playback and morph progress are out for the same reason, and
+   * DESIGN section 3 names all three.
+   */
+  const [highlight, setHighlight] = useState<string | null>(null)
   const reducedMotion = useReducedMotion()
   const indicator = lk.indicator(state.indicator)
   const covered = state.year >= indicator.coverage.from && state.year <= indicator.coverage.to
+  /**
+   * Which class on the ramp the highlighted municipality sits in, so the legend can tick it.
+   * Null where it has no value this year: a tick on an absence would claim a place on a scale
+   * the figure is not on.
+   */
+  const highlightClass = highlight
+    ? classOf(indicator, observationAt(lk, state.indicator, highlight, state.year).value)
+    : null
 
   // The tab, and what a screen reader announces on arrival. Set from the state rather than
   // written once in the HTML, so a shared link says where it goes.
@@ -148,6 +167,9 @@ export function App({
             aria-pressed={!state.table && view === 'map'}
             onClick={() => {
               interrupt()
+              // The shapes are about to move, so whatever the pointer was on is no longer under
+              // it. Cleared here, by the event that makes it untrue, rather than by an effect.
+              setHighlight(null)
               update({ view: 'map', table: false })
             }}
           >
@@ -158,6 +180,9 @@ export function App({
             aria-pressed={!state.table && view === 'cartogram'}
             onClick={() => {
               interrupt()
+              // The shapes are about to move, so whatever the pointer was on is no longer under
+              // it. Cleared here, by the event that makes it untrue, rather than by an effect.
+              setHighlight(null)
               update({ view: 'cartogram', table: false })
             }}
           >
@@ -168,6 +193,7 @@ export function App({
             aria-pressed={state.table}
             onClick={() => {
               interrupt()
+              setHighlight(null)
               update({ table: !state.table })
             }}
           >
@@ -219,6 +245,8 @@ export function App({
                   animate={!reducedMotion}
                   onNoMove={() => setNotice(strings.noNeighbour)}
                   onMoved={() => setNotice('')}
+                  highlight={highlight}
+                  onHover={setHighlight}
                   onSelect={(code) => {
                     interrupt()
                     setNotice('')
@@ -266,9 +294,83 @@ export function App({
               />
             </div>
 
-            <Legend lk={lk} indicatorId={state.indicator} year={state.year} lang={state.lang} />
+            <Legend
+              lk={lk}
+              indicatorId={state.indicator}
+              year={state.year}
+              lang={state.lang}
+              highlightClass={highlightClass}
+            />
 
             <AboutIndicator lk={lk} indicatorId={state.indicator} lang={state.lang} />
+
+            {/*
+             * The place, beside the map that named it.
+             *
+             * It used to render after the facts strip, so clicking a municipality changed
+             * nothing a visitor could see without scrolling past five facts first. The reading
+             * column was empty below here; now it holds what the click was for. On a narrow
+             * screen the single-column layout puts this under the map, which is the same answer.
+             */}
+            {state.selected && (
+              <ProfilePanel
+                asSheet={narrow}
+                lk={lk}
+                code={state.selected}
+                year={state.year}
+                lang={state.lang}
+                compare={
+                  state.compare === null ? (
+                    <CompareSearch
+                      lk={lk}
+                      selected={state.selected}
+                      lang={state.lang}
+                      onCompare={(compare) => {
+                        interrupt()
+                        setNotice('')
+                        update({ compare })
+                      }}
+                    />
+                  ) : null
+                }
+                story={
+                  <ProfileStory lk={lk} code={state.selected} year={state.year} lang={state.lang} />
+                }
+                similar={
+                  <SimilarPlaces
+                    lk={lk}
+                    similar={similar}
+                    meta={meta}
+                    state={state}
+                    lang={state.lang}
+                    onHighlight={setHighlight}
+                  />
+                }
+                onClose={() => {
+                  const closing = state.selected
+                  setNotice('')
+                  update({ selected: null, compare: null })
+                  // Focus goes back to the shape that opened the panel, rather than being
+                  // dropped at the top of the document.
+                  if (closing) mapRef.current?.focusMunicipality(closing)
+                }}
+              />
+            )}
+
+            {state.selected && state.compare !== null && (
+              <ComparePanel
+                lk={lk}
+                selected={state.selected}
+                compare={state.compare}
+                year={state.year}
+                lang={state.lang}
+                onCompare={(compare) => {
+                  interrupt()
+                  setNotice('')
+                  update({ compare })
+                }}
+              />
+            )}
           </div>
         </div>
 
@@ -277,52 +379,7 @@ export function App({
          * control, and putting them in the left column meant a keyboard visitor passed five
          * links before reaching the map.
          */}
-        <FactsStrip lang={state.lang} facts={facts} />
-
-        {state.selected && (
-          <ComparePanel
-            lk={lk}
-            selected={state.selected}
-            compare={state.compare}
-            year={state.year}
-            lang={state.lang}
-            onCompare={(compare) => {
-              interrupt()
-              setNotice('')
-              update({ compare })
-            }}
-          />
-        )}
-
-        {state.selected && (
-          <ProfilePanel
-            asSheet={narrow}
-            lk={lk}
-            code={state.selected}
-            year={state.year}
-            lang={state.lang}
-            story={
-              <ProfileStory lk={lk} code={state.selected} year={state.year} lang={state.lang} />
-            }
-            similar={
-              <SimilarPlaces
-                lk={lk}
-                similar={similar}
-                meta={meta}
-                state={state}
-                lang={state.lang}
-              />
-            }
-            onClose={() => {
-              const closing = state.selected
-              setNotice('')
-              update({ selected: null, compare: null })
-              // Focus goes back to the shape that opened the panel, rather than being dropped at
-              // the top of the document.
-              if (closing) mapRef.current?.focusMunicipality(closing)
-            }}
-          />
-        )}
+        <FactsStrip lang={state.lang} facts={facts} onHighlight={setHighlight} />
       </main>
 
       <Notices lang={state.lang} />

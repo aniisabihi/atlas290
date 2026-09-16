@@ -102,3 +102,35 @@ describe('Legend', () => {
     expect(screen.queryByRole('list')).toBeNull()
   })
 })
+
+/**
+ * The ramp answering "how big is that, then".
+ *
+ * Marked, never recoloured: the seven class colours are calibrated against the white plate and
+ * carry the whole meaning of the map, so a legend that changed one of them to show a hover
+ * would be changing the data's own key.
+ */
+describe('Legend, marking the class under the pointer', () => {
+  const marked = () => classItems().filter((li) => li.hasAttribute('data-highlight'))
+
+  it('marks nothing when the pointer is nowhere', () => {
+    draw('population', 2024)
+    expect(marked()).toHaveLength(0)
+  })
+
+  it('marks exactly one class, the one it was given', () => {
+    render(<Legend lk={lk} indicatorId="population" year={2024} lang="en" highlightClass={3} />)
+    const items = classItems()
+    expect(items.filter((li) => li.hasAttribute('data-highlight'))).toHaveLength(1)
+    expect(items[3]?.hasAttribute('data-highlight')).toBe(true)
+  })
+
+  it('leaves the class text alone, because the mark is not the meaning', () => {
+    const plain = render(<Legend lk={lk} indicatorId="population" year={2024} lang="en" />)
+      .container.textContent
+    const lit = render(
+      <Legend lk={lk} indicatorId="population" year={2024} lang="en" highlightClass={3} />,
+    ).container.textContent
+    expect(lit).toBe(plain)
+  })
+})

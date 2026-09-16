@@ -25,6 +25,7 @@ export function ProfilePanel({
   asSheet = false,
   story,
   similar,
+  compare,
 }: {
   lk: Lookup
   code: string
@@ -44,6 +45,12 @@ export function ProfilePanel({
    */
   story?: ReactNode
   similar?: ReactNode
+  /**
+   * The "compare with…" search, which belongs beside the name it will put a second name next to.
+   * It used to sit in a panel of its own above the profile, where it read as a stray text field
+   * and was styled like nothing else on the site.
+   */
+  compare?: ReactNode
 }) {
   const strings = t(lang)
   const heading = useRef<HTMLHeadingElement>(null)
@@ -79,9 +86,12 @@ export function ProfilePanel({
         <h2 id="profile-heading" ref={heading} tabIndex={-1}>
           {municipality.name[lang]}
         </h2>
-        <button type="button" onClick={onClose} aria-label={strings.closeProfile}>
-          {strings.close}
-        </button>
+        <div className="profile-actions">
+          {compare}
+          <button type="button" onClick={onClose} aria-label={strings.closeProfile}>
+            {strings.close}
+          </button>
+        </div>
       </div>
 
       {story}

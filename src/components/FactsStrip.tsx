@@ -19,6 +19,18 @@ const FAMILY_LABEL: Record<string, keyof Strings> = {
 }
 
 /**
+ * The municipality a fact's link lands on, if it lands on one.
+ *
+ * Read from the href rather than from a new field in the pantry: the link is already the claim's
+ * proof, so whatever it selects is by definition what the sentence is about, and no fact file
+ * has to be republished for the map to follow along.
+ */
+export function municipalityInHref(href: string): string | null {
+  const query = href.slice(href.indexOf('?') + 1)
+  return new URLSearchParams(query).get('m')
+}
+
+/**
  * Five things nobody thought to ask, each one link away from the view that proves it.
  *
  * The links are real anchors into the site's own URL state, so they work without JavaScript, can
@@ -29,7 +41,16 @@ const FAMILY_LABEL: Record<string, keyof Strings> = {
  * families, and publishes them with the figures each asserts. This component renders whatever
  * the file holds and chooses nothing.
  */
-export function FactsStrip({ lang, facts }: { lang: Lang; facts: Facts }) {
+export function FactsStrip({
+  lang,
+  facts,
+  onHighlight,
+}: {
+  lang: Lang
+  facts: Facts
+  /** Rings the municipality a fact is about while the pointer is on it. Not URL state. */
+  onHighlight?: (code: string | null) => void
+}) {
   return (
     <section className="facts panel" aria-labelledby="facts-heading">
       <h2 id="facts-heading">{t(lang).factsHeading}</h2>
@@ -39,7 +60,15 @@ export function FactsStrip({ lang, facts }: { lang: Lang; facts: Facts }) {
             {FAMILY_LABEL[fact.family] && (
               <p className="fact-family">{t(lang)[FAMILY_LABEL[fact.family]!] as string}</p>
             )}
-            <a href={`/${lang}${fact.href}`}>{fact.text[lang]}</a>
+            <a
+              href={`/${lang}${fact.href}`}
+              onMouseEnter={() => onHighlight?.(municipalityInHref(fact.href))}
+              onMouseLeave={() => onHighlight?.(null)}
+              onFocus={() => onHighlight?.(municipalityInHref(fact.href))}
+              onBlur={() => onHighlight?.(null)}
+            >
+              {fact.text[lang]}
+            </a>
           </li>
         ))}
       </ul>

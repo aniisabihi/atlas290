@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
 import rawData from '../../public/pantry/data/indicators.json'
 import rawSimilar from '../../public/pantry/data/similar.json'
 import { PantryData, Similar } from '../../shared/pantry'
@@ -13,7 +14,11 @@ const lk = lookup(data)
 const meta = metaFrom(data)
 const base = defaultsFor(meta)
 
-function show(state: Partial<AppState> = {}, lang: 'sv' | 'en' = 'sv') {
+function show(
+  state: Partial<AppState> = {},
+  lang: 'sv' | 'en' = 'sv',
+  onHighlight?: (code: string | null) => void,
+) {
   return render(
     <SimilarPlaces
       lk={lk}
@@ -21,6 +26,7 @@ function show(state: Partial<AppState> = {}, lang: 'sv' | 'en' = 'sv') {
       meta={meta}
       state={{ ...base, lang, selected: '1281', ...state }}
       lang={lang}
+      onHighlight={onHighlight}
     />,
   )
 }
@@ -89,5 +95,34 @@ describe('SimilarPlaces', () => {
     show({}, 'en')
     expect(screen.getByRole('heading', { name: 'Places like this one' })).toBeTruthy()
     expect(screen.getByText(/Closest across 10 measures, 2015–2024/)).toBeTruthy()
+  })
+})
+
+/**
+ * Five names are five places, and a map of 290 shapes is not somewhere you find one by reading.
+ * Pointing at a name rings its shape; that is the whole feature, and it is deliberately not in
+ * the URL — a highlight is where the pointer happens to be, not a view anybody chose.
+ */
+describe('SimilarPlaces, pointing at the map', () => {
+  it('names the municipality under the pointer, and takes it back on leaving', async () => {
+    const onHighlight = vi.fn()
+    show({}, 'sv', onHighlight)
+    const uppsala = screen.getByRole('link', { name: 'Uppsala' })
+    await userEvent.hover(uppsala)
+    expect(onHighlight).toHaveBeenCalledWith('0380')
+    await userEvent.unhover(uppsala)
+    expect(onHighlight).toHaveBeenLastCalledWith(null)
+  })
+
+  it('answers the keyboard the same way it answers a pointer', () => {
+    const onHighlight = vi.fn()
+    show({}, 'sv', onHighlight)
+    screen.getByRole('link', { name: 'Uppsala' }).focus()
+    expect(onHighlight).toHaveBeenCalledWith('0380')
+  })
+
+  it('works without anyone listening, because the list is a list first', () => {
+    show()
+    expect(screen.getAllByRole('link')).toHaveLength(5)
   })
 })

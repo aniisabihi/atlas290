@@ -45,7 +45,8 @@ Detail, environment variables and troubleshooting: [docs/setup.md](docs/setup.md
 
 - **The URL is the state.** Everything the site renders is a function of path plus query string
   (`src/state/url.ts`, `src/state/useAppState.ts`). New view state belongs in the URL unless it is
-  genuinely not worth sharing — playback and morph progress are the documented exceptions.
+  genuinely not worth sharing — playback, morph progress and pointer hover are the three
+  documented exceptions.
 - **Two programs, one repo.** The kitchen is Node-only and must never depend on a DOM; the site is
   browser-only. `shared/` is the only code both may import, so it may import nothing that needs
   either. `vitest.config.ts` splits the environments to keep this honest.

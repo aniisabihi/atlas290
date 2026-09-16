@@ -40,12 +40,30 @@ states immediately, so the scan is wired correctly — it simply does not cover 
 rule set. axe covers perhaps a third of what matters; this is a concrete example of the rest, and
 the reason the list below is not empty.
 
+**A second concrete example, found in Plan 11.** The skip link sits inside the sticky bar, so its
+containing block travels down the page with the bar: the strip it occupies while hidden at
+`top: -4rem` is always over whatever content sits four rem above the bar, invisible and first in
+the hit test. Nine states in two themes scanned clean for as long as no page scrolled on load. The
+moment one did, Firefox reported the play button as a target obscured by a link nobody could see.
+The scan was right both times; what changed was whether anything happened to be underneath.
+
 ## The manual pass
 
 ### Checked
 
 - **Keyboard, start to finish, in three engines.** Chromium and Firefox reach every control.
-  The map is reached after ten stops; the skip link jumps straight to it.
+  The map is the first thing in the main region, and the skip link jumps straight to it.
+- **The table's scroll box is a named region and a tab stop.** It takes the map's height and
+  scrolls inside itself, so a keyboard has to be able to scroll it. Firefox adds that stop on its
+  own; declaring it is what gives it a name instead of leaving a visitor on an anonymous div.
+- **The map tooltip is not in the accessibility tree, on purpose.** Hovering or focusing a shape
+  draws its name, value and rank beside the pointer. That is a pointer catching up: the shape's
+  own accessible name has carried the same reading since Plan 3, and the live region announces it
+  as focus moves. The box is `aria-hidden`, and a screen reader hears exactly what it heard
+  before. It is built from the same two strings as the label, so the two cannot drift apart —
+  `e2e/pointing.spec.ts` asserts every part of the label appears in the box.
+- **Hovering never changes the URL**, so nothing a pointer does can be shared, navigated back
+  through, or announced.
 - **Arrow-key navigation over the map and the cartogram.** Every one of the 290 municipalities is
   reachable by arrow keys, on both layouts, asserted by unit tests that walk the real graph. A key
   pointing at open sea says so in the live region rather than moving somewhere unasked.

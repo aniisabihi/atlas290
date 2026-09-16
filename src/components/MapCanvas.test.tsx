@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import rawData from '../../public/pantry/data/indicators.json'
 import rawTopology from '../../public/pantry/geometry/municipalities.topo.json'
@@ -424,5 +424,85 @@ describe('arrow keys on the bubble layout', () => {
       }
     }
     expect(codes.filter((c) => !reached.has(c))).toEqual(['0128'])
+  })
+})
+
+/**
+ * The pointer catching up with the keyboard.
+ *
+ * Every shape has carried its whole reading in its accessible name since Plan 3, and the live
+ * region has announced the same thing as focus moved. A pointer had neither: hovering a shape
+ * did nothing at all, so the one way to read a value with a mouse was to click and open a
+ * profile. These tests hold the tooltip to the label it duplicates — if the two ever disagree,
+ * one of them is lying about a published figure.
+ */
+describe('MapCanvas, pointing at a shape', () => {
+  const tooltip = () => screen.queryByTestId('map-tooltip')
+  const malmo = () => shapes().find((s) => s.getAttribute('data-code') === '1280')!
+
+  it('says nothing until the pointer is on a shape', () => {
+    draw()
+    expect(tooltip()).toBeNull()
+  })
+
+  it('names the municipality and its reading on hover', async () => {
+    draw()
+    await userEvent.hover(malmo())
+    const text = tooltip()?.textContent ?? ''
+    expect(text).toContain('Malmö')
+    // The same two strings the shape's accessible name is built from, not a second rounding.
+    const label = malmo().getAttribute('aria-label') ?? ''
+    for (const part of label.split(', ')) expect(text).toContain(part)
+  })
+
+  it('places the municipality on the scale it was just read from', async () => {
+    draw()
+    await userEvent.hover(malmo())
+    expect(tooltip()?.textContent).toMatch(/\d+ of 290/)
+  })
+
+  it('stops saying it when the pointer leaves the map', async () => {
+    draw()
+    await userEvent.hover(malmo())
+    await userEvent.unhover(malmo())
+    expect(tooltip()).toBeNull()
+  })
+
+  it('answers the keyboard as well as the pointer', () => {
+    draw()
+    act(() => malmo().focus())
+    expect(tooltip()?.textContent).toContain('Malmö')
+  })
+
+  /*
+   * A tooltip in the accessibility tree would be the value said twice: the shape's own name
+   * already carries it, and the live region says it again as focus moves.
+   */
+  it('is invisible to a screen reader, because the label already says all of it', async () => {
+    draw()
+    await userEvent.hover(malmo())
+    expect(tooltip()?.getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('tells the page what it is pointing at, so the legend can mark the class', async () => {
+    const onHover = vi.fn()
+    draw({ onHover })
+    await userEvent.hover(malmo())
+    expect(onHover).toHaveBeenCalledWith('1280')
+    await userEvent.unhover(malmo())
+    expect(onHover).toHaveBeenLastCalledWith(null)
+  })
+
+  it('rings a municipality the rest of the page is pointing at', () => {
+    const { container } = draw({ highlight: '1280' })
+    const ring = container.querySelector('[data-highlight-ring]')
+    expect(ring).not.toBeNull()
+    expect(ring?.querySelector('[data-ring-for="1280"]')).not.toBeNull()
+  })
+
+  it('does not ring the highlight twice when it is already the selection', () => {
+    const { container } = draw({ highlight: '1280', selected: '1280' })
+    expect(container.querySelector('[data-highlight-ring]')).toBeNull()
+    expect(container.querySelector('[data-selection-ring]')).not.toBeNull()
   })
 })

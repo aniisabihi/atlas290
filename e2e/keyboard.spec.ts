@@ -134,6 +134,11 @@ test.describe('the keyboard reaches the map', () => {
     await expect(page.getByRole('link', { name: /skip to the table/i })).toBeFocused()
     await page.keyboard.press('Enter')
     await page.keyboard.press('Tab')
+    // The table now takes the map's box and scrolls inside it, so the box itself is a tab stop:
+    // a region that scrolls has to be reachable with a keyboard, and Firefox adds the stop on
+    // its own. Declaring it is what gives it a name rather than leaving a visitor on a bare div.
+    expect(await label(page)).toMatch(/^div:/)
+    await page.keyboard.press('Tab')
     expect(await label(page)).toMatch(/^button:(Municipality|Value|Rank)/)
   })
 })
