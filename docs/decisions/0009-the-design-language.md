@@ -1,4 +1,4 @@
-# 0008 — The design language
+# 0009 — The design language
 
 **Date:** 2026-09-16
 **Plan:** [Plan 10](../plans/2026-09-16-10-the-design-language.md)

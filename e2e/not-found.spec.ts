@@ -37,6 +37,7 @@ test.describe('an address that matches nothing', () => {
   })
 
   test('is clean under axe', async ({ page }) => {
+    test.slow()
     await page.goto('/en/atlantis-9999/')
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'])

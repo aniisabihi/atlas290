@@ -6,6 +6,12 @@ on:
   pull_request:
   push:
     branches: [main]
+    # The monthly refresh commits one line to docs/refresh-log.md purely to keep its own schedule
+    # alive, and that push would otherwise run the whole suite and redeploy a site whose content
+    # has not changed by a single byte. The log is the only path excluded, and it is excluded
+    # because nothing reads it: it is a heartbeat, not documentation.
+    paths-ignore:
+      - 'docs/refresh-log.md'
 
 # A second push to the same branch cancels the first: nobody needs the results of a commit that
 # has already been replaced.
@@ -15,6 +21,14 @@ concurrency:
 
 permissions:
   contents: read
+
+# The Cloudflare Pages project name, which is also the hostname it is served from. Declared once,
+# at the top, because three things need it and they must not drift: the deploy target, the
+# absolute origin the link previews are built against, and the origin the performance budget
+# measures. Changing this name changes the site's address, so it is a decision, not a setting —
+# docs/decisions/0006-the-name.md.
+env:
+  PAGES_PROJECT: atlas290
 
 jobs:
   check:
@@ -128,7 +142,13 @@ jobs:
       - run: yarn playwright install-deps chromium
         if: steps.pw-cache.outputs.cache-hit == 'true'
 
+      # Built the way the deploy builds it. Without SITE_ORIGIN the canonical, the hreflang
+      # alternates and the sitemap are all absent or relative, so the budget would be measuring a
+      # site nobody visits — and it was: the SEO score was 91 for want of exactly those, against a
+      # deployed artefact that scores 100. The origin does not have to match the host serving it.
       - run: yarn build
+        env:
+          SITE_ORIGIN: https://${{ env.PAGES_PROJECT }}.pages.dev
       - name: Serve the built site and measure it
         run: |
           yarn preview --port 4173 --strictPort &
@@ -144,12 +164,6 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
-    env:
-      # The Cloudflare Pages project name, which is also the hostname it is served from. Declared
-      # once because two things need it and they must not drift: the deploy target, and the
-      # absolute origin the link previews are built against. Changing this name changes the site's
-      # address, so it is a decision, not a setting — docs/decisions/0006-the-name.md.
-      PAGES_PROJECT: atlas290
     steps:
       - uses: actions/checkout@v4
       - run: corepack enable

@@ -1,4 +1,26 @@
-import { z } from 'zod'
+import { config, z } from 'zod'
+
+/**
+ * In a browser, tell zod not to JIT-compile its validators.
+ *
+ * zod decides whether it may by running `new Function('')` and catching the failure. The
+ * deployed site's Content Security Policy refuses that call, so zod was already falling back to
+ * the interpreted parser — but it discovered this by triggering a real CSP violation on every
+ * load, which Chrome logs to the Issues panel and Lighthouse counts against the site. zod's own
+ * source names this exact case. Declaring it up front changes no behaviour and removes it.
+ *
+ * It has to be HERE, above the schemas, rather than in `src/main.tsx`: the flag is read when a
+ * schema is CONSTRUCTED, which for this file is at import, and an ES module's imports are all
+ * evaluated before any importing module's body runs.
+ *
+ * Guarded so the kitchen keeps the fast path. It parses far more than the site does, runs in
+ * Node under no policy at all, and would pay for a restriction that does not apply to it.
+ *
+ * Read off `globalThis` rather than as a bare `document`, because this file is compiled by both
+ * projects and the kitchen's tsconfig has no DOM library to name it in.
+ */
+const inBrowser = typeof (globalThis as { document?: unknown }).document !== 'undefined'
+if (inBrowser) config({ jitless: true })
 
 /** Every human-readable string in the pantry exists in both languages. */
 export const Bilingual = z.object({ sv: z.string(), en: z.string() })

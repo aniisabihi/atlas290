@@ -110,9 +110,25 @@ test.describe('the morph', () => {
     const stockholm = page.getByRole('button', { name: /^Stockholm,/ })
     await stockholm.focus()
     await page.keyboard.press('ArrowUp')
-    const focused = await page.evaluate(() => document.activeElement?.getAttribute('aria-label'))
-    expect(focused).not.toMatch(/^Stockholm,/)
-    expect(focused).toBeTruthy()
+
+    /*
+     * Synchronised on the app's own signal before focus is read, then polled.
+     *
+     * An arrow key does not move focus synchronously: it updates state, React re-renders, and the
+     * neighbouring shape takes focus. In the gap between the old node blurring and the new one
+     * focusing, `document.activeElement` is `<body>` — which has no `aria-label`, so a single
+     * immediate read returns null and the matcher fails on a type error rather than a wrong
+     * value. That is exactly what a slow CI WebKit did, twice, where every local run had passed.
+     *
+     * The ring is the same thing `e2e/keyboard.spec.ts` waits on for its own arrow-key test, and
+     * it is the honest signal: it is drawn from the focused shape, so it cannot appear before the
+     * move has actually happened. Neither wait weakens the assertion — a focus that never lands
+     * still fails, it just fails after the timeout instead of inside the gap.
+     */
+    await expect(page.locator('[data-focus-ring]')).toHaveCount(1)
+    await expect
+      .poll(() => page.evaluate(() => document.activeElement?.getAttribute('aria-label') ?? null))
+      .toMatch(/^(?!Stockholm,).+/)
   })
 })
 

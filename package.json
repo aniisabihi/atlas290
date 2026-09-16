@@ -14,7 +14,7 @@
     "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.kitchen.json --noEmit && tsc -p tsconfig.e2e.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "oxlint . && prettier --check .",
+    "lint": "oxlint --deny-warnings . && prettier --check .",
     "format": "prettier --write .",
     "kitchen": "tsx kitchen/src/cli.ts",
     "e2e": "playwright test",

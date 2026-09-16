@@ -50,6 +50,10 @@ const THEMES = ['light', 'dark'] as const
 for (const [name, url] of STATES) {
   for (const theme of THEMES) {
     test(`no accessibility violations in ${theme}: ${name}`, async ({ page }) => {
+      // An axe analysis is CPU-bound, and running every state in two themes doubled how many of
+      // them compete for the same cores. The default 30 s was comfortable for one theme and
+      // marginal for two — this is the work being slow, not the page.
+      test.slow()
       await page.addInitScript((t) => {
         try {
           localStorage.setItem('atlas-theme', t)

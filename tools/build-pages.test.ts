@@ -3,7 +3,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import rawData from '../public/pantry/data/indicators.json'
 import { PantryData } from '../shared/pantry'
 import { segmentFor } from '../shared/slug'
-import { entryPageFor, pageFor } from './build-pages.mjs'
+import {
+  cspFor,
+  entryPageFor,
+  headersFor,
+  inlineScriptHashes,
+  pageFor,
+  robotsFor,
+  sitemapFor,
+} from './build-pages.mjs'
 
 const data = PantryData.parse(rawData)
 
@@ -173,5 +181,144 @@ describe('entryPageFor', () => {
     // Running twice must not stack a second one, which is what a rebuild over a dirty dist does.
     expect(entryPageFor(once, '/sv/').match(/rel="canonical"/g)).toHaveLength(1)
     expect(once).toContain('rel="canonical" href="https://atlas290.pages.dev/sv/"')
+  })
+})
+
+describe('sitemapFor', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  const withOrigin = () => {
+    vi.stubEnv('SITE_ORIGIN', 'https://atlas290.pages.dev')
+    return sitemapFor(data.municipalities)!
+  }
+
+  it('writes none without an origin, because a relative sitemap is invalid rather than lenient', () => {
+    expect(sitemapFor(data.municipalities)).toBeNull()
+  })
+
+  it('lists both language roots and all 580 municipality pages', () => {
+    const xml = withOrigin()
+    expect(xml.match(/<loc>/g)).toHaveLength(2 + data.municipalities.length * 2)
+    expect(xml).toContain('<loc>https://atlas290.pages.dev/sv/</loc>')
+    expect(xml).toContain('<loc>https://atlas290.pages.dev/en/</loc>')
+  })
+
+  it('gives every municipality both of its pages, each naming the other as its alternate', () => {
+    const xml = withOrigin()
+    for (const m of data.municipalities) {
+      const sv = `https://atlas290.pages.dev/sv/${segmentFor(m.name.sv, m.code)}/`
+      const en = `https://atlas290.pages.dev/en/${segmentFor(m.name.en, m.code)}/`
+      expect(xml, m.code).toContain(`<loc>${sv}</loc>`)
+      expect(xml, m.code).toContain(`<loc>${en}</loc>`)
+      expect(xml, m.code).toContain(`hreflang="sv" href="${sv}"`)
+      expect(xml, m.code).toContain(`hreflang="en" href="${en}"`)
+    }
+  })
+
+  it('is a sitemap a crawler will accept, not just well-formed XML', () => {
+    const xml = withOrigin()
+    expect(xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>')).toBe(true)
+    expect(xml).toContain('xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"')
+    expect(xml).toContain('xmlns:xhtml="http://www.w3.org/1999/xhtml"')
+    // Every URL absolute: the one rule the protocol will not bend on.
+    expect(xml).not.toMatch(/<loc>\//)
+  })
+})
+
+describe('robotsFor', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  const robots = 'User-agent: *\nAllow: /\n'
+
+  it('leaves the file alone when there is no sitemap to name', () => {
+    expect(robotsFor(robots)).toBe(robots)
+  })
+
+  it('names the sitemap absolutely, which is the only form robots.txt accepts', () => {
+    vi.stubEnv('SITE_ORIGIN', 'https://atlas290.pages.dev')
+    expect(robotsFor(robots)).toContain('Sitemap: https://atlas290.pages.dev/sitemap.xml')
+  })
+
+  it('replaces the line rather than stacking one per build', () => {
+    vi.stubEnv('SITE_ORIGIN', 'https://atlas290.pages.dev')
+    const once = robotsFor(robots)
+    expect(robotsFor(once).match(/^Sitemap:/gm)).toHaveLength(1)
+    expect(robotsFor(once)).toBe(once)
+  })
+
+  it('keeps what the committed file already said', () => {
+    vi.stubEnv('SITE_ORIGIN', 'https://atlas290.pages.dev')
+    expect(robotsFor(robots)).toContain('User-agent: *')
+    expect(robotsFor(robots)).toContain('Allow: /')
+  })
+})
+
+describe('the Content Security Policy', () => {
+  /**
+   * The real root page. It ships TWO inline scripts since Plan 10: the theme applied before the
+   * first paint, and the language picker's redirect. Every hand-written document is scanned for
+   * exactly this reason — a script added to one of them would otherwise be blocked in production
+   * and nowhere else.
+   */
+  const rootEntry = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
+  const langEntry = readFileSync(new URL('../en/index.html', import.meta.url), 'utf8')
+
+  it('finds both inline scripts the root page ships', () => {
+    const hashes = inlineScriptHashes(rootEntry)
+    expect(hashes).toHaveLength(2)
+    for (const hash of hashes) expect(hash).toMatch(/^sha256-[A-Za-z0-9+/]+=*$/)
+    // Two different scripts must not hash alike, or one of them is not really covered.
+    expect(new Set(hashes).size).toBe(2)
+  })
+
+  it('finds the theme script on a language page too', () => {
+    // These carry the pre-paint theme script but no redirect. Missing it would mean a visitor
+    // who chose dark gets a white flash in production and nowhere else.
+    expect(inlineScriptHashes(langEntry)).toHaveLength(1)
+  })
+
+  it('ignores a script that has a src, which needs no hash', () => {
+    expect(inlineScriptHashes('<script type="module" src="/src/main.tsx"></script>')).toHaveLength(
+      0,
+    )
+    expect(entry).toContain('<script type="module"')
+  })
+
+  it('denies everything it has not been asked for', () => {
+    const csp = cspFor([])
+    expect(csp).toContain("default-src 'none'")
+    expect(csp).toContain("frame-ancestors 'none'")
+    expect(csp).toContain("base-uri 'none'")
+    expect(csp).toContain("form-action 'none'")
+  })
+
+  it('never gives scripts the blanket permission styles get', () => {
+    // The style attribute has no hash and two components set one. A script has neither excuse,
+    // and 'unsafe-inline' in script-src would undo most of what this header is for.
+    const csp = cspFor(inlineScriptHashes(rootEntry))
+    const scriptSrc = /script-src ([^;]*)/.exec(csp)![1]!
+    expect(scriptSrc).not.toContain('unsafe-inline')
+    expect(scriptSrc).not.toContain('unsafe-eval')
+    expect(csp).toContain("style-src 'self' 'unsafe-inline'")
+  })
+
+  it('carries the hash of the picker, so the bare domain is not the one page that breaks', () => {
+    const [hash] = inlineScriptHashes(rootEntry)
+    expect(cspFor(inlineScriptHashes(rootEntry))).toContain(`'${hash}'`)
+  })
+
+  it('writes a _headers Cloudflare will read, with the rest of the headers too', () => {
+    const headers = headersFor(inlineScriptHashes(rootEntry))
+    expect(headers).toContain('/*\n')
+    expect(headers).toContain('  X-Content-Type-Options: nosniff')
+    expect(headers).toContain('  Referrer-Policy: no-referrer')
+    expect(headers).toContain('  X-Frame-Options: DENY')
+    expect(headers).toContain('  Cross-Origin-Opener-Policy: same-origin')
+    expect(headers).toContain('  Permissions-Policy: ')
+    expect(headers).toContain('  Content-Security-Policy: ')
   })
 })

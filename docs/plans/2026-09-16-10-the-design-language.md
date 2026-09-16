@@ -224,7 +224,7 @@ the test should make it impossible.
       suspect and D4's fallback is the lever.
 - [ ] Full unit and browser suites; `public/pantry/` still rebuilds byte-identically.
 - [ ] Screenshots of both themes at desktop and phone width, checked by eye, not only by test.
-- [ ] `docs/decisions/0008-the-design-language.md` with D1–D11 and the measured font and
+- [ ] `docs/decisions/0009-the-design-language.md` with D1–D11 and the measured font and
       Lighthouse numbers.
 - [ ] DESIGN section 9 loses "visual design language"; `docs/plans/README.md` marks Plan 10 done
       and closes the tab-order item.
