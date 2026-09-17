@@ -73,3 +73,4 @@ no tracking.
 | [research/](research/README.md)      | Discovery record: sources, prior art, rendering and hosting options                |
 | [../CHANGELOG.md](../CHANGELOG.md)   | What changed in each release, and what a version number means here                 |
 | [refresh-log.md](refresh-log.md)     | One line per monthly refresh run, written by the workflow                          |
+| [runbook.md](runbook.md)             | Non-obvious failures and the exact fix, newest first                               |
