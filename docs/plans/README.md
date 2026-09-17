@@ -137,7 +137,7 @@ municipality pages take their absolute URLs from `SITE_ORIGIN`, which the deploy
 
 ---
 
-## The third slice — more of the source · **in design**
+## The fourth slice — more of the source · **in design**
 
 The first slice built a map you can read. The second made the data speak. The third widens what
 there is to speak about: from ten indicators to twenty-five, chosen question-first, and — the part
@@ -150,20 +150,20 @@ of income a house costs, and where women and men differ most in education.
 | Document                                                     | What it holds                                                                                                                              |
 | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | [The question list](../research/2026-09-17-question-list.md) | 28 questions mapped to SCB tables, verified against live v2 metadata on 2026-09-17; four candidates rejected on verification, with reasons |
-| [Third slice design](2026-09-17-third-slice-design.md)       | The three structural changes, the fifteen that ship, what is deferred and why, the decisions it forces, verification and risks             |
+| [Fourth slice design](2026-09-17-fourth-slice-design.md)     | The three structural changes, the fifteen that ship, what is deferred and why, the decisions it forces, verification and risks             |
 
 | #   | Plan                                                    | Ends with                                                                                                                                                               | Status      |
 | --- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| 12  | [The pantry splits](2026-09-17-12-the-pantry-splits.md) | An index plus one file per indicator. Same ten indicators, same numbers, nothing a visitor can see — first paint drops from 275,842 gzipped bytes to about 35,000.      | **written** |
-| 13  | Indicators become definitions                           | Four builders and two modifiers, one added; the existing ten migrated onto them; similarity pinned to the core ten. Proves itself by leaving the pantry byte-identical. | not yet     |
-| 14  | The fifteen                                             | The indicators in the design's §4, each with its caveat, its verified-figure tests and its decision records.                                                            | not yet     |
+| 13  | [The pantry splits](2026-09-17-13-the-pantry-splits.md) | An index plus one file per indicator. Same ten indicators, same numbers, nothing a visitor can see — first paint drops from 275,842 gzipped bytes to about 35,000.      | **written** |
+| 14  | Indicators become definitions                           | Four builders and two modifiers, one added; the existing ten migrated onto them; similarity pinned to the core ten. Proves itself by leaving the pantry byte-identical. | not yet     |
+| 15  | The fifteen                                             | The indicators in the design's §4, each with its caveat, its verified-figure tests and its decision records.                                                            | not yet     |
 
 Same rule as the slices before it: **each plan is written in full only just before it is
 executed.** The table is intent, not specification.
 
 ## Later, and possibly never
 
-**~~More indicators.~~** Superseded by the third slice above. The paragraph that stood here said a
+**~~More indicators.~~** Superseded by the fourth slice above. The paragraph that stood here said a
 plan when there is a reason, not before; the reason is now written down.
 
 **Still deferred, and may never be built**, unchanged from

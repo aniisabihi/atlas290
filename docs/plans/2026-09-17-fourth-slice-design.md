@@ -1,6 +1,6 @@
 # Third slice — more of the source
 
-**Design document.** The implementation plans (12, 13, …) are written one at a time from this, just
+**Design document.** The implementation plans (13, 14, 15) are written one at a time from this, just
 before each is executed, as every slice before it has been.
 
 Input: [the question list](../research/2026-09-17-question-list.md), verified against live SCB v2
@@ -77,7 +77,7 @@ So: a slim index plus one file per indicator.
 
 - **Index** carries what the picker, the URL parser and the legend need for _every_ indicator: id,
   bilingual name, unit, scale kind and breaks, coverage, and the price fields. Built and measured
-  while writing [plan 12](2026-09-17-12-the-pantry-splits.md): **6,471 bytes gzipped at ten
+  while writing [plan 13](2026-09-17-13-the-pantry-splits.md): **6,471 bytes gzipped at ten
   indicators and 6,524 at twenty-five** — it barely grows, because the 290 municipalities dominate
   it. An earlier estimate here said ~15 kB; that was a guess, and the measurement replaced it.
 - **Per-indicator file** carries the series and the prose. Fetched when the indicator is chosen.
@@ -164,13 +164,13 @@ Each becomes a record under `docs/decisions/`.
 - **D6 — This slice changes the pantry's container, and none of its value semantics.**
   `Indicator`, `IndicatorSeries`, `Municipality` and `OBSERVATION_STATUS` are untouched — the
   enum whose index is a persisted byte in every published cell does not move. What does change is
-  how those values are packaged into files: [plan 12](2026-09-17-12-the-pantry-splits.md) adds
+  how those values are packaged into files: [plan 13](2026-09-17-13-the-pantry-splits.md) adds
   `PantryIndex`, `IndicatorMeta` and `PantryIndicator` beside `PantryData`. Deferring the
   period-based indicators (§5) is what keeps the distinction clean, and it is worth keeping:
   a container can be revised, a status byte cannot.
 
   _Corrected 2026-09-17._ As first written this read "does not touch `shared/pantry.ts`", which
-  plan 12 falsified the moment it was drafted — the split cannot be expressed without new schemas
+  plan 13 falsified the moment it was drafted — the split cannot be expressed without new schemas
   in that file. The claim worth making was always about semantics, not about the file.
 
 - **D7 — `compare` needs no change yet.** "Higher on 17 of 25" is still a sentence a person can

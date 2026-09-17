@@ -1,15 +1,15 @@
-# Plan 12: The pantry splits
+# Plan 13: The pantry splits
 
-The first plan of [the third slice](2026-09-17-third-slice-design.md), and the one that ships on
+The first plan of [the fourth slice](2026-09-17-fourth-slice-design.md), and the one that ships on
 its own. It adds no indicator, changes no number and alters nothing a visitor can see. It changes
-how the data arrives, so that the fifteen indicators in plan 14 can arrive at all.
+how the data arrives, so that the fifteen indicators in plan 15 can arrive at all.
 
-Source: [third slice design](2026-09-17-third-slice-design.md) §3.2. Architect's ruling, 2026-09-17:
+Source: [fourth slice design](2026-09-17-fourth-slice-design.md) §3.2. Architect's ruling, 2026-09-17:
 the split ships ahead of any new indicator, as its own plan and its own pull request.
 
 ## What was checked before this was written
 
-Everything measured against the working tree at `43bbd62`.
+Everything measured against the working tree at `e0b9350`.
 
 | Checked                                    | Found                                                                                                                                                                                                                                                    |
 | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -60,7 +60,7 @@ The answer is a second axis — `data/places/<code>.json`, one municipality acro
 a few kB each, which is the natural shape for a panel that is per-municipality. It is **not in this
 plan**, because at ten indicators it optimises a cost the site already pays, and it means
 refactoring `ProfilePanel`, `ComparePanel` and `ProfileStory` onto a different accessor — front-end
-work inside a plan that is otherwise about delivery. Plan 14 decides it, with the numbers this plan
+work inside a plan that is otherwise about delivery. Plan 15 decides it, with the numbers this plan
 records.
 
 **D5 — Tests read the pantry through one helper.**
@@ -106,7 +106,7 @@ write of `data/indicators.json`.
 
 **Acceptance:** A published pantry contains `data/index.json` and ten indicator files and no
 `data/indicators.json`. Reassembling the parts yields a `PantryData` deep-equal to what the old
-single file contained at `43bbd62` — this is the byte-level proof that nothing changed but the
+single file contained at `e0b9350` — this is the byte-level proof that nothing changed but the
 packaging. Publishing twice is byte-identical.
 **Verify:** `yarn kitchen publish && git diff --stat public/pantry/` shows only the expected
 adds and the one delete; `yarn kitchen publish` again shows nothing.
@@ -183,7 +183,7 @@ written for D1, D2 and D4 — D4 especially, because it records a cost knowingly
 | Task | Signal                                                                                  |
 | ---- | --------------------------------------------------------------------------------------- |
 | 1    | Assemble-from-parts is deep-equal to the published file; `PantryData` unchanged         |
-| 2    | Parts reassemble to the pantry at `43bbd62`; second publish byte-identical              |
+| 2    | Parts reassemble to the pantry at `e0b9350`; second publish byte-identical              |
 | 3    | No test imports `indicators.json`; test count unchanged                                 |
 | 4    | Cold load issues exactly one `data/indicators/` request                                 |
 | 5    | Indicator switch draws; A→B→A settles on A; no stale render; e2e green on three engines |
@@ -209,5 +209,5 @@ written for D1, D2 and D4 — D4 especially, because it records a cost knowingly
 Per the workflow's unattended rules, and one specific to this plan: **if task 5 fails verification
 three times, stop.** A race between the URL and an in-flight fetch is exactly the kind of defect
 that looks fixed and is not, and the honest fallback — loading every series up front, as today,
-while keeping the split for the tools and for plan 14 — is available and loses only the first-paint
+while keeping the split for the tools and for plan 15 — is available and loses only the first-paint
 win.
