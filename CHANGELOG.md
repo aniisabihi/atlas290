@@ -23,6 +23,18 @@ request and writes its own line to [docs/refresh-log.md](docs/refresh-log.md); a
 change to the software. See
 [decision 0012](docs/decisions/0012-releases-and-a-changelog.md).
 
+## [1.1.0](https://github.com/aniisabihi/atlas290/compare/v1.0.0...v1.1.0) (2026-09-17)
+
+
+### Added
+
+* **release:** version the repository and generate its changelog ([#20](https://github.com/aniisabihi/atlas290/issues/20)) ([27c0f41](https://github.com/aniisabihi/atlas290/commit/27c0f41577ff4d871a70561a1b65f402d2c1682f))
+
+
+### Fixed
+
+* **release:** keep main green when a release merges, and start the runbook ([#22](https://github.com/aniisabihi/atlas290/issues/22)) ([d5c38b6](https://github.com/aniisabihi/atlas290/commit/d5c38b69ad96832797f9e90ea4a1ca2a5fb095d6))
+
 ## [1.0.0] — 2026-09-17
 
 The first release. An interactive atlas of Sweden's 290 municipalities built entirely from
