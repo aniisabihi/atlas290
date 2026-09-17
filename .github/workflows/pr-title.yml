@@ -1,0 +1,45 @@
+name: Pull request title
+
+# The changelog is generated from commit subjects, and this repository squash-merges — so the
+# pull request title below becomes the commit subject on main, and the commit subject becomes the
+# changelog entry a reader sees. A title that is not a Conventional Commit does not fail loudly:
+# the entire increment silently disappears from the release notes. That already happened once,
+# to "The place beside the map, and a pointer that can read it (#18)".
+#
+# Written as a shell step rather than a third-party action, for the same reason wrangler is a
+# pinned devDependency: what runs here is visible in this file.
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  conventional:
+    name: The title is a Conventional Commit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          PATTERN='^(feat|fix|chore|docs|refactor|test|style|ci|perf)(\([a-z0-9,/ -]+\))?!?: .+'
+          if printf '%s' "$TITLE" | grep -qE "$PATTERN"; then
+            echo "OK: $TITLE"
+            exit 0
+          fi
+          echo "::error title=Rename this pull request::\"$TITLE\" is not a Conventional Commit."
+          cat <<'MSG'
+          This title becomes the squash commit on main, and that commit becomes the CHANGELOG
+          entry. As written, this change would ship with no release note at all.
+
+            <type>(<optional scope>): <what changed>
+
+          Types: feat, fix, chore, docs, refactor, test, style, ci, perf.
+          feat, fix, perf, refactor and docs appear in the changelog; the rest stay in git.
+          Append ! (feat!: ...) only when a published URL stops working — see CHANGELOG.md.
+
+          For example:  feat(map): the place beside the map
+          MSG
+          exit 1

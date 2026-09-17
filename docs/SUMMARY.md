@@ -18,6 +18,7 @@ no tracking.
     [architecture.md](architecture.md) when the change is cross-cutting or touches the data contract
   - **Data / pipeline change** → [kitchen.md](kitchen.md) + [conventions.md](conventions.md)
   - **Ship / release** → [development-workflow.md](development-workflow.md) + [deployment.md](deployment.md)
+    - [CHANGELOG.md](../CHANGELOG.md)
   - **Why is it like this?** → [DESIGN.md](DESIGN.md) and [decisions/](decisions/README.md)
 - Prefer path references in docs over duplicating source; read code for implementation detail.
 - Generated and committed — never hand-edit: `public/pantry/`, `kitchen/raw/`, `public/share/`,
@@ -70,4 +71,5 @@ no tracking.
 | [decisions/](decisions/README.md)    | Dated decision records, 0001 onwards                                               |
 | [plans/](plans/README.md)            | The build plans, each ending in software that runs                                 |
 | [research/](research/README.md)      | Discovery record: sources, prior art, rendering and hosting options                |
+| [../CHANGELOG.md](../CHANGELOG.md)   | What changed in each release, and what a version number means here                 |
 | [refresh-log.md](refresh-log.md)     | One line per monthly refresh run, written by the workflow                          |
