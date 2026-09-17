@@ -1,3 +1,9 @@
+# Written by release-please, whose Markdown is not prettier's Markdown: `*` bullets and unwrapped
+# lines. Nothing can reformat it before it lands, because it arrives in release-please's own commit
+# on its own branch — so `prettier --check .` would fail on main after every single release, with
+# the deploy behind it. The hand-written 1.0.0 entry above it was formatted by hand.
+CHANGELOG.md
+
 docs/research/
 kitchen/raw/
 public/pantry/

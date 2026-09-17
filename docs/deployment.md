@@ -82,6 +82,12 @@ What the number means — MAJOR is a published URL that stopped working, and not
 monthly data refresh does not cut a release at all. Both are stated at the top of
 [CHANGELOG.md](../CHANGELOG.md).
 
+**One repository setting is required**, and it is off by default: Settings → Actions → General →
+Workflow permissions → **"Allow GitHub Actions to create and approve pull requests"**. Without it
+release-please does all its work and then fails on the last call, because that checkbox governs
+creating pull requests as well as approving them and no `permissions:` block overrides it. See
+[runbook.md](runbook.md).
+
 > The release pull request is opened by the default `GITHUB_TOKEN`, and a pull request opened by
 > that token does not start other workflows — so **CI and the haus gate do not run on it**. It
 > touches three files that cannot break a build, and merging it runs the full pipeline. Decision
