@@ -96,7 +96,9 @@ quietly becoming something else.
 
 ## 4. What ships
 
-Fifteen new indicators, from twelve new tables, taking the site to twenty-five. Every source below
+Fifteen new indicators, from eleven new sources, taking the site to twenty-five. Eleven sources are
+thirteen table ids, because births and deaths each need a CKM continuation table for 2025 — the
+same stitching the existing `net-migration-rate` already does. Every source below
 is verified: 290 municipality codes, real content code, real coverage.
 
 | Indicator id                   | The question it answers                          | Source                         | Coverage  | Builder            |
@@ -193,10 +195,25 @@ Highest-stakes rule applies: every builder and modifier is `kitchen/src/indicato
 4. **Emissions end in 2022.** Three years behind the slider's other end. Honest, flagged in the
    caveat, and worth knowing before it ships rather than after.
 
-## 9. Open for the architect
+## 9. Settled, and still open
 
-1. **Fifteen, or fewer?** The list in §4 is a size that can be finished, not a size that was
-   measured. Cutting `median-rent` and `disposable-household-income` would lose the least.
-2. **Does stage 2 ship on its own?** Splitting the pantry is invisible to visitors and independently
-   valuable. It could be its own plan and its own pull request, ahead of any new indicator.
+Settled by the architect on 2026-09-17:
+
+1. **Fifteen it is.** §4 is the list. It was a size that could be finished rather than a size that
+   was measured, and that was accepted as the reason.
+2. **The pantry split ships on its own**, ahead of any new indicator — its own plan, its own pull
+   request. It is invisible to visitors and independently valuable, and shipping it first means the
+   declarative migration's byte-identical proof (§3.1) runs against the layout the slice will
+   actually keep, rather than against a layout about to be replaced.
+
+Still open:
+
 3. **Sparse series** (§5) — whether that design pass happens next, or after this slice lands.
+
+### Plan order that follows
+
+| Plan | Covers                                                                        | Proves itself by                                      |
+| ---- | ----------------------------------------------------------------------------- | ----------------------------------------------------- |
+| 12   | The pantry split: index plus one file per indicator (§3.2)                    | Same ten indicators, `yarn e2e` green, index measured |
+| 13   | Indicators become definitions; similarity pinned to the core ten (§3.1, §3.3) | `public/pantry/` byte-identical                       |
+| 14   | The fifteen (§4), with D1–D5 recorded                                         | Headline-figure tests per indicator; determinism      |
