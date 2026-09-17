@@ -135,14 +135,30 @@ between how well this project is built and how well it reads.
 controls moved into the sticky bar and the map is now the first thing in the main region. The `hreflang` item that stood beside it is closed — the generated
 municipality pages take their absolute URLs from `SITE_ORIGIN`, which the deploy now sets.
 
+---
+
+## The third slice — more of the source · **in design**
+
+The first slice built a map you can read. The second made the data speak. The third widens what
+there is to speak about: from ten indicators to twenty-five, chosen question-first, and — the part
+that matters longer — a kitchen where the twenty-sixth costs a definition rather than a module.
+
+It also ships the first combinations, indicators computed from other indicators, so the site
+answers questions no single SCB table answers. Two of them need no new data at all: how many years
+of income a house costs, and where women and men differ most in education.
+
+| Document                                                     | What it holds                                                                                                                              |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| [The question list](../research/2026-09-17-question-list.md) | 28 questions mapped to SCB tables, verified against live v2 metadata on 2026-09-17; four candidates rejected on verification, with reasons |
+| [Third slice design](2026-09-17-third-slice-design.md)       | The three structural changes, the fifteen that ship, what is deferred and why, the decisions it forces, verification and risks             |
+
+Same rule as the slices before it: **each plan is written in full only just before it is
+executed.** The design is intent, not specification.
+
 ## Later, and possibly never
 
-**More indicators.** The kitchen's registry was built so a new indicator is one module, and
-[DESIGN section 4](../DESIGN.md#4-data-model) leaves the list deliberately open. Unemployment,
-housing completions, commuting, election turnout and land use are all within SCB alone. Cheap now
-that the machinery exists, and it makes every plan above richer — but it adds no new capability,
-and the first ten already answer the questions the design set out to answer. A plan when there is
-a reason, not before.
+**~~More indicators.~~** Superseded by the third slice above. The paragraph that stood here said a
+plan when there is a reason, not before; the reason is now written down.
 
 **Still deferred, and may never be built**, unchanged from
 [DESIGN section 7](../DESIGN.md#7-scope): neighbourhood-level zoom into SCB's 6,160 small areas, a
