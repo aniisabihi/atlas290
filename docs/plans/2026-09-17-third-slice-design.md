@@ -30,7 +30,7 @@ executes.
 | Decision                                                                     | Consequence for this slice                                                                                |
 | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | **Broad but curated**, not exhaustive and not two-tier                       | One quality bar. Every indicator keeps a hand-written caveat and verified-figure tests. DESIGN §1 stands. |
-| **Flat shape** — each breakdown is its own indicator, not an axis            | `shared/pantry.ts` is not modified by this slice at all. The indicator-id scheme becomes load-bearing.    |
+| **Flat shape** — each breakdown is its own indicator, not an axis            | No value semantic in `shared/pantry.ts` changes (see D6). The indicator-id scheme becomes load-bearing.   |
 | **Combination happens in the kitchen**, as curated derived indicators        | No browser-side arithmetic. Fixed colour breaks across years survive intact.                              |
 | **Curation is question-led**, with no coverage-balance or series-length gate | Short and ragged series are allowed in, and handled honestly rather than excluded.                        |
 
@@ -76,8 +76,10 @@ regression rather than a cost.
 So: a slim index plus one file per indicator.
 
 - **Index** carries what the picker, the URL parser and the legend need for _every_ indicator: id,
-  bilingual name, unit, scale kind and breaks, coverage. Measured today at ~2.6 kB per indicator,
-  so ~65 kB raw for 25 — call it 15 kB gzipped.
+  bilingual name, unit, scale kind and breaks, coverage, and the price fields. Built and measured
+  while writing [plan 12](2026-09-17-12-the-pantry-splits.md): **6,471 bytes gzipped at ten
+  indicators and 6,524 at twenty-five** — it barely grows, because the 290 municipalities dominate
+  it. An earlier estimate here said ~15 kB; that was a guess, and the measurement replaced it.
 - **Per-indicator file** carries the series and the prose. Fetched when the indicator is chosen.
 - A visitor loads the index plus one series, not twenty-five.
 
@@ -159,9 +161,18 @@ Each becomes a record under `docs/decisions/`.
   indicator's own unit, and must be re-derived for each of the fifteen rather than inherited.
 - **D5 — DESIGN §8 is wrong about nature data.** `TAB4357` publishes municipal greenhouse gases.
   The sentence gets corrected and the correction gets a record.
-- **D6 — This slice does not touch `shared/pantry.ts`.** Deferring the period-based indicators
-  (§5) is what buys this, and it is worth buying: the contract is append-only, TDD-only, and its
-  status enum is a persisted byte.
+- **D6 — This slice changes the pantry's container, and none of its value semantics.**
+  `Indicator`, `IndicatorSeries`, `Municipality` and `OBSERVATION_STATUS` are untouched — the
+  enum whose index is a persisted byte in every published cell does not move. What does change is
+  how those values are packaged into files: [plan 12](2026-09-17-12-the-pantry-splits.md) adds
+  `PantryIndex`, `IndicatorMeta` and `PantryIndicator` beside `PantryData`. Deferring the
+  period-based indicators (§5) is what keeps the distinction clean, and it is worth keeping:
+  a container can be revised, a status byte cannot.
+
+  _Corrected 2026-09-17._ As first written this read "does not touch `shared/pantry.ts`", which
+  plan 12 falsified the moment it was drafted — the split cannot be expressed without new schemas
+  in that file. The claim worth making was always about semantics, not about the file.
+
 - **D7 — `compare` needs no change yet.** "Higher on 17 of 25" is still a sentence a person can
   use. Revisit past roughly forty.
 
