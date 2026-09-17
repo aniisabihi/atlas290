@@ -330,7 +330,18 @@ main {
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.02fr);
-  grid-template-areas: 'reading view';
+  /*
+   * A second row, the width of both columns, for the municipality.
+   *
+   * Its ten measures are a table of figures with a trend beside each, and a table of figures
+   * wants the page rather than half of it — at column width the name and the value were fighting
+   * for the same line. So the place announces itself under the map and its data spreads across
+   * everything the map and the reading column together occupy.
+   */
+  grid-template-areas:
+    'reading view'
+    'place place'
+    'against against';
   gap: clamp(1.5rem, 4vw, 3.5rem);
   align-items: start;
   max-width: 78rem;
@@ -723,13 +734,36 @@ main {
 }
 
 /*
- * The profile arrives under the instrument, in the column that was empty below "about this
- * measure". It used to render after the facts strip, so a click on the map changed nothing a
- * visitor could see.
+ * The profile takes the whole width, directly under the map, and before the facts. It used to
+ * render after the facts strip, which is the defect this placement exists to fix — being below
+ * the map was never the problem, being below five facts was.
  */
-.reading-column .profile,
-.reading-column .compare {
-  margin-top: 2.5rem;
+/*
+ * A row each, not an area each way round: two items given the same grid area are stacked on top
+ * of one another, which drew the comparison straight through the profile it was meant to follow.
+ */
+.layout .profile {
+  grid-area: place;
+}
+
+.layout .compare {
+  grid-area: against;
+}
+
+.layout .profile,
+.layout .compare {
+  margin: 2.5rem 0 0;
+  max-width: none;
+  /*
+   * Both the zeroed side margins and `min-width: 0` are load-bearing at 320 px.
+   *
+   * The compare panel inherits `margin: 3.5rem auto 0` from the rule that centres the page's
+   * standalone sections, and an auto side margin on a grid item turns off the stretch that would
+   * otherwise size it to its track — so it sized itself to its content instead, 486 px of
+   * comparison table inside a 320 px screen, and pushed the whole document sideways. `min-width`
+   * is then what lets the item shrink below that content, as both columns already do.
+   */
+  min-width: 0;
 }
 
 .story {
@@ -1223,7 +1257,9 @@ main {
     /* The map stays first, on screen as well as in the document. */
     grid-template-areas:
       'view'
-      'reading';
+      'reading'
+      'place'
+      'against';
   }
 
   .reading-column {
