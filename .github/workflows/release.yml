@@ -1,0 +1,43 @@
+name: Release
+
+# Every push to main. release-please reads the Conventional Commit subjects since the last tag,
+# and keeps ONE open pull request proposing the next version: the changelog entry, the bumped
+# package.json and the manifest. Merging that pull request is what tags the commit and publishes
+# the GitHub Release. Nothing here releases on its own — see
+# docs/decisions/0012-releases-and-a-changelog.md.
+#
+# A release is not a deploy. ci.yml already deploys every green push to main; this workflow only
+# labels what is already live.
+on:
+  push:
+    branches: [main]
+    # The monthly refresh commits one line here purely to keep its own schedule alive. That push
+    # must not open a release pull request. Same exclusion, same reason, as ci.yml.
+    paths-ignore:
+      - 'docs/refresh-log.md'
+
+# Only one release pull request may be in flight, and two runs racing to update it would fight
+# over the same branch.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    name: Propose or publish a release
+    runs-on: ubuntu-latest
+    steps:
+      # No `token:` input, so this runs as the default GITHUB_TOKEN. The consequence is deliberate
+      # and worth stating: a pull request opened by that token does not start other workflows, so
+      # CI and the haus gate do NOT run on the release pull request. That pull request touches
+      # CHANGELOG.md, package.json and .release-please-manifest.json and nothing else, and merging
+      # it is a human push that runs the full pipeline. The alternative is a long-lived personal
+      # access token in repository secrets, bought to check a diff that cannot break the build.
+      - uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

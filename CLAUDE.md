@@ -67,6 +67,10 @@ Detail, environment variables and troubleshooting: [docs/setup.md](docs/setup.md
   is not covered is stated in [docs/accessibility.md](docs/accessibility.md).
 - **Decisions get a record.** Anything that changes a decision in `docs/DESIGN.md` gets a dated
   file in [docs/decisions/](docs/decisions/README.md).
+- **The commit subject is the changelog entry.** Releases and `CHANGELOG.md` are generated from
+  Conventional Commits, and the PR title is the squash commit — CI fails a title with no type,
+  because a bad title loses the change from the release notes silently. `!` only when a published
+  URL stops working: that is the only thing that costs a major version.
 - **Docs are an index:** use path references in `docs/`; read source for implementation detail.
 - **Keep docs in sync:** after setup, commands, env, deploy, or integration changes, run the
   **writing-documentation** skill in this repo and commit the doc updates with the code change.
@@ -79,6 +83,8 @@ Detail, environment variables and troubleshooting: [docs/setup.md](docs/setup.md
 - [ ] A decision record under `docs/decisions/` when a DESIGN decision changed (or N/A)
 - [ ] Run the **writing-documentation** skill when setup, commands, env, deploy or integrations
       changed (or N/A)
+- [ ] The PR title is a Conventional Commit (`type(scope): subject`) — it becomes the changelog
+      entry
 - [ ] Docs reflect this change or explicitly N/A
 
 ## Docs

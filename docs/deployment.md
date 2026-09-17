@@ -18,6 +18,8 @@ build and a live site could coexist.
 | `.github/workflows/ci.yml`        | every pull request; every push to `main`   | Checks, browsers, budget — and on `main` only, deploy        |
 | `.github/workflows/haus-gate.yml` | every pull request                         | `haus doctor`, `haus decisions check`, `haus update --check` |
 | `.github/workflows/refresh.yml`   | `17 4 1 * *` (monthly) and manual dispatch | Refetches from SCB and opens a data pull request             |
+| `.github/workflows/release.yml`   | every push to `main`                       | Keeps the release pull request up to date; on merge, tags    |
+| `.github/workflows/pr-title.yml`  | every pull request                         | Fails a title that is not a Conventional Commit              |
 
 A second push to the same ref cancels the first (`concurrency` on `ci.yml`).
 
@@ -32,9 +34,11 @@ to `main`:
    Playwright report is uploaded as an artifact for 7 days.
 3. **budget** — builds, serves `dist/`, and runs Lighthouse against `/en/`.
 
-## Release steps
+## Deploy steps
 
-1. Merge to `main`. Nothing else is manual.
+A deploy is automatic and continuous. Nothing here is manual.
+
+1. Merge to `main`.
 2. `check`, `browsers` and `budget` run; any failure stops the deploy.
 3. The deploy job checks whether `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` exist. If they
    do not, it **skips with a notice** rather than failing — a permanently red badge for a step
@@ -47,6 +51,41 @@ to `main`:
 The one-time Cloudflare account, project and token setup — with the minimum permissions — is in
 [README.md](../README.md#deploying-it). It has to be done by the repository owner, and nothing in
 this repository can or should do it.
+
+## Releases
+
+**A release is not a deploy.** Every green push to `main` is already live; a release is a version
+number and a changelog entry put on top of what is live, so a reader can say what changed between
+one visit and the next. Full reasoning:
+[decision 0012](decisions/0012-releases-and-a-changelog.md).
+
+| Workflow                         | Trigger              | Does                                                              |
+| -------------------------------- | -------------------- | ----------------------------------------------------------------- |
+| `.github/workflows/release.yml`  | every push to `main` | Keeps one open release pull request; on merge, tags and publishes |
+| `.github/workflows/pr-title.yml` | every pull request   | Fails a title that is not a Conventional Commit                   |
+
+How a release happens:
+
+1. Changes land on `main` as Conventional Commits. **The pull request title is the squash commit,
+   and the squash commit is the changelog entry** — `pr-title.yml` fails the pull request if that
+   title has no type, because the alternative failure is silent: the increment simply never
+   appears in the release notes.
+2. `release-please` keeps one open pull request, titled `chore(main): release X.Y.Z`, holding the
+   generated `CHANGELOG.md` entry, the bumped `package.json` and
+   `.release-please-manifest.json`.
+3. Review it like any other pull request and merge it. That tags the commit `vX.Y.Z` and publishes
+   the GitHub Release.
+4. Merging it is a push to `main`, so CI runs and redeploys a site whose content has not changed.
+   Harmless.
+
+What the number means — MAJOR is a published URL that stopped working, and nothing else; the
+monthly data refresh does not cut a release at all. Both are stated at the top of
+[CHANGELOG.md](../CHANGELOG.md).
+
+> The release pull request is opened by the default `GITHUB_TOKEN`, and a pull request opened by
+> that token does not start other workflows — so **CI and the haus gate do not run on it**. It
+> touches three files that cannot break a build, and merging it runs the full pipeline. Decision
+> 0012 records what that gives up and why a personal access token was not the answer.
 
 ## Artifacts
 
