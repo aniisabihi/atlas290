@@ -65,6 +65,28 @@ table inside a 320 px screen, pushing the whole document sideways. The reflow te
 immediately, which is exactly what it is for. The fix is zeroed side margins plus `min-width: 0`,
 the same declaration both columns already carry.
 
+## And one CI found, in code this record did not touch
+
+The morph guard from [0010](0010-the-place-beside-the-map.md) D5 was a frame short, and only
+WebKit and Firefox on CI hardware ever showed it.
+
+`useMorph` starts its animation in an effect whose first frame is a `requestAnimationFrame` after
+that, so between the view flipping and the first frame nothing had said the shapes were moving.
+Worse, the flag was written as `t > 0 && t < 1`, and Firefox hands a frame callback the timestamp
+the frame _began_ — which can precede the moment the animation started, so the first `t` is
+slightly negative and the flag read "at rest" for one frame at the start of every morph. Two
+windows, both of them a pointer move wide.
+
+The flag is now raised in a layout effect when the view changes, which runs synchronously with
+the commit so no event can slip between them, and it means "not where it is going" rather than
+"strictly between the two ends". Twelve repetitions across three engines.
+
+The test for it was wrong in a third way, and its own comment now says so: it clicked from the
+test process and watched from the test process, so on a slow run the shapes had arrived before
+the watching finished and the tooltip came back for the right reason. It clicks from inside the
+page now, and counts only once the map has actually changed view — a tooltip drawn over a map
+still standing still is the feature working, right up to the moment it should stop.
+
 ## Where this is re-derived
 
 - `e2e/pointing.spec.ts` — the profile as wide as the layout and under the map, the comparison

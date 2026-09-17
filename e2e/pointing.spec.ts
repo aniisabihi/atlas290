@@ -195,23 +195,26 @@ test.describe('pointing at a shape', () => {
     await page.locator(KIRUNA).hover({ force: true })
     await expect(page.getByTestId('map-tooltip')).toBeVisible()
 
-    // The view flips the instant the button is pressed; the shapes take 650 ms to get there.
-    await page.getByRole('button', { name: 'Bubbles' }).click()
-    await expect(page.getByTestId('map-tooltip')).toHaveCount(0)
-
     /*
-     * Driven inside the page rather than over the wire.
+     * The press and the watching happen in the same page task.
      *
-     * Following the shape with `mouse.move` needs a round trip per frame, and in Firefox and
-     * WebKit those round trips outlast the 650 ms morph — so the last few moves landed after the
-     * shapes had arrived, the tooltip correctly reappeared, and the test failed for being slow
-     * rather than for finding anything.
+     * Driving them separately meant the loop started however long a round trip took after the
+     * view changed, and on a slow run that was enough of the 650 ms for the shapes to arrive
+     * before the loop finished — so the tooltip came back for the right reason and the test
+     * failed anyway. Clicking from inside the page removes the gap entirely.
      */
     const saw = await page.evaluate(async () => {
+      const button = [...document.querySelectorAll('button')].find(
+        (b) => b.textContent?.trim() === 'Bubbles',
+      )!
+      button.click()
+
       const path = document.querySelector('svg.map path[data-code="2584"]')!
+      const map = document.querySelector('svg.map')!
       let seen = false
       const started = performance.now()
-      while (performance.now() - started < 300) {
+      // Comfortably inside the 650 ms the morph takes, whatever the machine is doing.
+      while (performance.now() - started < 400) {
         const r = path.getBoundingClientRect()
         path.dispatchEvent(
           new PointerEvent('pointermove', {
@@ -222,7 +225,11 @@ test.describe('pointing at a shape', () => {
           }),
         )
         await new Promise(requestAnimationFrame)
-        if (document.querySelector('[data-testid="map-tooltip"]')) seen = true
+        // Only once the shapes have actually set off. The click is one thing and the state
+        // catching up with it is another, and a tooltip drawn over a map still standing still is
+        // not the defect — it is the feature working right up to the moment it should stop.
+        const travelling = map.getAttribute('data-view') === 'cartogram'
+        if (travelling && document.querySelector('[data-testid="map-tooltip"]')) seen = true
       }
       return seen
     })

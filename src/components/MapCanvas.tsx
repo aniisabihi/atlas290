@@ -1,4 +1,4 @@
-import { useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react'
+import { useCallback, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { MunicipalityTopology } from '../../shared/geometry'
 import type { Adjacency, Bubbles } from '../../shared/pantry'
 import { observationAt, rankOf, type Lookup } from '../data/select'
@@ -138,6 +138,8 @@ export function MapCanvas({
    * answer a question only an event handler ever asks.
    */
   const morphing = useRef(false)
+  /** The view the shapes were last known to be resting in, so a change to it is a departure. */
+  const restingIn = useRef(view)
   /**
    * The input behind the most recent press.
    *
@@ -204,7 +206,16 @@ export function MapCanvas({
    */
   const applyFrame = useCallback(
     (t: number) => {
-      morphing.current = t > 0 && t < 1
+      /*
+       * "Not where it is going", rather than "strictly between the two ends".
+       *
+       * Firefox hands a `requestAnimationFrame` callback the timestamp the frame began, which can
+       * precede the moment the animation was started — so the first frame arrives with a slightly
+       * negative `t`, which is not greater than zero, and a flag written as `t > 0 && t < 1` read
+       * as "at rest" for exactly one frame at the start of every morph. Long enough for a pointer
+       * to find it under load.
+       */
+      morphing.current = t !== (view === 'cartogram' ? 1 : 0)
       for (const shape of shapes) {
         paths.current.get(shape.code)?.setAttribute('d', pathFor(shape.code, shape.d, t))
       }
@@ -220,8 +231,30 @@ export function MapCanvas({
           `${lerp(FRAME[1], cartogramBox.height, t).toFixed(1)}`,
       )
     },
-    [shapes, pathFor, cartogramBox],
+    [shapes, pathFor, cartogramBox, view],
   )
+
+  /*
+   * In flight from the moment the view changes, not from the first frame.
+   *
+   * `useMorph` starts the animation in an effect and its first frame is a `requestAnimationFrame`
+   * after that, so between the button being pressed and `applyFrame` first running there is a
+   * window where the view has already flipped and nothing has said the shapes are moving. A
+   * pointer moved in that window took a fresh hover and drew a reading beside a shape about to
+   * leave. Rare enough to pass locally every time; WebKit on slower CI hardware found it.
+   *
+   * A layout effect rather than a line in the render body, because a ref written while rendering
+   * is a value React is free to discard — the same reason `useMorph` gives for its own. This runs
+   * synchronously with the commit, so no event can be dispatched between the two.
+   *
+   * Unconditional, including under reduced motion: `useMorph` has no animation to run there and
+   * calls the frame straight away, in an effect that follows this one in the same flush, so the
+   * flag is corrected to false before anything can be pointed at.
+   */
+  useLayoutEffect(() => {
+    morphing.current = restingIn.current !== view
+    restingIn.current = view
+  }, [view])
 
   useMorph(view === 'cartogram' ? 1 : 0, !animate, applyFrame)
 
