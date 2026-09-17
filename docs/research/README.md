@@ -9,6 +9,7 @@ tagged that way should be relied on without a fresh check.
 
 | File | What it covers |
 | --- | --- |
+| [2026-09-17-question-list.md](2026-09-17-question-list.md) | Question-led candidate indicators for the expansion beyond the first ten: 28 questions mapped to verified SCB v2 tables, content codes and coverage; four candidates rejected on verification; what SCB cannot answer; open questions on periods that are not years |
 | [2026-09-10-discovery-report.md](2026-09-10-discovery-report.md) | The synthesis: concept, data, geography, technical challenges, cost traps, prior art, interaction ideas, product directions, recommendation, decide-now vs keep-open |
 | [reports/scb-pxweb.md](reports/scb-pxweb.md) | SCB: PxWeb API v1/v2 status, limits, license, verified municipality-level tables with years, DeSO/RegSO, boundary files, code changes, CKM noise, publication lags |
 | [reports/other-swedish-sources.md](reports/other-swedish-sources.md) | Kolada, Valmyndigheten, Lantmäteriet, Skolverket, JobTech, Brå, housing sources, dataportal.se, nature geodata, SMHI, Trafikanalys, health, Skatteverket, Wikidata, SKR, Tillväxtverket, PTS and others |
