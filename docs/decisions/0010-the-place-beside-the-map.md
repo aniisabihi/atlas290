@@ -2,7 +2,9 @@
 
 **Date:** 2026-09-16
 **Plan:** [Plan 11](../plans/2026-09-16-11-the-place-beside-the-map.md)
-**Status:** accepted
+**Status:** accepted; **D1 superseded by [0011](0011-the-profile-takes-the-page.md)** — the
+profile takes the full width of the layout under the map, rather than the reading column beside
+it. Everything else here stands.
 
 ## Context
 
@@ -23,8 +25,10 @@ figures overprinted each other.
 
 ## Decisions
 
-**D1 — The profile lives in the reading column, beneath the year and the legend.** Chosen by the
-architect over replacing them. The visitor keeps the instrument in view and the column grows
+**D1 — The profile lives in the reading column, beneath the year and the legend.**
+_Superseded by [0011](0011-the-profile-takes-the-page.md): the placement below the map was right,
+the column was not, and ten rows of figures want the page._ Chosen by the architect
+over replacing them. The visitor keeps the instrument in view and the column grows
 downward, into space that was empty. The facts strip stays below both columns, where it is
 somewhere to go next rather than a wall between a click and its answer. The map is still first in
 `<main>` (0009 D6) and the heading is still the focus target on open.

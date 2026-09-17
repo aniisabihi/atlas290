@@ -303,75 +303,74 @@ export function App({
             />
 
             <AboutIndicator lk={lk} indicatorId={state.indicator} lang={state.lang} />
-
-            {/*
-             * The place, beside the map that named it.
-             *
-             * It used to render after the facts strip, so clicking a municipality changed
-             * nothing a visitor could see without scrolling past five facts first. The reading
-             * column was empty below here; now it holds what the click was for. On a narrow
-             * screen the single-column layout puts this under the map, which is the same answer.
-             */}
-            {state.selected && (
-              <ProfilePanel
-                asSheet={narrow}
-                lk={lk}
-                code={state.selected}
-                year={state.year}
-                lang={state.lang}
-                compare={
-                  state.compare === null ? (
-                    <CompareSearch
-                      lk={lk}
-                      selected={state.selected}
-                      lang={state.lang}
-                      onCompare={(compare) => {
-                        interrupt()
-                        setNotice('')
-                        update({ compare })
-                      }}
-                    />
-                  ) : null
-                }
-                story={
-                  <ProfileStory lk={lk} code={state.selected} year={state.year} lang={state.lang} />
-                }
-                similar={
-                  <SimilarPlaces
-                    lk={lk}
-                    similar={similar}
-                    meta={meta}
-                    state={state}
-                    lang={state.lang}
-                    onHighlight={setHighlight}
-                  />
-                }
-                onClose={() => {
-                  const closing = state.selected
-                  setNotice('')
-                  update({ selected: null, compare: null })
-                  // Focus goes back to the shape that opened the panel, rather than being
-                  // dropped at the top of the document.
-                  if (closing) mapRef.current?.focusMunicipality(closing)
-                }}
-              />
-            )}
-
-            {state.selected && state.compare !== null && (
-              <ComparePanel
-                lk={lk}
-                selected={state.selected}
-                compare={state.compare}
-                year={state.year}
-                lang={state.lang}
-                onCompare={(compare) => {
-                  interrupt()
-                  setNotice('')
-                  update({ compare })
-                }}
-              />
-            )}
           </div>
+          {/*
+           * The place, in a row of its own under the map.
+           *
+           * It used to render after the facts strip, so clicking a municipality changed nothing
+           * a visitor could see without scrolling past five facts first. Being under the map was
+           * never the problem; being under the facts was. The measures are a table of figures
+           * and want the page rather than half of it.
+           */}
+          {state.selected && (
+            <ProfilePanel
+              asSheet={narrow}
+              lk={lk}
+              code={state.selected}
+              year={state.year}
+              lang={state.lang}
+              compare={
+                state.compare === null ? (
+                  <CompareSearch
+                    lk={lk}
+                    selected={state.selected}
+                    lang={state.lang}
+                    onCompare={(compare) => {
+                      interrupt()
+                      setNotice('')
+                      update({ compare })
+                    }}
+                  />
+                ) : null
+              }
+              story={
+                <ProfileStory lk={lk} code={state.selected} year={state.year} lang={state.lang} />
+              }
+              similar={
+                <SimilarPlaces
+                  lk={lk}
+                  similar={similar}
+                  meta={meta}
+                  state={state}
+                  lang={state.lang}
+                  onHighlight={setHighlight}
+                />
+              }
+              onClose={() => {
+                const closing = state.selected
+                setNotice('')
+                update({ selected: null, compare: null })
+                // Focus goes back to the shape that opened the panel, rather than being
+                // dropped at the top of the document.
+                if (closing) mapRef.current?.focusMunicipality(closing)
+              }}
+            />
+          )}
+
+          {state.selected && state.compare !== null && (
+            <ComparePanel
+              lk={lk}
+              selected={state.selected}
+              compare={state.compare}
+              year={state.year}
+              lang={state.lang}
+              onCompare={(compare) => {
+                interrupt()
+                setNotice('')
+                update({ compare })
+              }}
+            />
+          )}
         </div>
 
         {/*

@@ -14,14 +14,11 @@ const DESKTOP = { width: 1440, height: 900 }
 const KIRUNA = 'svg.map path[data-code="2584"]'
 
 test.describe('the place beside the map', () => {
-  test('a selected municipality appears without pushing the map off the screen', async ({
-    page,
-  }) => {
+  test('a selected municipality is brought into view, before the facts', async ({ page }) => {
     await page.setViewportSize(DESKTOP)
     await page.goto('/en/?y=2024&v=map')
     await page.locator('svg.map').waitFor()
 
-    const before = await page.locator('.map-frame').boundingBox()
     await page.locator('svg.map path[data-code="1280"]').click()
 
     const heading = page.getByRole('heading', { level: 2, name: 'Malmö' })
@@ -30,21 +27,46 @@ test.describe('the place beside the map', () => {
     // five facts, so clicking a municipality changed nothing a visitor could see.
     await expect(heading).toBeInViewport()
 
-    // And the map is still there. It used to be the thing that scrolled away.
-    const after = await page.locator('.map-frame').boundingBox()
-    expect(after?.y).toBe(before?.y)
-    await expect(page.locator('.map-frame')).toBeInViewport()
+    // Still before the facts. That ordering is the whole of the defect; the width is not.
+    const profile = (await page.locator('.layout .profile').boundingBox())!
+    const facts = (await page.locator('.facts').boundingBox())!
+    expect(profile.y).toBeLessThan(facts.y)
   })
 
-  test('the profile sits in the reading column, above the facts', async ({ page }) => {
+  /*
+   * Two grid items given the same area are drawn on top of each other, and the first version of
+   * the full-width row did exactly that: the comparison was painted straight through the profile
+   * it is supposed to follow. Nothing in the suite noticed, because every assertion was about
+   * where a box starts and none about where the one above it ends.
+   */
+  test('the comparison follows the profile rather than being drawn over it', async ({ page }) => {
+    await page.setViewportSize(DESKTOP)
+    await page.goto('/en/?y=2024&m=1280&c=0180&v=map')
+    await page.locator('svg.map').waitFor()
+
+    const profile = (await page.locator('.layout .profile').boundingBox())!
+    const compare = (await page.locator('.layout .compare').boundingBox())!
+    expect(compare.y).toBeGreaterThanOrEqual(profile.y + profile.height - 1)
+
+    const facts = (await page.locator('.facts').boundingBox())!
+    expect(facts.y).toBeGreaterThanOrEqual(compare.y + compare.height - 1)
+  })
+
+  test('the profile takes the width of both columns, under the map', async ({ page }) => {
     await page.setViewportSize(DESKTOP)
     await page.goto('/en/?y=2024&m=1280&v=map')
     await page.locator('svg.map').waitFor()
 
-    const profile = await page.locator('.reading-column .profile').boundingBox()
-    const facts = await page.locator('.facts').boundingBox()
-    expect(profile).not.toBeNull()
-    expect(profile!.y).toBeLessThan(facts!.y)
+    const profile = (await page.locator('.layout .profile').boundingBox())!
+    const layout = (await page.locator('.layout').boundingBox())!
+    const plate = (await page.locator('.map-frame').boundingBox())!
+
+    // The page, not half of it: a measure row is a name, a figure and a trend, and at column
+    // width the name and the figure were fighting for the same line.
+    expect(Math.abs(profile.width - layout.width)).toBeLessThan(2)
+    expect(profile.x).toBeLessThan(plate.x)
+    // Under the map, which is where it used to be and where it is again.
+    expect(profile.y).toBeGreaterThan(plate.y + plate.height - 2)
   })
 })
 

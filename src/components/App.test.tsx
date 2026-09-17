@@ -204,14 +204,18 @@ describe('App', () => {
 
   /**
    * The defect these exist for: clicking a municipality used to render its profile after the
-   * facts strip, below the fold, so the visible page did not change at all. The reading column
-   * beside the map was empty from "about this measure" downwards, which is where it goes now.
+   * facts strip, so the visible page did not change at all. Being under the map was never the
+   * problem — being under five facts was. It now has a row of its own inside the layout, the
+   * width of both columns, before the facts.
    */
-  it('puts the municipality in the column beside the map, not after the facts', () => {
+  it('puts the municipality in the layout, under the map and before the facts', () => {
     const { container } = open('/en/?y=2024&m=1280')
     const heading = screen.getByRole('heading', { level: 2, name: 'Malmö' })
-    expect(heading.closest('.reading-column')).not.toBeNull()
+    expect(heading.closest('.layout')).not.toBeNull()
     expect(heading.closest('.facts')).toBeNull()
+    // Neither column: it spans both, so its measures get the page rather than half of it.
+    expect(heading.closest('.reading-column')).toBeNull()
+    expect(heading.closest('.view-column')).toBeNull()
     // The map is still the first thing in the main region — Plan 10 D6, which this must not undo.
     const main = container.querySelector('main')!
     expect(main.querySelector('.view-column, .reading-column')?.className).toContain('view-column')
