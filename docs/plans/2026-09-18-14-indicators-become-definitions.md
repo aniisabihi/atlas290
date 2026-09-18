@@ -137,13 +137,26 @@ what a definition is — since the next person adding an indicator reads that, n
 
 ## What must be measured when it is done
 
-| Gate                                  | Target                               | Result |
-| ------------------------------------- | ------------------------------------ | ------ |
-| `public/pantry/` after the migration  | **byte-identical**                   |        |
-| Lines under `kitchen/src/indicators/` | less than half of 2,919              |        |
-| What an eleventh indicator would cost | record it — this is the plan's point |        |
-| Unit tests                            | no loss against 1,218                |        |
-| Browser tests                         | no loss                              |        |
+| Gate                                       | Target                               | Result                                                     |
+| ------------------------------------------ | ------------------------------------ | ---------------------------------------------------------- |
+| `public/pantry/` after each migration      | byte-identical                       | **byte-identical**, all nine                               |
+| `data/similar.json` after pinning the core | byte-identical                       | **byte-identical**                                         |
+| What an eleventh indicator costs           | record it — this is the plan's point | **7–30 lines, mean 19**, against modules of 153–696        |
+| Shared builder code                        | —                                    | 492 lines (`define.ts` 274, `source.ts` 218), written once |
+| Lines under `kitchen/src/indicators/`      | less than half of the 2,602          | **not met, and deliberately** — see below                  |
+| Unit tests                                 | no loss against 1,218                | **1,236**                                                  |
+| Browser tests                              | no loss                              | unchanged                                                  |
+
+**The line-count target was not met, because task 4 was not done.** Twenty-seven per-indicator
+build functions and selection helpers now have no production caller, and roughly 190 test
+assertions exercise them. Deleting all of that belongs in its own change: this plan's entire claim
+is "nothing moved", and a 1,500-line deletion in the same diff would make that claim unreviewable.
+Recorded as a known cost in [decision 0014](../decisions/0014-indicators-become-definitions.md),
+with its own follow-up, rather than quietly dropped or quietly bundled.
+
+**Nine of ten, not ten.** `population-change` reads population's series, propagates four statuses
+through a year-over-year comparison and applies the structural-break rule. A generic builder for it
+would have one user and a pile of special cases. It stays hand-written and says so.
 
 ## Stop conditions
 
