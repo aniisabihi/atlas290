@@ -258,6 +258,10 @@ import { meanAgeDefinition, populationChangeDefinition, share65PlusDefinition } 
 // establishes, so their position among the non-population entries is arbitrary.
 import { dependencyDefinition, fertilityDefinition } from './demography'
 import { employmentDefinition, unemploymentDefinition } from './labour'
+// Taxable income fetches the price index itself inside its own build(), exactly as income and
+// housing do, so like them it has no ordering dependency beyond ctx.municipalities.
+import { disposableDefinition, taxBaseDefinition } from './finance'
+import { rentDefinition } from './dwellings'
 
 /** Every indicator the pantry publishes, in build order. Population must stay first: it is
  * the only definition that derives `ctx.municipalities`, and every other definition depends
@@ -298,6 +302,9 @@ function ensureRegistered(): void {
     dependencyDefinition,
     employmentDefinition,
     unemploymentDefinition,
+    taxBaseDefinition,
+    disposableDefinition,
+    rentDefinition,
   )
 }
 

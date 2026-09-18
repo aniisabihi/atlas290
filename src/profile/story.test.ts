@@ -205,14 +205,14 @@ describe('coverage across the whole country', () => {
   })
 
   it('tells about three quarters of them where they stand', () => {
-    // 185 before plan 16, 218 after, and the rise is the point rather than a regression: a
+    // 185 before plan 16 and 226 after, and the rise is the point rather than a regression: a
     // standing sentence needs the municipality to be near the top or the bottom of SOME measure,
     // and there are more measures now. Design D4 predicted exactly this — "the facts may simply
     // become different overnight, which is correct behaviour and will still be surprising".
     //
     // The bounds are what the test really defends: every municipality having a standing would
     // mean the threshold is meaningless, and very few would mean the sentence never fires.
-    expect(counts.standing).toBe(218)
+    expect(counts.standing).toBe(226)
     expect(counts.standing).toBeGreaterThan(120)
     expect(counts.standing).toBeLessThan(280)
   })

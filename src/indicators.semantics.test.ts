@@ -316,6 +316,51 @@ describe('published pantry: edge cells and status semantics', () => {
     })
   })
 
+  describe('the three money measures SCB publishes ready-made', () => {
+    // Read from each table on 2026-09-18 through a separate single-municipality request, before
+    // any of them was declared. Stockholm 2024: skattekraft 329,390 NOMINAL kronor, disposable
+    // 533.8 tkr, rent 1,619 kr per square metre per year. Borgholm: 212,862, 426.6, 1,182.
+    it('reproduces the disposable income and the rent exactly, since neither is adjusted here', () => {
+      expect(cell('disposable-household-income', 'Stockholm', 2024)).toEqual({
+        value: 533_800,
+        status: 'present',
+      })
+      expect(cell('disposable-household-income', 'Borgholm', 2024)).toEqual({
+        value: 426_600,
+        status: 'present',
+      })
+      expect(cell('median-rent-per-sqm', 'Stockholm', 2024)).toEqual({
+        value: 1619,
+        status: 'present',
+      })
+      expect(cell('median-rent-per-sqm', 'Borgholm', 2024)).toEqual({
+        value: 1182,
+        status: 'present',
+      })
+    })
+
+    // The tax base IS adjusted, so it must NOT reproduce the nominal figure — and the gap has to
+    // be the right size. 2024 kronor expressed in 2025 kronor is a little more, not a lot: if
+    // this ever equalled the nominal figure the adjustment silently stopped running, and if it
+    // were far larger the wrong base year was used.
+    it('publishes the tax base in the price index base year, a little above the nominal figure', () => {
+      const stockholm = cell('taxable-income-per-resident', 'Stockholm', 2024)
+      expect(stockholm.status).toBe('present')
+      expect(stockholm.value).toBe(331_635)
+      expect(stockholm.value! / 329_390).toBeGreaterThan(1)
+      expect(stockholm.value! / 329_390).toBeLessThan(1.05)
+      expect(cell('taxable-income-per-resident', 'Borgholm', 2024).value).toBe(214_313)
+    })
+
+    // TAB3600 publishes 2026 and the price index does not reach it. Dropping the year is the
+    // decision; this is what makes it visible if anyone ever quietly adds it back unadjusted.
+    it('stops the tax base at the price index, not at the table', () => {
+      const years = seriesOf('taxable-income-per-resident').years
+      expect(years[years.length - 1]).toBe(2025)
+      expect(seriesOf('tax-rate').years).toContain(2026)
+    })
+  })
+
   /**
    * Which tables carry SCB's Cell Key Method note is a per-table fact, and getting it wrong in
    * either direction is a published lie: a perturbed cell presented as exact, or an exact cell

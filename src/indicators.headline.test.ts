@@ -69,6 +69,9 @@ describe('published pantry: headline facts', () => {
         'dependency-ratio',
         'employment-rate',
         'unemployment-rate',
+        'taxable-income-per-resident',
+        'disposable-household-income',
+        'median-rent-per-sqm',
       ].sort(),
     )
   })

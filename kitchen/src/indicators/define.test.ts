@@ -24,6 +24,8 @@ import { migrationDefined } from './migration'
 import { meanAgeDefined, share65PlusDefined } from './derived'
 import { dependencyDefined, fertilityDefined } from './demography'
 import { employmentDefined, unemploymentDefined } from './labour'
+import { disposableDefined, taxBaseDefined } from './finance'
+import { rentDefined } from './dwellings'
 
 /**
  * Plan 14, widened by plan 15: an indicator built from its definition must equal the one the
@@ -82,6 +84,9 @@ const DEFINED: ReadonlyArray<readonly [id: string, definition: () => Definition]
   ['dependency-ratio', dependencyDefined],
   ['employment-rate', employmentDefined],
   ['unemployment-rate', unemploymentDefined],
+  ['taxable-income-per-resident', taxBaseDefined],
+  ['disposable-household-income', disposableDefined],
+  ['median-rent-per-sqm', rentDefined],
 ]
 
 /**
@@ -96,7 +101,8 @@ const DEFINED: ReadonlyArray<readonly [id: string, definition: () => Definition]
  */
 async function contextFor(id: string): Promise<Parameters<typeof buildDefined>[1]> {
   const freeze = { deps: { fetchImpl: offline } }
-  const needsCpi = id === 'median-income' || id === 'house-prices'
+  const needsCpi =
+    id === 'median-income' || id === 'house-prices' || id === 'taxable-income-per-resident'
   return {
     municipalities: index.municipalities,
     years: [],

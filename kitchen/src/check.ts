@@ -92,6 +92,10 @@ export const PLAUSIBLE_RANGES: Record<string, PlausibleRange> = {
   'dependency-ratio': { min: 0, max: 500 },
   'employment-rate': { min: 0, max: 100 },
   'unemployment-rate': { min: 0, max: 100 },
+  // Money, so generous headroom above today's real maximum: these can only grow.
+  'taxable-income-per-resident': { min: 0, max: 5_000_000 },
+  'disposable-household-income': { min: 0, max: 5_000_000 },
+  'median-rent-per-sqm': { min: 0, max: 20_000 },
 }
 
 /**
