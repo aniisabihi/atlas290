@@ -22,10 +22,11 @@ import { housingDefined } from './housing'
 import { educationDefined } from './education'
 import { migrationDefined } from './migration'
 import { meanAgeDefined, share65PlusDefined } from './derived'
-import { dependencyDefined, fertilityDefined } from './demography'
+import { dependencyDefined, fertilityDefined, naturalChangeDefined } from './demography'
 import { employmentDefined, unemploymentDefined } from './labour'
 import { disposableDefined, taxBaseDefined } from './finance'
-import { rentDefined } from './dwellings'
+import { completedDefined, rentDefined, stockDefined } from './dwellings'
+import { emissionsDefined } from './environment'
 
 /**
  * Plan 14, widened by plan 15: an indicator built from its definition must equal the one the
@@ -87,6 +88,10 @@ const DEFINED: ReadonlyArray<readonly [id: string, definition: () => Definition]
   ['taxable-income-per-resident', taxBaseDefined],
   ['disposable-household-income', disposableDefined],
   ['median-rent-per-sqm', rentDefined],
+  ['natural-change-rate', naturalChangeDefined],
+  ['dwellings-completed-rate', completedDefined],
+  ['dwellings-per-1000', stockDefined],
+  ['greenhouse-gas-per-resident', emissionsDefined],
 ]
 
 /**

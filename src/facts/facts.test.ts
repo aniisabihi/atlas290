@@ -89,7 +89,11 @@ describe('every published claim re-derives from the pantry', () => {
 
   it('extreme: Sundbyberg against Arjeplog on density, of 290', () => {
     const s = series('density')
-    const col = s.years.indexOf(2024)
+    // The indicator's own last year, read from the pantry rather than written down. Plan 16 gave
+    // each extreme fact its own indicator's latest year instead of one shared across the pantry,
+    // and a literal here would pin the year this test was written rather than the rule it checks.
+    const year = s.years[s.years.length - 1]!
+    const col = s.years.indexOf(year)
     const present = data.municipalities
       .map((m) => ({ code: m.code, value: s.values[rowOf(m.code)]?.[col] ?? null }))
       .filter((x): x is { code: string; value: number } => x.value !== null)
@@ -97,7 +101,7 @@ describe('every published claim re-derives from the pantry', () => {
     const high = present[0]!
     const low = present[present.length - 1]!
     expect(claimOf('extreme-density')).toBe(
-      `density 2024: ${high.code} ${high.value} vs ${low.code} ${low.value}, of ${present.length}`,
+      `density ${year}: ${high.code} ${high.value} vs ${low.code} ${low.value}, of ${present.length}`,
     )
   })
 

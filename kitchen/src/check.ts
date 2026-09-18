@@ -96,6 +96,13 @@ export const PLAUSIBLE_RANGES: Record<string, PlausibleRange> = {
   'taxable-income-per-resident': { min: 0, max: 5_000_000 },
   'disposable-household-income': { min: 0, max: 5_000_000 },
   'median-rent-per-sqm': { min: 0, max: 20_000 },
+  // Natural change is signed and legitimately negative — most Swedish municipalities have more
+  // deaths than births — so its range is not 0-anchored, for the same reason net migration's is
+  // not. The rest are counts over a population and cannot be negative.
+  'natural-change-rate': { min: -200, max: 200 },
+  'dwellings-completed-rate': { min: 0, max: 500 },
+  'dwellings-per-1000': { min: 0, max: 2000 },
+  'greenhouse-gas-per-resident': { min: 0, max: 1000 },
 }
 
 /**

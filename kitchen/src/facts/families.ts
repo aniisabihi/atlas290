@@ -73,8 +73,6 @@ type Ctx = {
   valueAt: (indicatorId: string, code: string, year: number) => number | null
   /** The value together with why it is what it is, for the claims that have to know. */
   pointAt: (indicatorId: string, code: string, year: number) => Point | null
-  /** The last year every indicator covers, which is where a cross-indicator claim has to sit. */
-  commonYear: number
 }
 
 export function contextFor(data: PantryData): Ctx {
@@ -102,7 +100,6 @@ export function contextFor(data: PantryData): Ctx {
       if (!status) throw new Error(`${indicatorId} ${code} ${year}: status byte out of range`)
       return { year, value, status }
     },
-    commonYear: Math.min(...data.indicators.map((i) => i.coverage.to)),
   }
 }
 
@@ -311,7 +308,19 @@ export function unusualCandidates(ctx: Ctx): Candidate[] {
 export function extremeCandidates(ctx: Ctx): Candidate[] {
   const out: Candidate[] = []
   for (const indicator of ctx.data.indicators) {
-    const year = Math.min(ctx.commonYear, indicator.coverage.to)
+    // Each indicator's OWN last year, not a year shared with every other.
+    //
+    // This used to sit at `min(coverage.to)` across the whole pantry, which was harmless while
+    // every indicator ended in the same year or close to it. Plan 16 added greenhouse gases,
+    // whose inventory ends in 2022, and that one lagging series silently pulled EVERY extreme
+    // fact back two years: the site would have said Sundbyberg was 31,147 times denser than
+    // Arjeplog in 2022 while the map beside it drew 2025.
+    //
+    // An extreme is a claim about one indicator, and every published fact states its own year,
+    // so there is nothing to synchronise. The only thing the shared floor bought was that two
+    // facts never quoted different years — which is not a property anyone needs, and was paid
+    // for by quoting a stale one.
+    const year = indicator.coverage.to
     const found = extremesOf(
       ctx.data.municipalities,
       (m) => ctx.valueAt(indicator.id, m.code, year),

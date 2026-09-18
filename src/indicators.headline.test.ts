@@ -72,6 +72,10 @@ describe('published pantry: headline facts', () => {
         'taxable-income-per-resident',
         'disposable-household-income',
         'median-rent-per-sqm',
+        'natural-change-rate',
+        'dwellings-completed-rate',
+        'dwellings-per-1000',
+        'greenhouse-gas-per-resident',
       ].sort(),
     )
   })

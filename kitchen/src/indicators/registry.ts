@@ -68,6 +68,9 @@ export const TOTAL_CODES: Record<string, string[]> = {
   // 'tot' covering both. This site publishes the whole population of the age band; the split is
   // a question for a later indicator, not a silent choice inside this one.
   Fodelseregion: ['tot'],
+  // Plan 16: the births tables' own age dimension. TAB1264 carries 'tot' ("totalt ålder");
+  // TAB6401, its 2025 continuation, carries the CKM-era 'TotSA' like TAB5557 does for Alder.
+  AlderModer: ['tot', 'TotSA'],
 }
 
 /**
@@ -93,6 +96,21 @@ export const SUM_SAFE: Record<string, string[]> = {
   // own 'TotSa' total instead, so it never needs this fallback).
   TAB1211: ['Kon'],
   TAB1212: ['Kon'],
+  // Plan 16 (natural change): TAB1264 (births) and TAB960 (deaths) publish 1968-2024 split by
+  // sex with no total code — only '1' and '2' — so the total is summed. Safe for exactly the
+  // reason TAB638's and TAB1211's sums are: a birth is recorded once under one sex and a death
+  // once under one, the two sets are disjoint, and both tables predate the Cell Key Method, so
+  // the sum is exact arithmetic rather than an approximation over perturbed cells. Their 2025
+  // continuations TAB6401/TAB6757 carry 'TotSa' and never reach this fallback.
+  TAB1264: ['Kon'],
+  TAB960: ['Kon'],
+  // Plan 16 (dwellings): TAB2538 splits completed dwellings by house type with no total, and
+  // TAB824 splits the standing stock by house type AND tenure with no total for either. Each
+  // dimension partitions the same set exactly once — a dwelling is one house type and one
+  // tenure — so summing counts every dwelling once rather than several times. Neither table
+  // carries a perturbation note.
+  TAB2538: ['Hustyp'],
+  TAB824: ['Hustyp', 'Upplatelseform'],
   // Task 9 (education): TAB3981's Kon has exactly two values, '1' and '2', and no total code —
   // verified live 2026-09-14 against the table's own metadata, so summing the two sexes here is
   // not optional, it is required before a share can be computed at all. Declared safe for the
@@ -261,7 +279,11 @@ import { employmentDefinition, unemploymentDefinition } from './labour'
 // Taxable income fetches the price index itself inside its own build(), exactly as income and
 // housing do, so like them it has no ordering dependency beyond ctx.municipalities.
 import { disposableDefinition, taxBaseDefinition } from './finance'
-import { rentDefinition } from './dwellings'
+import { completedDefinition, rentDefinition, stockDefinition } from './dwellings'
+// These four divide by population's finished series through ctx.series, exactly as migration,
+// population-change and share-65-plus do, so like them they MUST be registered after population.
+import { naturalChangeDefinition } from './demography'
+import { emissionsDefinition } from './environment'
 
 /** Every indicator the pantry publishes, in build order. Population must stay first: it is
  * the only definition that derives `ctx.municipalities`, and every other definition depends
@@ -305,6 +327,10 @@ function ensureRegistered(): void {
     taxBaseDefinition,
     disposableDefinition,
     rentDefinition,
+    naturalChangeDefinition,
+    completedDefinition,
+    stockDefinition,
+    emissionsDefinition,
   )
 }
 

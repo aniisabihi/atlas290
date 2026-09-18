@@ -361,6 +361,48 @@ describe('published pantry: edge cells and status semantics', () => {
     })
   })
 
+  describe('the four rates, each hand-computed from its own raw counts', () => {
+    // Every figure below was reconstructed on 2026-09-18 from a separate read of the source
+    // table's raw counts and this pantry's own published population, then compared with what
+    // the pipeline published. Stockholm 2024: 11,430 births, 5,850 deaths, 4,959 dwellings
+    // completed, 522,654 dwellings standing, over a population of 995,574. Borgholm: 51, 187,
+    // 157, 6,317, over 10,666. Emissions are 2022: 3,736 and 145 kilotonnes over 984,748 and
+    // 10,857 residents.
+    it('reproduces natural change, including a negative rate where deaths outnumber births', () => {
+      expect(cell('natural-change-rate', 'Stockholm', 2024)).toEqual({
+        value: 5.6,
+        status: 'present',
+      })
+      // Borgholm had 51 births against 187 deaths. A rate that could not go negative would have
+      // to publish something here, and everything it could publish would be false.
+      expect(cell('natural-change-rate', 'Borgholm', 2024)).toEqual({
+        value: -12.75,
+        status: 'present',
+      })
+    })
+
+    it('reproduces both dwelling rates', () => {
+      expect(cell('dwellings-completed-rate', 'Stockholm', 2024).value).toBe(4.98)
+      expect(cell('dwellings-completed-rate', 'Borgholm', 2024).value).toBe(14.72)
+      expect(cell('dwellings-per-1000', 'Stockholm', 2024).value).toBe(524.98)
+      expect(cell('dwellings-per-1000', 'Borgholm', 2024).value).toBe(592.26)
+    })
+
+    it('reproduces emissions in tonnes per resident, not kilotonnes', () => {
+      // 3,736 kilotonnes over 984,748 people is 3.79 tonnes each, not 0.0038. The unit
+      // conversion is the whole reason this indicator has a unit of its own.
+      expect(cell('greenhouse-gas-per-resident', 'Stockholm', 2022).value).toBe(3.79)
+      expect(cell('greenhouse-gas-per-resident', 'Borgholm', 2022).value).toBe(13.36)
+    })
+
+    // Every other series in this pantry that reaches the present ends in 2025. This one ends in
+    // 2022, and saying so is more honest than quietly letting the slider run past it.
+    it('ends emissions in 2022, three years before the rest', () => {
+      const years = seriesOf('greenhouse-gas-per-resident').years
+      expect(years[years.length - 1]).toBe(2022)
+    })
+  })
+
   /**
    * Which tables carry SCB's Cell Key Method note is a per-table fact, and getting it wrong in
    * either direction is a published lie: a perturbed cell presented as exact, or an exact cell
@@ -375,11 +417,14 @@ describe('published pantry: edge cells and status semantics', () => {
       },
     )
 
-    it.each(['population', 'density', 'share-65-plus', 'net-migration-rate'])(
-      'does mark cells of %s perturbed, from the 2025 CKM tables',
-      (id) => {
-        expect(statusesIn(id)).toContain('perturbed')
-      },
-    )
+    it.each([
+      'population',
+      'density',
+      'share-65-plus',
+      'net-migration-rate',
+      'natural-change-rate',
+    ])('does mark cells of %s perturbed, from the 2025 CKM tables', (id) => {
+      expect(statusesIn(id)).toContain('perturbed')
+    })
   })
 })

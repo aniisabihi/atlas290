@@ -110,9 +110,11 @@ describe('the other three sentences', () => {
     // decimals; English groups with a comma and uses a full stop. Written as an escape
     // rather than a literal space, because the two are indistinguishable in a diff and the
     // non-breaking one is what stops a figure splitting across two lines.
-    expect(text.sv).toContain('6\u00a0446,0')
-    expect(text.sv).not.toContain('6 446,0')
-    expect(text.en).toContain('6,446.0')
+    // 6,529.2 rather than 6,446.0: plan 16 gave each extreme its own indicator's last year, so
+    // density's is quoted for 2025 rather than for the last year the whole pantry shared.
+    expect(text.sv).toContain('6\u00a0529,2')
+    expect(text.sv).not.toContain('6 529,2')
+    expect(text.en).toContain('6,529.2')
   })
 
   it('shows each value at its own indicator precision, never more', () => {
