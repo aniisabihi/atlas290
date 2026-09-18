@@ -430,7 +430,8 @@ describe('publish() writes nothing on a code mismatch (review finding 1)', () =>
       expect(existsSync(join(pantryDir, 'geometry/municipalities.topo.json'))).toBe(false)
       expect(existsSync(join(pantryDir, 'geometry/adjacency.json'))).toBe(false)
       expect(existsSync(join(pantryDir, 'layout/bubbles.json'))).toBe(false)
-      expect(existsSync(join(pantryDir, 'data/indicators.json'))).toBe(false)
+      expect(existsSync(join(pantryDir, 'data/index.json'))).toBe(false)
+      expect(existsSync(join(pantryDir, 'data/indicators'))).toBe(false)
       expect(existsSync(join(pantryDir, 'manifest.json'))).toBe(false)
     } finally {
       rmSync(pantryDir, { recursive: true, force: true })
