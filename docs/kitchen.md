@@ -678,3 +678,42 @@ rendered page rather than loud:
 
 Why these particular choices, and the measurements behind each, are in
 [docs/decisions/0002-similarity-metric.md](decisions/0002-similarity-metric.md).
+
+## The pantry splits (Plan 13, 2026-09-18)
+
+`publish()` no longer writes one `data/indicators.json`. It writes an index and one file per
+indicator, because a single file meant the site fetched every series before first paint for an
+opening view that draws one.
+
+| File                        | Holds                                                                             | Size (gzip -9)  |
+| --------------------------- | --------------------------------------------------------------------------------- | --------------- |
+| `data/index.json`           | Municipalities, the price index, and every indicator WITHOUT its prose            | 6,433           |
+| `data/indicators/<id>.json` | One indicator in full — description, caveat, derivation, sources — and its series | 6,138 to 49,103 |
+
+Measured on the real output: the ten indicator files sum to 272,879 against 272,475 for the single
+file they replaced, so the split costs 404 bytes in total and saves 237,174 before first paint.
+The index barely grows with the indicator count — 6,433 at ten, 6,524 extrapolated to
+twenty-five — because the 290 municipalities dominate it.
+
+**Prose lives in the per-indicator file**, not the index, because only `AboutIndicator` reads it
+and only for the indicator already on screen. That is what keeps the index flat.
+
+**Reading it back.** Three readers, one rule — the index decides the order, never the directory
+listing, because `src/state/url.ts` opens on the first indicator:
+
+- `readPantryParts()` in `kitchen/src/publish.ts` — the kitchen and its tests.
+- `readPantry()` in `tools/read-pantry.mjs` — the build-time tools, which are plain JavaScript and
+  cannot import the TypeScript one. `tools/read-pantry.test.ts` asserts the two agree field for
+  field on the real pantry, because two implementations of one rule drift otherwise.
+- `src/test/pantry.ts` — the site's tests, via `import.meta.glob`, because `tsconfig.app.json` has
+  `vite/client` types and no Node ones.
+
+**Stale files are pruned.** `publish()` deletes any indicator file the index no longer lists.
+Without that, dropping or renaming an indicator would leave its file committed and served for
+ever, ignored by every reader — the worst kind of stale, because every check would still pass.
+
+**Two invariants the split makes possible to violate**, both enforced by the schemas: an indicator
+id must be unique, because the id IS the file name; and a file's series must belong to its own
+indicator, which nothing else would have noticed.
+
+Why these choices: [docs/decisions/0013-the-pantry-splits.md](decisions/0013-the-pantry-splits.md).

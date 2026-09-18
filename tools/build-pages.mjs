@@ -16,6 +16,7 @@
  */
 import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { readPantry } from './read-pantry.mjs'
 import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { segmentFor } from '../shared/slug.ts'
@@ -267,9 +268,9 @@ export function headersFor(hashes) {
 }
 
 export function buildPages({ distDir = join(root, 'dist'), dataFile } = {}) {
-  const data = JSON.parse(
-    readFileSync(dataFile ?? join(root, 'public/pantry/data/indicators.json'), 'utf8'),
-  )
+  // Plan 13: the pantry is an index plus one file per indicator, reassembled here because these
+  // 580 pages genuinely need every municipality and every indicator name.
+  const data = dataFile ? JSON.parse(readFileSync(dataFile, 'utf8')) : readPantry()
   const written = []
   for (const lang of ['sv', 'en']) {
     const entry = join(distDir, lang, 'index.html')

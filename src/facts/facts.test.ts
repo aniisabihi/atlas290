@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import rawData from '../../public/pantry/data/indicators.json'
-import { PantryData } from '../../shared/pantry'
 import { lookup } from '../data/select'
 import { metaFrom, parseHref, LANGS } from '../state/url'
 import rawFacts from '../../public/pantry/data/facts.json'
 import { Facts } from '../../shared/pantry'
 import { factsFrom } from './facts'
+import { publishedPantry } from '../test/pantry'
 
-const data = PantryData.parse(rawData)
+const data = publishedPantry
 const lk = lookup(data)
 const meta = metaFrom(data)
 const FACTS = factsFrom(Facts.parse(rawFacts))

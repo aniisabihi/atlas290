@@ -73,11 +73,16 @@ Full inventory: [codebase.md](codebase.md). Registration mechanics: [conventions
 
 **Runtime (the site):**
 
-1. `src/main.tsx` calls `loadPantry()`, which fetches the six pantry files in parallel and validates
-   five of them against zod schemas (the topology gets a structural check — see the note in
-   `src/data/pantry.ts`).
-2. `App` parses the URL into `AppState` (`src/state/url.ts`) and renders everything from it.
-3. An interaction calls `update()`, which writes a new URL through `history.pushState` (or
+1. `src/main.tsx` calls `loadPantry()`, which fetches the index, the geometry and the derived files
+   in parallel, validates them against zod schemas (the topology gets a structural check — see the
+   note in `src/data/pantry.ts`), reads the URL to learn which indicator is being shown, and
+   fetches that one series. About 35,000 gzipped bytes, against 272,475 before Plan 13 split the
+   pantry.
+2. Each further series is fetched when something needs it — a different indicator chosen, or a
+   profile opened, which needs them all. `withPart()` returns a **new** pantry rather than mutating
+   the one in hand, so `App`'s memoised `Lookup` is rebuilt exactly once per arrival.
+3. `App` parses the URL into `AppState` (`src/state/url.ts`) and renders everything from it.
+4. An interaction calls `update()`, which writes a new URL through `history.pushState` (or
    `replaceState` during playback) — state and address bar cannot disagree.
 
 ## Integration boundaries
@@ -96,7 +101,10 @@ There are no database migrations. The published data has two contracts, both in 
 
 - `shared/pantry.ts` — zod schemas for the pantry files. The absence-status enum is **append-only**:
   the index is a status byte persisted in every published series, so inserting or reordering would
-  silently relabel every cell.
+  silently relabel every cell. Since Plan 13 the same file also holds the container schemas —
+  `PantryIndex`, `IndicatorMeta`, `PantryIndicator` and `PantryView` — plus `splitPantry` and
+  `assemblePantry`, which are inverse and tested as such. A container can be revised; a status
+  byte cannot.
 - `shared/geometry.ts` — the projection and render frame, which must be byte-identical in the
   kitchen and the browser.
 

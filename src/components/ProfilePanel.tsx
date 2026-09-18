@@ -97,33 +97,39 @@ export function ProfilePanel({
       {story}
 
       <ul className="profile-rows">
-        {lk.data.indicators.map((indicator) => {
-          const { value, status } = observationAt(lk, indicator.id, code, year)
-          const rank = value === null ? null : rankOf(lk, indicator.id, year, code)
-          const nominal = nominalOf(lk.data, indicator, value, year)
-          return (
-            <li key={indicator.id} className="profile-row">
-              <span className="profile-name">{indicator.name[lang]}</span>
-              <span className="profile-value">
-                {value === null
-                  ? statusPhrase(status, lang)
-                  : formatWithUnit(value, indicator, lang)}
-              </span>
-              {nominal !== null && nominal !== value && (
-                <span className="profile-nominal">
-                  {strings.atTheTime(
-                    formatWithUnit(nominal, { ...indicator, priceBasis: 'none' }, lang),
-                    year,
-                  )}
+        {/*
+          Only the indicators whose series has arrived. Plan 13 fetches them when a profile
+          opens, so on a cold open the rows fill in; every row that IS shown is real.
+        */}
+        {lk.data.indicators
+          .filter((indicator) => lk.hasSeries(indicator.id))
+          .map((indicator) => {
+            const { value, status } = observationAt(lk, indicator.id, code, year)
+            const rank = value === null ? null : rankOf(lk, indicator.id, year, code)
+            const nominal = nominalOf(lk.data, indicator, value, year)
+            return (
+              <li key={indicator.id} className="profile-row">
+                <span className="profile-name">{indicator.name[lang]}</span>
+                <span className="profile-value">
+                  {value === null
+                    ? statusPhrase(status, lang)
+                    : formatWithUnit(value, indicator, lang)}
                 </span>
-              )}
-              <span className="profile-rank">
-                {rank ? strings.rank(rank.rank, rank.outOf) : ''}
-              </span>
-              <Sparkline lk={lk} indicatorId={indicator.id} code={code} year={year} />
-            </li>
-          )
-        })}
+                {nominal !== null && nominal !== value && (
+                  <span className="profile-nominal">
+                    {strings.atTheTime(
+                      formatWithUnit(nominal, { ...indicator, priceBasis: 'none' }, lang),
+                      year,
+                    )}
+                  </span>
+                )}
+                <span className="profile-rank">
+                  {rank ? strings.rank(rank.rank, rank.outOf) : ''}
+                </span>
+                <Sparkline lk={lk} indicatorId={indicator.id} code={code} year={year} />
+              </li>
+            )
+          })}
       </ul>
 
       {similar}

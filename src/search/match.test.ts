@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import rawData from '../../public/pantry/data/indicators.json'
-import { PantryData } from '../../shared/pantry'
 import { fold, searchMunicipalities } from './match'
+import { publishedPantry } from '../test/pantry'
 
-const { municipalities } = PantryData.parse(rawData)
+const { municipalities } = publishedPantry
 const find = (q: string, lang: 'sv' | 'en' = 'sv') =>
   searchMunicipalities(q, municipalities, lang).map((m) => m.name[lang])
 

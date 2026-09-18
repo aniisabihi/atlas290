@@ -1,11 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, render } from '@testing-library/react'
-import rawData from '../../public/pantry/data/indicators.json'
-import { PantryData } from '../../shared/pantry'
 import { lookup, observationSentence } from '../data/select'
 import { LiveRegion, SETTLE_MS } from './LiveRegion'
+import { publishedPantry } from '../test/pantry'
 
-const lk = lookup(PantryData.parse(rawData))
+const lk = lookup(publishedPantry)
 
 describe('observationSentence', () => {
   it('gives name, indicator, year, value with unit and rank', () => {

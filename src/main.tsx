@@ -5,18 +5,7 @@ import { App } from './components/App'
 
 const root = createRoot(document.getElementById('root')!)
 loadPantry()
-  .then(({ data, topology, adjacency, bubbles, similar, facts }) =>
-    root.render(
-      <App
-        data={data}
-        topology={topology}
-        adjacency={adjacency}
-        bubbles={bubbles}
-        similar={similar}
-        facts={facts}
-      />,
-    ),
-  )
+  .then((loaded) => root.render(<App loaded={loaded} />))
   .catch((err: unknown) => {
     root.render(<pre>{String(err)}</pre>)
     throw err

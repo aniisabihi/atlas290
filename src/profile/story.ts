@@ -1,4 +1,4 @@
-import type { Indicator } from '../../shared/pantry'
+import type { IndicatorMeta } from '../../shared/pantry'
 import { observationAt, ranksFor, type Lookup } from '../data/select'
 import { formatValue, formatWithUnit } from '../i18n/format'
 import type { Lang } from '../state/url'
@@ -79,6 +79,10 @@ export const EXTREME_SHARE = 0.1
  * Bollebygd and Lekeberg from 1995. "Since 1968" would be false for all of them.
  */
 function arc(lk: Lookup, code: string, year: number, lang: Lang): Sentence | null {
+  // Built from population whatever indicator is on the map, so there is nothing to say until that
+  // file has arrived (Plan 13). Null is what this rule already returns for a municipality whose
+  // history is too short to describe, and the panel renders without it.
+  if (!lk.hasSeries('population')) return null
   const points = history(lk, 'population', code).filter((p) => p.year <= year)
   const first = points[0]
   const last = points[points.length - 1]
@@ -128,6 +132,10 @@ function arc(lk: Lookup, code: string, year: number, lang: Lang): Sentence | nul
 export const MIN_FALL_PERCENT = 1
 
 function turn(lk: Lookup, code: string, year: number, lang: Lang): Sentence | null {
+  // Built from population whatever indicator is on the map, so there is nothing to say until that
+  // file has arrived (Plan 13). Null is what this rule already returns for a municipality whose
+  // history is too short to describe, and the panel renders without it.
+  if (!lk.hasSeries('population')) return null
   const points = history(lk, 'population', code).filter((p) => p.year <= year)
   const first = points[0]
   const last = points[points.length - 1]
@@ -171,8 +179,12 @@ function turn(lk: Lookup, code: string, year: number, lang: Lang): Sentence | nu
  * across rebuilds rather than depending on object iteration order.
  */
 function standing(lk: Lookup, code: string, year: number, lang: Lang): Sentence | null {
-  let best: { indicator: Indicator; rank: number; outOf: number; share: number } | null = null
+  let best: { indicator: IndicatorMeta; rank: number; outOf: number; share: number } | null = null
   for (const indicator of lk.data.indicators) {
+    // Only what has been fetched (Plan 13). The story says "this is one of the ten oldest
+    // municipalities in the country", and it can only say that about a series it holds; an
+    // indicator still in flight has no standing to report, not a standing of none.
+    if (!lk.hasSeries(indicator.id)) continue
     const { value } = observationAt(lk, indicator.id, code, year)
     if (value === null) continue
     const rank = ranksFor(lk, indicator.id, year).get(code)

@@ -1,11 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import rawData from '../../public/pantry/data/indicators.json'
-import { PantryData } from '../../shared/pantry'
 import { SearchBox } from './SearchBox'
+import { publishedPantry } from '../test/pantry'
 
-const { municipalities } = PantryData.parse(rawData)
+const { municipalities } = publishedPantry
 
 const draw = (lang: 'sv' | 'en' = 'en') => {
   const onSelect = vi.fn()

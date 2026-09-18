@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import rawData from '../../../public/pantry/data/indicators.json'
+import { DEFAULT_PANTRY_DIR, readPantryParts } from '../publish'
 import rawSimilar from '../../../public/pantry/data/similar.json'
 import { PantryData, Similar, type Indicator } from '../../../shared/pantry'
 import {
@@ -12,7 +12,10 @@ import {
   WINDOW_YEARS,
 } from './build'
 
-const data = PantryData.parse(rawData)
+/** The published pantry, reassembled from the files the kitchen writes (Plan 13). */
+const publishedPantry = readPantryParts(DEFAULT_PANTRY_DIR)
+
+const data = publishedPantry
 const name = new Map(data.municipalities.map((m) => [m.code, m.name.sv]))
 const built = buildSimilar(data)
 

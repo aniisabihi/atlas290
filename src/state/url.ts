@@ -1,4 +1,4 @@
-import type { PantryData } from '../../shared/pantry'
+import type { IndicatorMeta, Municipality } from '../../shared/pantry'
 import { parseSegment, segmentFor } from '../../shared/slug'
 
 /**
@@ -74,21 +74,33 @@ export type PantryMeta = {
   defaultYear: number
 }
 
-export function metaFrom(data: PantryData): PantryMeta {
-  const years = data.series.flatMap((s) => s.years)
-  const first = data.indicators[0]
+/**
+ * Built from the INDEX, never from the series.
+ *
+ * Plan 13: the site parses the URL before it has fetched any series, because the URL is what says
+ * which series to fetch. Reading the axis off whatever happened to be loaded would give the slider
+ * a different length depending on which indicator a visitor arrived on. Each indicator's declared
+ * `coverage` says the same thing and is always present — verified equal to the series' own first
+ * and last year for all ten indicators before this was changed, and asserted in url.test.ts.
+ */
+export function metaFrom(source: {
+  municipalities: readonly Municipality[]
+  indicators: readonly IndicatorMeta[]
+}): PantryMeta {
+  const first = source.indicators[0]
   if (!first) throw new Error('pantry has no indicators')
-  const defaultSeries = data.series.find((s) => s.indicator === first.id)
-  if (!defaultSeries) throw new Error(`pantry has no series for its first indicator "${first.id}"`)
   return {
-    indicators: data.indicators.map((i) => i.id),
-    codes: data.municipalities.map((m) => m.code),
-    names: Object.fromEntries(data.municipalities.map((m) => [m.code, m.name.sv])),
-    years: { min: Math.min(...years), max: Math.max(...years) },
+    indicators: source.indicators.map((i) => i.id),
+    codes: source.municipalities.map((m) => m.code),
+    names: Object.fromEntries(source.municipalities.map((m) => [m.code, m.name.sv])),
+    years: {
+      min: Math.min(...source.indicators.map((i) => i.coverage.from)),
+      max: Math.max(...source.indicators.map((i) => i.coverage.to)),
+    },
     // Deliberately the default indicator's last year, not the axis end. The axis reaches 2026
     // because municipal tax rates are set a year ahead; opening on 2026 would show every
     // visitor an empty population map.
-    defaultYear: Math.max(...defaultSeries.years),
+    defaultYear: first.coverage.to,
   }
 }
 

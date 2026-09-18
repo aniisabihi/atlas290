@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import rawData from '../../public/pantry/data/indicators.json'
-import { PantryData, type Indicator } from '../../shared/pantry'
+import { publishedPantry } from '../test/pantry'
+import { type Indicator } from '../../shared/pantry'
 import {
   FOCUS_RING,
   MAP_GROUND,
@@ -12,7 +12,7 @@ import {
   zeroClassOf,
 } from './colour'
 
-const data = PantryData.parse(rawData)
+const data = publishedPantry
 const byId = (id: string): Indicator => {
   const i = data.indicators.find((x) => x.id === id)
   if (!i) throw new Error(`no indicator ${id}`)

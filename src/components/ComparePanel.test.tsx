@@ -1,12 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import rawData from '../../public/pantry/data/indicators.json'
-import { PantryData } from '../../shared/pantry'
 import { lookup } from '../data/select'
 import { ComparePanel, CompareSearch } from './ComparePanel'
+import { publishedPantry } from '../test/pantry'
 
-const lk = lookup(PantryData.parse(rawData))
+const lk = lookup(publishedPantry)
 const draw = (compare: string, year = 2024, lang: 'sv' | 'en' = 'en') => {
   const onCompare = vi.fn()
   const result = render(

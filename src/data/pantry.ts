@@ -1,39 +1,97 @@
-import { Adjacency, Bubbles, Facts, PantryData, Similar } from '../../shared/pantry'
+import {
+  Adjacency,
+  Bubbles,
+  Facts,
+  PantryIndex,
+  PantryIndicator,
+  Similar,
+  viewOf,
+  type PantryView,
+} from '../../shared/pantry'
 import type { MunicipalityTopology } from '../../shared/geometry'
+import { metaFrom, parseState } from '../state/url'
 
 /**
- * Loads the six pantry files the site needs, straight from the public/pantry
- * directory (served at /pantry by Vite's publicDir).
- *
- * The indicator data is validated against the shared `PantryData` zod schema, so a
- * malformed data file fails loudly instead of rendering a broken map. The topology has
- * no schema of its own — there is no runtime TopoJSON schema anywhere in this repo, and
- * writing a full recursive one would be disproportionate for a file our own deterministic
- * pipeline generates, validates by municipality count, and commits. Instead it gets a
- * lightweight structural check: this loader only trusts that
- * `objects.municipalities.geometries` exists and is an array, and fails loudly, by name,
- * if it does not.
+ * Where the published pantry lives, served by Vite's publicDir and by the static host.
  */
-export async function loadPantry(): Promise<{
-  data: PantryData
+const PANTRY = '/pantry'
+
+export type LoadedPantry = {
+  /** What the site renders from: every indicator's metadata, and the series fetched so far. */
+  view: PantryView
+  /** The index as published, kept so a later fetch can rebuild the view from it. */
+  index: PantryIndex
+  /** The full indicators, keyed by id, for the ones fetched — the only source of prose. */
+  parts: ReadonlyMap<string, PantryIndicator>
   topology: MunicipalityTopology
   adjacency: Adjacency
   bubbles: Bubbles
   similar: Similar
   facts: Facts
-}> {
-  const [dataRes, topoRes, adjRes, bubbleRes, similarRes, factsRes] = await Promise.all([
-    fetch('/pantry/data/indicators.json'),
-    fetch('/pantry/geometry/municipalities.topo.json'),
-    fetch('/pantry/geometry/adjacency.json'),
-    fetch('/pantry/layout/bubbles.json'),
-    fetch('/pantry/data/similar.json'),
-    fetch('/pantry/data/facts.json'),
+}
+
+/**
+ * Fetches one indicator's file: its full definition, including the prose only `AboutIndicator`
+ * reads, and its series.
+ *
+ * Between 6,138 and 49,103 gzipped bytes each, against 272,475 for the single file this replaced.
+ */
+export async function fetchIndicatorPart(id: string): Promise<PantryIndicator> {
+  const res = await fetch(`${PANTRY}/data/indicators/${encodeURIComponent(id)}.json`)
+  if (!res.ok) {
+    throw new Error(
+      `pantry: no file for indicator "${id}" (HTTP ${res.status}); run yarn kitchen publish`,
+    )
+  }
+  return PantryIndicator.parse(await res.json())
+}
+
+/**
+ * Adds a fetched indicator to a loaded pantry, returning a NEW one — the old is left untouched.
+ *
+ * The new object identity is the point, not an accident of style: `App` memoises `lookup` on it,
+ * and `ranksFor` caches into a WeakMap keyed on the Lookup object. Mutating in place would leave
+ * both holding a view that no longer matches what was fetched.
+ */
+export function withPart(loaded: LoadedPantry, part: PantryIndicator): LoadedPantry {
+  if (loaded.parts.has(part.indicator.id)) return loaded
+  const parts = new Map(loaded.parts)
+  parts.set(part.indicator.id, part)
+  return { ...loaded, parts, view: viewOf(loaded.index, [...parts.values()]) }
+}
+
+/**
+ * Loads the index, the geometry and the derived files, then the one series the URL asks for.
+ *
+ * Plan 13. Before the split this fetched every series — 272,475 gzipped bytes — before React
+ * rendered anything, for an opening view that draws one indicator. Now it fetches the 6,433-byte
+ * index alongside the geometry, works out from the URL which indicator is actually being shown,
+ * and fetches that one: about 35,000 bytes to first paint.
+ *
+ * The indicator's own fetch cannot start until the index has arrived, because the index is what
+ * says which indicator ids exist and which one is the default. That is one extra round trip on a
+ * cold load, spent while the 36 kB topology is still in flight.
+ */
+export async function loadPantry(): Promise<LoadedPantry> {
+  const [indexRes, topoRes, adjRes, bubbleRes, similarRes, factsRes] = await Promise.all([
+    fetch(`${PANTRY}/data/index.json`),
+    fetch(`${PANTRY}/geometry/municipalities.topo.json`),
+    fetch(`${PANTRY}/geometry/adjacency.json`),
+    fetch(`${PANTRY}/layout/bubbles.json`),
+    fetch(`${PANTRY}/data/similar.json`),
+    fetch(`${PANTRY}/data/facts.json`),
   ])
-  if (!dataRes.ok || !topoRes.ok || !adjRes.ok || !bubbleRes.ok || !similarRes.ok || !factsRes.ok) {
+  if (
+    !indexRes.ok ||
+    !topoRes.ok ||
+    !adjRes.ok ||
+    !bubbleRes.ok ||
+    !similarRes.ok ||
+    !factsRes.ok
+  ) {
     throw new Error('pantry files missing; run yarn kitchen publish')
   }
-  const data = PantryData.parse(await dataRes.json())
+  const index = PantryIndex.parse(await indexRes.json())
   const adjacency = Adjacency.parse(await adjRes.json())
   const bubbles = Bubbles.parse(await bubbleRes.json())
   const similar = Similar.parse(await similarRes.json())
@@ -44,5 +102,22 @@ export async function loadPantry(): Promise<{
       'public/pantry/geometry/municipalities.topo.json has no objects.municipalities.geometries array; run yarn kitchen publish',
     )
   }
-  return { data, topology, adjacency, bubbles, similar, facts }
+
+  // The URL decides what to fetch, so it is read here rather than after the first render: the
+  // alternative is rendering a map with no series in it and then replacing it.
+  const meta = metaFrom(index)
+  const opening = parseState(window.location.pathname, window.location.search, meta)
+  const part = await fetchIndicatorPart(opening.indicator)
+  const parts = new Map([[part.indicator.id, part]])
+
+  return {
+    view: viewOf(index, [part]),
+    index,
+    parts,
+    topology,
+    adjacency,
+    bubbles,
+    similar,
+    facts,
+  }
 }

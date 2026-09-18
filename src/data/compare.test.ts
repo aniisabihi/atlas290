@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import rawData from '../../public/pantry/data/indicators.json'
 // Vite's `?raw` gives the file as a string; oxlint resolves the path without the suffix and so
 // cannot see the default export that Vite synthesises. The import works — the test below reads
 // real source through it — so the rule is disabled here rather than the test being weakened.
@@ -7,11 +6,11 @@ import rawData from '../../public/pantry/data/indicators.json'
 import compareSource from './compare.ts?raw'
 // eslint-disable-next-line import/default
 import stringsSource from '../i18n/strings.ts?raw'
-import { PantryData } from '../../shared/pantry'
 import { lookup } from './select'
 import { compareOf, summarise } from './compare'
+import { partialPantry, publishedPantry } from '../test/pantry'
 
-const lk = lookup(PantryData.parse(rawData))
+const lk = lookup(publishedPantry)
 
 describe('compareOf', () => {
   it('compares all ten indicators', () => {
@@ -88,5 +87,30 @@ describe('the rule about not declaring a winner', () => {
   it('still bites on real code, so stripping comments has not made it toothless', () => {
     expect(BANNED.test(code("const summary = 'Stockholm wins'"))).toBe(true)
     expect(BANNED.test(code('// Stockholm wins'))).toBe(false)
+  })
+})
+
+describe('while the pantry is still loading', () => {
+  /**
+   * Plan 13: the comparison needs every indicator and gets them one file at a time. An indicator
+   * still in flight must not be counted as "could not compare" — that phrase means SCB published
+   * nothing, which is a statement about the data rather than about our network.
+   */
+  it('compares only the indicators whose series has arrived', () => {
+    const half = lookup(partialPantry(['population', 'tax-rate']))
+    expect(compareOf(half, '0180', '1280', 2024).map((r) => r.indicator.id)).toEqual([
+      'population',
+      'tax-rate',
+    ])
+  })
+
+  it('never counts an unfetched indicator in the denominator', () => {
+    const half = lookup(partialPantry(['population']))
+    const summary = summarise(compareOf(half, '0180', '1280', 2024))
+    expect(summary.comparable + summary.notComparable).toBe(1)
+  })
+
+  it('compares all ten once every file has arrived', () => {
+    expect(compareOf(lookup(publishedPantry), '0180', '1280', 2024)).toHaveLength(10)
   })
 })

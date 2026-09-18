@@ -53,7 +53,8 @@ immutability rule and needs no change to `select.ts`'s internals.
 
 **D4 — The profile loads what it is missing, and the cliff is measured rather than hidden.**
 Opening a profile needs every series. Today that cost is paid before first paint; after this plan
-it is paid on profile open, and it is the same 272,697 gz. That is not a regression, and it is not
+it is paid on profile open, and it is the same order of bytes — measured afterwards at 244,011 gz,
+the nine series not already in hand. That is not a regression, and it is not
 a solution either: at twenty-five indicators it becomes ~690 kB.
 
 The answer is a second axis — `data/places/<code>.json`, one municipality across all indicators,
@@ -66,6 +67,13 @@ records.
 **D5 — Tests read the pantry through one helper.**
 A single `src/test/pantry.ts` assembles a full `PantryData` from the split files, so the 37 test
 files change an import line and nothing else. The helper is test-only and never ships.
+
+_Changed in execution:_ two helpers, not one. The site's tests are compiled by `tsconfig.app.json`,
+which has `vite/client` types and no Node ones — deliberately, because the site is a browser
+program — so `src/test/pantry.ts` reassembles through `import.meta.glob`. The kitchen's tests have
+Node and already have `readPantryParts()`, the same assembly over the same schemas. One helper
+would have meant a site test importing kitchen code, which is the boundary `CLAUDE.md` exists to
+keep.
 
 ## What this plan does not do
 
@@ -193,16 +201,26 @@ written for D1, D2 and D4 — D4 especially, because it records a cost knowingly
 
 ## What must be measured when it is done
 
-| Gate                                 | Target                         | Result |
-| ------------------------------------ | ------------------------------ | ------ |
-| Index, gzipped                       | ≤ 8,000 bytes                  |        |
-| Blocking bytes before first paint    | ≤ 40,000 gz (from 275,842)     |        |
-| Sum of all parts, gzipped            | within 2% of 275,842           |        |
-| Transferred bytes on profile open    | record it — this is D4's cliff |        |
-| Lighthouse, median of three          | within the existing budget     |        |
-| Unit tests / browser tests           | no loss against 1,176 / 280    |        |
-| `public/pantry/` second publish      | byte-identical                 |        |
-| `dist/` pages, `public/share/` cards | byte-identical                 |        |
+All byte figures below are `gzip -9`, on the real published output. The plan's own baseline of
+275,842 was measured at gzip's default level; re-measured at -9 the same file is **272,475**, and
+every figure here is comparable with that.
+
+| Gate                              | Target                         | Result                                                                             |
+| --------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------- |
+| Index, gzipped                    | ≤ 8,000 bytes                  | **6,433** (30,120 raw)                                                             |
+| Blocking bytes before first paint | ≤ 40,000 gz                    | **35,301** — index + `population-change`                                           |
+| Sum of all parts, gzipped         | within 2% of the single file   | **272,879** against 272,475 — **+0.15%**                                           |
+| Transferred bytes on profile open | record it — this is D4's cliff | **244,011** — the nine series not yet fetched                                      |
+| Unit tests                        | no loss against 1,176          | **1,218**                                                                          |
+| Browser tests, 3 engines          | no loss against 280            | **282 passed, 1 flaky, 2 skipped, 0 failed** under CI's `--retries=1`              |
+| Lighthouse, median of three       | within the existing budget     | **92** / 100 / 100 / 91 — performance was **83** in Plan 11                        |
+| Script bytes                      | budget 180,000                 | 127,646                                                                            |
+| `public/pantry/` second publish   | byte-identical                 | **yes**                                                                            |
+| `public/share/` cards             | byte-identical                 | **yes** — 290 cards, 4.7 MB, drawn from the reassembled data                       |
+| `dist/` pages                     | byte-identical                 | 580 written; `dist/` is not committed, so the cards above are the byte-level proof |
+
+The card result is the strongest single check in this plan: the 290 committed PNGs were generated
+from the old single file, and redrawing them from the reassembled parts changed not one byte.
 
 ## Stop conditions
 

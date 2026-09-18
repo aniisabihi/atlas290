@@ -1,19 +1,19 @@
 import { describe, expect, it, vi } from 'vitest'
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import rawData from '../../public/pantry/data/indicators.json'
 import rawTopology from '../../public/pantry/geometry/municipalities.topo.json'
 import rawAdjacency from '../../public/pantry/geometry/adjacency.json'
 import rawBubbles from '../../public/pantry/layout/bubbles.json'
-import { Adjacency, Bubbles, PantryData } from '../../shared/pantry'
+import { Adjacency, Bubbles } from '../../shared/pantry'
 import type { MunicipalityTopology } from '../../shared/geometry'
 import { lookup } from '../data/select'
 import { fillFor, NO_VALUE_FILLS, paletteFor } from '../map/colour'
 import { placeAll } from '../map/frame'
 import { CARTOGRAM_CONE_COS, DIRECTIONS, step, type NavContext } from '../map/navigate'
 import { MapCanvas } from './MapCanvas'
+import { publishedPantry } from '../test/pantry'
 
-const lk = lookup(PantryData.parse(rawData))
+const lk = lookup(publishedPantry)
 const topology = rawTopology as unknown as MunicipalityTopology
 const adjacency = Adjacency.parse(rawAdjacency)
 const bubbles = Bubbles.parse(rawBubbles)

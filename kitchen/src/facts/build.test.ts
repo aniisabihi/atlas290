@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import rawData from '../../../public/pantry/data/indicators.json'
-import { FACT_FAMILIES, Facts, PantryData } from '../../../shared/pantry'
+import { DEFAULT_PANTRY_DIR, readPantryParts } from '../publish'
+import { FACT_FAMILIES, Facts } from '../../../shared/pantry'
 import { assertUsable, buildFacts } from './build'
 
-const data = PantryData.parse(rawData)
+/** The published pantry, reassembled from the files the kitchen writes (Plan 13). */
+const publishedPantry = readPantryParts(DEFAULT_PANTRY_DIR)
+
+const data = publishedPantry
 const built = buildFacts(data)
 
 describe('buildFacts', () => {

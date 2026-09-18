@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import rawData from '../../public/pantry/data/indicators.json'
-import { PantryData } from '../../shared/pantry'
+import { publishedPantry } from '../test/pantry'
 import {
   DEFAULT_LANG,
   LANGS,
@@ -86,7 +85,7 @@ describe('parseState', () => {
     expect(toUrl(parseState('/sv/', '?compare=1280&nonsense=1', meta), meta)).toBe('/sv/')
   })
 
-  it.each(['/', '/fr/', '/sv', '', '/pantry/data/indicators.json'])(
+  it.each(['/', '/fr/', '/sv', '', '/pantry/data/index.json'])(
     'falls back to the default language for the path %j instead of throwing',
     (pathname) => {
       expect(parseState(pathname, '', meta).lang).toBe(DEFAULT_LANG)
@@ -145,8 +144,38 @@ describe('the round trip', () => {
   })
 })
 
+describe('metaFrom, with no series loaded at all', () => {
+  /**
+   * Plan 13. The site now parses the URL before it has fetched a single series — it has to,
+   * because the URL is what says which series to fetch. So the year axis and the default year
+   * must come from the indicators' declared coverage, never from the series themselves; deriving
+   * them from whatever happens to be loaded would give the slider a different length depending on
+   * which indicator a visitor opened on.
+   *
+   * Verified against the published pantry before this was changed: for all ten indicators,
+   * coverage.from and coverage.to equal the first and last year of the series, so this reads the
+   * same numbers off a different field rather than computing new ones.
+   */
+  const indexOnly = {
+    municipalities: publishedPantry.municipalities,
+    indicators: publishedPantry.indicators,
+  }
+
+  it('gives exactly the meta the whole pantry gives', () => {
+    expect(metaFrom(indexOnly)).toEqual(metaFrom(publishedPantry))
+  })
+
+  it('still spans 1968 to 2026 with nothing fetched', () => {
+    expect(metaFrom(indexOnly).years).toEqual({ min: 1968, max: 2026 })
+  })
+
+  it('still knows the default year without the default indicator being loaded', () => {
+    expect(metaFrom(indexOnly).defaultYear).toBe(2025)
+  })
+})
+
 describe('metaFrom, against the real published pantry', () => {
-  const real = metaFrom(PantryData.parse(rawData))
+  const real = metaFrom(publishedPantry)
 
   it('finds all ten indicators and all 290 municipalities', () => {
     expect(real.indicators).toHaveLength(10)

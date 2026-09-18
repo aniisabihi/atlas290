@@ -1,18 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import rawData from '../../public/pantry/data/indicators.json'
 import rawTopology from '../../public/pantry/geometry/municipalities.topo.json'
 import rawAdjacency from '../../public/pantry/geometry/adjacency.json'
 import rawBubbles from '../../public/pantry/layout/bubbles.json'
 import rawSimilar from '../../public/pantry/data/similar.json'
 import rawFacts from '../../public/pantry/data/facts.json'
-import { Adjacency, Bubbles, Facts, PantryData, Similar } from '../../shared/pantry'
+import { Adjacency, Bubbles, Facts, Similar } from '../../shared/pantry'
 import type { MunicipalityTopology } from '../../shared/geometry'
 import { App } from './App'
 import { SETTLE_MS } from './LiveRegion'
+import { loadedDataFor } from '../test/pantry'
 
-const data = PantryData.parse(rawData)
 const topology = rawTopology as unknown as MunicipalityTopology
 const adjacency = Adjacency.parse(rawAdjacency)
 const bubbles = Bubbles.parse(rawBubbles)
@@ -28,14 +27,7 @@ const facts = Facts.parse(rawFacts)
 const open = (url: string) => {
   window.history.replaceState(null, '', url)
   return render(
-    <App
-      data={data}
-      topology={topology}
-      adjacency={adjacency}
-      bubbles={bubbles}
-      similar={similar}
-      facts={facts}
-    />,
+    <App loaded={{ ...loadedDataFor(), topology, adjacency, bubbles, similar, facts }} />,
   )
 }
 

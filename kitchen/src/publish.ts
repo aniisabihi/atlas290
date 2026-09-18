@@ -1,9 +1,28 @@
 import { createHash } from 'node:crypto'
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import type { ZodType } from 'zod'
-import { Adjacency, Bubbles, Facts, Manifest, PantryData, Similar } from '../../shared/pantry'
+import {
+  Adjacency,
+  Bubbles,
+  Facts,
+  Manifest,
+  PantryData,
+  PantryIndex,
+  PantryIndicator,
+  Similar,
+  assemblePantry,
+  splitPantry,
+} from '../../shared/pantry'
 import type { Indicator, IndicatorSeries, Municipality } from '../../shared/pantry'
 import { check } from './check'
 import { cmp } from './cmp'
@@ -94,6 +113,80 @@ export function writePantryFile(path: string, schema: ZodType, value: unknown): 
   const parsed = schema.parse(value)
   mkdirSync(dirname(path), { recursive: true })
   writeFileSync(path, stableStringify(parsed))
+}
+
+/** Where the index lives inside a pantry directory, and where the per-indicator files live. */
+export const INDEX_FILE = 'data/index.json'
+export const INDICATOR_DIR = 'data/indicators'
+
+/**
+ * Writes the pantry as the files the site fetches: one index, and one file per indicator.
+ *
+ * Plan 13. The single `data/indicators.json` was 275,842 gzipped bytes fetched before first
+ * paint, for an opening view that draws one indicator. Split, the index is 6,471 and a visitor
+ * downloads one series beside it.
+ *
+ * Every file goes through `writePantryFile`, so each is schema-checked and stably stringified
+ * exactly as the one file was — determinism is per file already, and needs nothing new here.
+ */
+export function writePantryParts(pantryDir: string, data: PantryData): void {
+  const { index, parts } = splitPantry(data)
+  writePantryFile(join(pantryDir, INDEX_FILE), PantryIndex, index)
+  for (const part of parts) {
+    writePantryFile(
+      join(pantryDir, INDICATOR_DIR, `${part.indicator.id}.json`),
+      PantryIndicator,
+      part,
+    )
+  }
+}
+
+/**
+ * Reads those files back into one pantry. The build-time tools and the test fixtures take this
+ * path, all of which legitimately want everything; the SITE never does.
+ *
+ * Reads only the indicators the INDEX lists, rather than everything in the directory, so a
+ * stale file left behind by an older publish cannot quietly rejoin the dataset.
+ */
+export function readPantryParts(pantryDir: string): PantryData {
+  const index = PantryIndex.parse(
+    JSON.parse(readFileSync(join(pantryDir, INDEX_FILE), 'utf8')) as unknown,
+  )
+  const parts = index.indicators.map((meta) => {
+    const file = join(pantryDir, INDICATOR_DIR, `${meta.id}.json`)
+    let text: string
+    try {
+      text = readFileSync(file, 'utf8')
+    } catch {
+      throw new Error(
+        `readPantryParts: the index lists "${meta.id}" but ${file} is missing; run yarn kitchen publish`,
+      )
+    }
+    return PantryIndicator.parse(JSON.parse(text) as unknown)
+  })
+  return assemblePantry(index, parts)
+}
+
+/**
+ * Deletes indicator files the index no longer lists.
+ *
+ * Without this, dropping or renaming an indicator would leave its file in `public/pantry/`
+ * for ever: the publish would simply stop writing it, and nothing would remove it. It would
+ * still be served, still be committed, and `readPantryParts` would ignore it — the worst kind
+ * of stale, because every check would pass.
+ */
+function pruneIndicatorFiles(pantryDir: string, keep: readonly string[]): void {
+  const dir = join(pantryDir, INDICATOR_DIR)
+  let present: string[]
+  try {
+    present = readdirSync(dir)
+  } catch {
+    return
+  }
+  const wanted = new Set(keep.map((id) => `${id}.json`))
+  for (const file of present) {
+    if (file.endsWith('.json') && !wanted.has(file)) rmSync(join(dir, file))
+  }
 }
 
 /**
@@ -393,7 +486,11 @@ export async function publish(
       series: rounded.series,
       priceIndex: toPriceIndex(cpiIndex),
     })
-    writePantryFile(join(pantryDir, 'data/indicators.json'), PantryData, published)
+    writePantryParts(pantryDir, published)
+    pruneIndicatorFiles(
+      pantryDir,
+      published.indicators.map((i) => i.id),
+    )
 
     /**
      * Plan 6: "places like this", computed from the PUBLISHED data rather than the full-

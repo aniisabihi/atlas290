@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import rawData from '../../public/pantry/data/indicators.json'
-import { PantryData } from '../../shared/pantry'
-import { lookup } from '../data/select'
 import { AboutIndicator } from './AboutIndicator'
+import { publishedParts } from '../test/pantry'
 
-const lk = lookup(PantryData.parse(rawData))
+/** The prose lives in each indicator's own file since Plan 13, which is what this renders. */
+const indicatorOf = (id: string) => publishedParts.get(id)!.indicator
 const draw = (indicatorId: string, lang: 'sv' | 'en' = 'en') =>
-  render(<AboutIndicator lk={lk} indicatorId={indicatorId} lang={lang} />)
+  render(<AboutIndicator indicator={indicatorOf(indicatorId)} lang={lang} />)
 
 describe('AboutIndicator', () => {
   it('is collapsed until asked for', () => {
@@ -45,7 +44,7 @@ describe('AboutIndicator', () => {
 
   it('lists every source table with its content code', () => {
     draw('net-migration-rate')
-    const sources = lk.indicator('net-migration-rate').sources
+    const sources = indicatorOf('net-migration-rate').sources
     expect(sources.length).toBeGreaterThan(1)
     for (const source of sources) {
       expect(screen.getByText(new RegExp(`${source.table}.*${source.contentCode}`))).toBeTruthy()

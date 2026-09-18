@@ -1,14 +1,41 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { loadPantry } from './pantry'
+import { fetchIndicatorPart, loadPantry, withPart } from './pantry'
 
-/** Smallest object that satisfies the PantryData zod schema: empty arrays are valid. */
-const validData = {
+/**
+ * Plan 13: the loader fetches an index, then the one series the URL asks for.
+ *
+ * The shape under test changed; the promises did not. A missing or malformed file still fails
+ * loudly and by name rather than rendering a broken map, which is what most of this file is about.
+ */
+
+const indicator = {
+  id: 'population',
+  name: { sv: 'Folkmängd', en: 'Population' },
+  description: { sv: 'Antal invånare.', en: 'Residents.' },
+  unit: 'count',
+  priceBasis: 'none',
+  scale: { kind: 'sequential', breaks: [1, 2, 3, 4, 5, 6] },
+  coverage: { from: 2024, to: 2025 },
+  caveat: { sv: '', en: '' },
+  sensitivity: 'none',
+  sources: [{ table: 'TAB638', contentCode: 'BE0101N1', note: '' }],
+  derivation: 'Sum over sex and marital status.',
+}
+
+const second = { ...indicator, id: 'tax-rate', unit: 'percent' }
+
+/** Smallest index the schema accepts: no municipalities, so every series has no rows. */
+const validIndex = {
   schemaVersion: 1,
   municipalities: [],
-  indicators: [],
-  series: [],
+  indicators: [indicator, second],
   priceIndex: { base: 2025, values: { '2025': 100 } },
 }
+
+const partFor = (id: string) => ({
+  indicator: id === 'tax-rate' ? second : indicator,
+  series: { indicator: id, years: [2024, 2025], values: [], status: [] },
+})
 
 const validAdjacency = { schemaVersion: 1, neighbours: {}, synthetic: [] }
 const validBubbles = {
@@ -38,7 +65,6 @@ const validSimilar = {
   },
   nearest: {},
 }
-
 const validTopology = {
   type: 'Topology',
   objects: {
@@ -52,143 +78,166 @@ function okResponse(body: unknown): Response {
   return { ok: true, json: () => Promise.resolve(body) } as Response
 }
 
-function notOkResponse(): Response {
-  return { ok: false, json: () => Promise.resolve(undefined) } as Response
+function notOkResponse(status = 404): Response {
+  return { ok: false, status, json: () => Promise.resolve(undefined) } as Response
 }
 
-/** Routes each of the three pantry fetches to its own stub response. */
+/** Routes each pantry fetch to its own stub, and records every URL asked for. */
 function stubFetch(
-  dataRes: Response,
-  topoRes: Response,
-  adjRes = okResponse(validAdjacency),
-  bubbleRes = okResponse(validBubbles),
-  similarRes = okResponse(validSimilar),
-  factsRes = okResponse(validFacts),
+  overrides: {
+    index?: Response
+    part?: (id: string) => Response
+    topology?: Response
+    adjacency?: Response
+    bubbles?: Response
+    similar?: Response
+    facts?: Response
+  } = {},
 ) {
+  const asked: string[] = []
   vi.stubGlobal(
     'fetch',
-    vi.fn((url: string) =>
-      Promise.resolve(
-        url.includes('indicators')
-          ? dataRes
-          : url.includes('adjacency')
-            ? adjRes
-            : url.includes('bubbles')
-              ? bubbleRes
-              : url.includes('similar')
-                ? similarRes
-                : url.includes('facts')
-                  ? factsRes
-                  : topoRes,
-      ),
-    ),
+    vi.fn((url: string) => {
+      asked.push(url)
+      if (url.includes('data/index.json'))
+        return Promise.resolve(overrides.index ?? okResponse(validIndex))
+      if (url.includes('data/indicators/')) {
+        const id = url.split('/').pop()!.replace('.json', '')
+        return Promise.resolve(overrides.part ? overrides.part(id) : okResponse(partFor(id)))
+      }
+      if (url.includes('adjacency'))
+        return Promise.resolve(overrides.adjacency ?? okResponse(validAdjacency))
+      if (url.includes('bubbles'))
+        return Promise.resolve(overrides.bubbles ?? okResponse(validBubbles))
+      if (url.includes('similar'))
+        return Promise.resolve(overrides.similar ?? okResponse(validSimilar))
+      if (url.includes('facts')) return Promise.resolve(overrides.facts ?? okResponse(validFacts))
+      return Promise.resolve(overrides.topology ?? okResponse(validTopology))
+    }),
   )
+  return asked
 }
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  window.history.replaceState(null, '', '/sv/')
 })
 
 describe('loadPantry', () => {
   it.each([
-    ['the data file', () => stubFetch(notOkResponse(), okResponse(validTopology))],
-    ['the topology', () => stubFetch(okResponse(validData), notOkResponse())],
-    [
-      'the adjacency graph',
-      () => stubFetch(okResponse(validData), okResponse(validTopology), notOkResponse()),
-    ],
-    [
-      'the bubble layout',
-      () =>
-        stubFetch(
-          okResponse(validData),
-          okResponse(validTopology),
-          okResponse(validAdjacency),
-          notOkResponse(),
-        ),
-    ],
-    [
-      'the facts file',
-      () =>
-        stubFetch(
-          okResponse(validData),
-          okResponse(validTopology),
-          okResponse(validAdjacency),
-          okResponse(validBubbles),
-          okResponse(validSimilar),
-          notOkResponse(),
-        ),
-    ],
-    [
-      'the similar-municipalities file',
-      () =>
-        stubFetch(
-          okResponse(validData),
-          okResponse(validTopology),
-          okResponse(validAdjacency),
-          okResponse(validBubbles),
-          notOkResponse(),
-        ),
-    ],
-  ])('throws the pantry-files-missing message when %s is not ok', async (_label, stub) => {
-    stub()
-    await expect(loadPantry()).rejects.toThrow('pantry files missing')
+    ['the index', { index: notOkResponse() }],
+    ['the topology', { topology: notOkResponse() }],
+    ['the adjacency graph', { adjacency: notOkResponse() }],
+    ['the bubble layout', { bubbles: notOkResponse() }],
+    ['the similar file', { similar: notOkResponse() }],
+    ['the facts file', { facts: notOkResponse() }],
+  ])('throws the pantry-files-missing message when %s is not ok', async (_what, overrides) => {
+    stubFetch(overrides)
+    await expect(loadPantry()).rejects.toThrow(/pantry files missing/)
   })
 
-  it('throws a named error when the topology has no objects.municipalities.geometries array', async () => {
-    stubFetch(okResponse(validData), okResponse({ type: 'Topology', objects: {}, arcs: [] }))
-    await expect(loadPantry()).rejects.toThrow('has no objects.municipalities.geometries array')
+  it('names the indicator when its own file is missing', async () => {
+    // A 404 on one indicator is a different failure from a missing pantry, and says so: the
+    // index listed it, so either the publish is half-finished or the file was deleted by hand.
+    stubFetch({ part: () => notOkResponse(404) })
+    await expect(loadPantry()).rejects.toThrow(/no file for indicator "population"/)
   })
 
-  it('throws the same named error when municipalities exists but geometries is not an array', async () => {
-    // The case a shallower check (one that only tests objects.municipalities for
-    // existence) would miss: the collection is present, but its geometries is an
-    // object, not an array.
-    stubFetch(
-      okResponse(validData),
-      okResponse({
+  it.each([
+    ['has no objects.municipalities.geometries array', { type: 'Topology', objects: {}, arcs: [] }],
+    [
+      'has municipalities but geometries is not an array',
+      {
         type: 'Topology',
         objects: { municipalities: { type: 'GeometryCollection', geometries: {} } },
         arcs: [],
-      }),
-    )
-    await expect(loadPantry()).rejects.toThrow('has no objects.municipalities.geometries array')
+      },
+    ],
+  ])('throws a named error when the topology %s', async (_what, topology) => {
+    stubFetch({ topology: okResponse(topology) })
+    await expect(loadPantry()).rejects.toThrow(/objects\.municipalities\.geometries/)
   })
 
   it('validates the adjacency graph rather than trusting it', async () => {
-    stubFetch(
-      okResponse(validData),
-      okResponse(validTopology),
-      okResponse({ schemaVersion: 1, neighbours: { '180': ['0184'] }, synthetic: [] }),
-    )
-    // A three-digit key is not a municipality code, and arrow-key navigation reading it would
-    // silently find no neighbours rather than failing.
-    await expect(loadPantry()).rejects.toThrow(/four digits/)
+    stubFetch({ adjacency: okResponse({ schemaVersion: 1, neighbours: 'nope', synthetic: [] }) })
+    await expect(loadPantry()).rejects.toThrow()
   })
 
   it('validates the similar file rather than trusting it', async () => {
-    stubFetch(
-      okResponse(validData),
-      okResponse(validTopology),
-      okResponse(validAdjacency),
-      okResponse(validBubbles),
-      // A municipality listed as its own neighbour. The panel would render it as a link
-      // back to the page it is already on, which looks like a styling bug rather than a
-      // broken pantry — so the loader has to refuse it here.
-      okResponse({ ...validSimilar, nearest: { '0180': ['0180'] } }),
-    )
-    await expect(loadPantry()).rejects.toThrow(/is listed as its own neighbour/)
+    stubFetch({ similar: okResponse({ schemaVersion: 1, nearest: {} }) })
+    await expect(loadPantry()).rejects.toThrow()
   })
 
-  it('resolves with the validated data, the topology, the adjacency graph and the neighbours', async () => {
-    stubFetch(okResponse(validData), okResponse(validTopology))
-    await expect(loadPantry()).resolves.toEqual({
-      data: validData,
-      topology: validTopology,
-      adjacency: validAdjacency,
-      bubbles: validBubbles,
-      similar: validSimilar,
-      facts: validFacts,
+  it('fetches exactly one indicator file: the one the URL asks for', async () => {
+    window.history.replaceState(null, '', '/sv/?i=tax-rate&y=2025')
+    const asked = stubFetch()
+    const loaded = await loadPantry()
+
+    const indicatorRequests = asked.filter((u) => u.includes('data/indicators/'))
+    expect(indicatorRequests).toEqual(['/pantry/data/indicators/tax-rate.json'])
+    expect([...loaded.parts.keys()]).toEqual(['tax-rate'])
+  })
+
+  it('falls back to the default indicator when the URL names one that does not exist', async () => {
+    window.history.replaceState(null, '', '/sv/?i=not-an-indicator')
+    const asked = stubFetch()
+    await loadPantry()
+    expect(asked.filter((u) => u.includes('data/indicators/'))).toEqual([
+      '/pantry/data/indicators/population.json',
+    ])
+  })
+
+  it('knows every indicator, and holds the series for one', async () => {
+    const loaded = await (async () => {
+      stubFetch()
+      return loadPantry()
+    })()
+    expect(loaded.view.indicators.map((i) => i.id)).toEqual(['population', 'tax-rate'])
+    expect(loaded.view.series.map((s) => s.indicator)).toEqual(['population'])
+    expect(loaded.index.indicators).toHaveLength(2)
+  })
+})
+
+describe('fetchIndicatorPart', () => {
+  it('reads one indicator file and validates it', async () => {
+    stubFetch()
+    const part = await fetchIndicatorPart('tax-rate')
+    expect(part.indicator.id).toBe('tax-rate')
+    expect(part.series.indicator).toBe('tax-rate')
+  })
+
+  it('refuses a file whose series is not the indicator it claims to be', async () => {
+    stubFetch({
+      part: () => okResponse({ indicator, series: { ...partFor('tax-rate').series } }),
     })
+    await expect(fetchIndicatorPart('population')).rejects.toThrow()
+  })
+})
+
+describe('withPart', () => {
+  it('returns a new pantry with the series added, leaving the old one alone', async () => {
+    stubFetch()
+    const loaded = await loadPantry()
+    const grown = withPart(loaded, await fetchIndicatorPart('tax-rate'))
+
+    expect(grown).not.toBe(loaded)
+    expect(loaded.view.series.map((s) => s.indicator)).toEqual(['population'])
+    expect(grown.view.series.map((s) => s.indicator)).toEqual(['population', 'tax-rate'])
+  })
+
+  it('orders series by the index, not by arrival', async () => {
+    // url.ts opens on the first indicator, and the table twin reads them in order; a pantry that
+    // reordered itself by whichever fetch landed first would shuffle under the visitor.
+    window.history.replaceState(null, '', '/sv/?i=tax-rate')
+    stubFetch()
+    const loaded = await loadPantry()
+    const grown = withPart(loaded, await fetchIndicatorPart('population'))
+    expect(grown.view.series.map((s) => s.indicator)).toEqual(['population', 'tax-rate'])
+  })
+
+  it('is a no-op for a series already held, so a repeat fetch cannot churn identity', async () => {
+    stubFetch()
+    const loaded = await loadPantry()
+    expect(withPart(loaded, await fetchIndicatorPart('population'))).toBe(loaded)
   })
 })

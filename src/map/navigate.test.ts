@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { publishedPantry } from '../test/pantry'
 import rawAdjacency from '../../public/pantry/geometry/adjacency.json'
 import rawTopology from '../../public/pantry/geometry/municipalities.topo.json'
-import rawData from '../../public/pantry/data/indicators.json'
 import type { MunicipalityTopology } from '../../shared/geometry'
 import { shapesFor } from './geometry'
 import { DIRECTIONS, step, type Direction, type NavContext } from './navigate'
@@ -11,11 +11,7 @@ const ctx: NavContext = {
   neighbours: (rawAdjacency as { neighbours: Record<string, string[]> }).neighbours,
   centroids: new Map(shapes.map((s) => [s.code, s.centroid])),
 }
-const name = new Map(
-  (rawData as { municipalities: Array<{ code: string; name: { sv: string } }> }).municipalities.map(
-    (m) => [m.code, m.name.sv],
-  ),
-)
+const name = new Map(publishedPantry.municipalities.map((m) => [m.code, m.name.sv]))
 const codes = shapes.map((s) => s.code)
 
 /** Real graph, real projected centroids. A four-node fixture cannot validate any of this. */
