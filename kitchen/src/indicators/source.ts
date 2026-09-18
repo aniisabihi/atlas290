@@ -19,8 +19,36 @@ import { resolveContentCode, totalOrDeclaredSum, values } from './registry'
  * - `{ values }` — an explicit list, for a range that is not a total: single ages 65 and over,
  *   for instance.
  * - `'all'` — every value, deliberately, where the whole set IS the thing wanted.
+ * - `{ label }` — the one value carrying that Swedish label. The same principle content codes
+ *   already follow: the code varies by table and by era, the label is stable. Refuses a label no
+ *   value carries, and refuses one several carry, rather than taking the first.
  */
-export type DimRule = 'total' | 'all' | { values: readonly string[] }
+export type DimRule = 'total' | 'all' | { values: readonly string[] } | { label: string }
+
+/** Resolves a dimension VALUE by its label, with the guards `resolveContentCode` applies. */
+function valueByLabel(meta: TableMeta, dim: string, label: string): string {
+  const variable = meta.variables.find((v) => v.code === dim)
+  if (!variable) {
+    throw new Error(
+      `${meta.id}: no dimension ${dim}; have ${meta.variables.map((v) => v.code).join(', ')}`,
+    )
+  }
+  const matches = variable.values.filter((v) => v.label === label)
+  if (matches.length === 0) {
+    throw new Error(
+      `${meta.id}: no ${dim} value labelled '${label}'; have ` +
+        `${variable.values.map((v) => `${v.code}=${v.label}`).join(', ')}`,
+    )
+  }
+  if (matches.length > 1) {
+    throw new Error(
+      `${meta.id}: ${matches.length} ${dim} values are labelled '${label}' ` +
+        `(${matches.map((v) => v.code).join(', ')}) — ambiguous, pick one explicitly instead ` +
+        'of silently taking the first',
+    )
+  }
+  return matches[0]!.code
+}
 
 /**
  * One SCB table, as an indicator declares it.
@@ -35,6 +63,17 @@ export type Source = {
   years: readonly number[]
   /** Every dimension beyond Region, ContentsCode and Tid. Omit where the table has none. */
   dims?: Readonly<Record<string, DimRule>>
+  /**
+   * Which regions to ask for.
+   *
+   * `'four-digit'` takes every region whose code looks like a municipality, dropping the country
+   * and the counties these tables also carry. `'known'` intersects that with the 290 codes
+   * population established, which is what an indicator wants when its table carries regions that
+   * are no longer municipalities.
+   *
+   * The difference is already real in the hand-written modules; declaring it makes it visible.
+   */
+  regions?: 'four-digit' | 'known'
 }
 
 /** What a resolved source yields: one value per `region|year`, and what was read to get it. */
@@ -50,17 +89,26 @@ export type ResolvedRows = {
  * county rows every one of these tables also carries — the one rule with no exception, which is
  * why it is here rather than in each definition.
  */
-export function selectionFor(meta: TableMeta, source: Source): Selection {
-  const selection: Selection = {
-    Region: values(meta, 'Region').filter((c) => /^\d{4}$/.test(c)),
-  }
+export function selectionFor(
+  meta: TableMeta,
+  source: Source,
+  knownCodes?: readonly string[],
+): Selection {
+  const known = new Set(knownCodes ?? [])
+  const wanted =
+    source.regions === 'known'
+      ? (code: string) => known.has(code)
+      : (code: string) => /^\d{4}$/.test(code)
+  const selection: Selection = { Region: values(meta, 'Region').filter(wanted) }
   for (const [dim, rule] of Object.entries(source.dims ?? {})) {
     selection[dim] =
       rule === 'total'
         ? totalOrDeclaredSum(meta, dim)
         : rule === 'all'
           ? values(meta, dim)
-          : [...rule.values]
+          : 'label' in rule
+            ? [valueByLabel(meta, dim, rule.label)]
+            : [...rule.values]
   }
   selection['ContentsCode'] = [resolveContentCode(meta, source.content)]
   selection['Tid'] = source.years.map(String)
@@ -106,6 +154,7 @@ function sumByRegionYear(chunks: readonly FrozenData[]): Map<string, number | nu
 export async function resolveSources(
   sources: readonly Source[],
   freeze: FreezeOpts,
+  knownCodes?: readonly string[],
 ): Promise<ResolvedRows> {
   const merged = new Map<string, number | null>()
   const frozen: Array<FrozenData | FrozenMeta> = []
@@ -116,7 +165,12 @@ export async function resolveSources(
   for (const source of sources) {
     const meta = await freezeMetadata(source.table, 'sv', freeze)
     const parsed = parseMetadata(source.table, meta.response)
-    const chunks = await freezeData(source.table, selectionFor(parsed, source), 'sv', freeze)
+    const chunks = await freezeData(
+      source.table,
+      selectionFor(parsed, source, knownCodes),
+      'sv',
+      freeze,
+    )
     for (const [key, value] of sumByRegionYear(chunks)) merged.set(key, value)
     frozen.push(...chunks)
     metas.push(meta)

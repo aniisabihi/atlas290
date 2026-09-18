@@ -1,6 +1,7 @@
 import { statusCode, type Indicator, type IndicatorSeries } from '../../../shared/pantry'
 import { existed } from '../municipalities'
 import { buildRows, type BuildContext } from './registry'
+import { toCurrentKronor } from './cpi'
 import { resolveSources, type Source } from './source'
 
 /**
@@ -29,6 +30,52 @@ export type Definition = {
    * deliberately fuzzed and the site says so.
    */
   perturbedFrom?: number
+  /**
+   * Years to shift the existence gate back by.
+   *
+   * House prices and migration describe what happened DURING a year and are stamped with the
+   * following one, so the boundary that matters is the one that existed the year before. `existed`
+   * is a full calendar year too early for them; one is the shift they need.
+   */
+  existsShift?: number
+  modifiers?: Modifiers
+}
+
+export type Modifiers = {
+  /** Multiply the source figure, where SCB publishes in thousands and the pantry wants units. */
+  scale?: number
+  /**
+   * Express every year's figure in the price index's own base-year kronor.
+   *
+   * Throws rather than silently passing a nominal figure through when the index lacks a year —
+   * a money series with one unadjusted value in it is worse than none, because nothing on the
+   * page would show which one it was.
+   */
+  inflationAdjust?: boolean
+  /**
+   * Below this many underlying cases the cell is `too-few-cases` rather than a published figure.
+   * A mean price resting on a handful of sales is noise wearing a number's clothes.
+   */
+  minCount?: { threshold: number; counts: readonly Source[] }
+}
+
+/**
+ * The year every money figure is expressed in: the last year the price index covers.
+ *
+ * Guarded against an empty index, which would otherwise make `Math.max` return `-Infinity` and
+ * push the failure into `toCurrentKronor` wearing a message about a missing year rather than a
+ * missing index. income.ts and housing.ts each carry their own copy of this guard for the build
+ * paths they still own; this is the one the definitions use, and it names whichever indicator
+ * asked.
+ */
+function targetKronorYear(cpi: Map<number, number>, indicatorId: string): number {
+  if (cpi.size === 0) {
+    throw new Error(
+      `${indicatorId}: CPI index has no entries at all — cannot determine the latest year to ` +
+        'adjust every value to',
+    )
+  }
+  return Math.max(...cpi.keys())
 }
 
 /**
@@ -45,13 +92,36 @@ function directSeries(
   municipalities: BuildContext['municipalities'],
   years: readonly number[],
   values: ReadonlyMap<string, number | null>,
+  counts: ReadonlyMap<string, number | null> | undefined,
+  cpi: Map<number, number> | undefined,
 ): IndicatorSeries {
+  const mods = definition.modifiers ?? {}
+  const shift = definition.existsShift ?? 0
+  const target =
+    mods.inflationAdjust && cpi ? targetKronorYear(cpi, definition.indicator.id) : undefined
+
   const cells = buildRows(municipalities, [...years], (m, y) => {
-    if (!existed(m.code, y)) return { v: null as number | null, s: statusCode('did-not-exist') }
-    const value = values.get(`${m.code}|${y}`) ?? null
-    if (value === null) return { v: null, s: statusCode('not-yet-published') }
+    if (!existed(m.code, y - shift)) {
+      return { v: null as number | null, s: statusCode('did-not-exist') }
+    }
+    const key = `${m.code}|${y}`
+    const value = values.get(key) ?? null
+    const count = counts ? (counts.get(key) ?? null) : undefined
+    if (value === null || count === null) return { v: null, s: statusCode('not-yet-published') }
+    if (mods.minCount && count !== undefined && count < mods.minCount.threshold) {
+      return { v: null, s: statusCode('too-few-cases') }
+    }
+    let out = value * (mods.scale ?? 1)
+    if (mods.inflationAdjust) {
+      if (!cpi || target === undefined) {
+        throw new Error(
+          `${definition.indicator.id}: adjusts for inflation but no price index was supplied`,
+        )
+      }
+      out = toCurrentKronor(out, y, cpi, target)
+    }
     const perturbed = definition.perturbedFrom !== undefined && y >= definition.perturbedFrom
-    return { v: value, s: statusCode(perturbed ? 'perturbed' : 'present') }
+    return { v: out, s: statusCode(perturbed ? 'perturbed' : 'present') }
   })
   return {
     indicator: definition.indicator.id,
@@ -71,9 +141,18 @@ export async function buildDefined(
   definition: Definition,
   ctx: BuildContext,
 ): Promise<IndicatorSeries> {
-  const resolved = await resolveSources(definition.sources, ctx.freeze)
+  const codes = ctx.municipalities.map((m) => m.code)
+  const resolved = await resolveSources(definition.sources, ctx.freeze, codes)
   ctx.frozen.push(...resolved.frozen)
 
+  let counts: ReadonlyMap<string, number | null> | undefined
+  const minCount = definition.modifiers?.minCount
+  if (minCount) {
+    const resolvedCounts = await resolveSources(minCount.counts, ctx.freeze, codes)
+    ctx.frozen.push(...resolvedCounts.frozen)
+    counts = resolvedCounts.values
+  }
+
   const years = [...new Set(definition.sources.flatMap((s) => [...s.years]))].sort((a, b) => a - b)
-  return directSeries(definition, ctx.municipalities, years, resolved.values)
+  return directSeries(definition, ctx.municipalities, years, resolved.values, counts, ctx.cpi)
 }

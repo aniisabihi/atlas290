@@ -5,14 +5,10 @@ import {
   statusCode,
 } from '../../../shared/pantry'
 import { existed } from '../municipalities'
-import { parseMetadata, type Selection, type TableMeta } from '../scb/client'
-import {
-  freezeData,
-  freezeMetadata,
-  type FreezeOpts,
-  type FrozenData,
-  type FrozenMeta,
-} from '../scb/freeze'
+import { buildDefined, type Definition } from './define'
+import type { Source } from './source'
+import type { Selection, TableMeta } from '../scb/client'
+import type { FreezeOpts, FrozenData, FrozenMeta } from '../scb/freeze'
 import { assertCpiLatestYear, CPI_LATEST_YEAR, fetchCpi, toCurrentKronor } from './cpi'
 import { toRows } from '../scb/jsonstat'
 import {
@@ -339,38 +335,46 @@ export function buildHousingSeries(
 }
 
 export async function buildHousing(ctx: BuildContext): Promise<IndicatorSeries> {
-  const meta = await freezeMetadata(HOUSING_TABLE, 'sv', ctx.freeze)
-  const parsed = parseMetadata(HOUSING_TABLE, meta.response)
-  const years = HOUSING_YEARS.map(String)
-  const codes = ctx.municipalities.map((m) => m.code)
-
-  const priceChunks = await freezeData(
-    HOUSING_TABLE,
-    housingPriceSelection(parsed, codes, years),
-    'sv',
-    ctx.freeze,
-  )
-  const countChunks = await freezeData(
-    HOUSING_TABLE,
-    housingCountSelection(parsed, codes, years),
-    'sv',
-    ctx.freeze,
-  )
-
   // cpi.ts is deliberately independent of registry.ts (see its own module comment), so this
-  // indicator calls it directly rather than reading ctx.cpi — that slot stays unpopulated
-  // until Task 13 wires it, per the plan (same approach income.ts takes).
+  // indicator fetches the index itself and hands it to the shared builder through ctx.cpi rather
+  // than relying on something upstream having filled that slot.
   const { index: cpiIndex, frozen: cpiFrozen } = await fetchCpi(ctx.freeze)
 
-  const series = buildHousingSeries(
-    ctx.municipalities,
-    priceChunks,
-    countChunks,
-    HOUSING_YEARS,
-    cpiIndex,
-  )
-  ctx.frozen.push(...priceChunks, ...countChunks, meta, ...cpiFrozen)
+  ctx.cpi = cpiIndex
+  const series = await buildDefined(housingDefined(), ctx)
+  ctx.frozen.push(...cpiFrozen)
   return series
+}
+
+/**
+ * Mean price of sold single-family houses, as a definition (Plan 14).
+ *
+ * The three things that make this the most-featured indicator of the ten, all declared rather
+ * than coded: `Fastighetstyp` is resolved by its label so the permanent-home code is never
+ * hardcoded; the count of sales comes from the same table under a second content label and
+ * suppresses any cell resting on fewer than twenty of them; and the existence gate is shifted a
+ * year, because a price stamped with year Y describes sales made during Y under the boundary
+ * that existed then.
+ */
+export function housingDefined(): Definition {
+  const of = (content: string): Source => ({
+    table: HOUSING_TABLE,
+    content,
+    years: HOUSING_YEARS,
+    dims: { Fastighetstyp: { label: PERMANENT_HOME_LABEL } },
+    regions: 'known',
+  })
+  return {
+    indicator: HOUSING,
+    sources: [of(HOUSING_PRICE_LABEL)],
+    spec: { kind: 'direct' },
+    existsShift: 1,
+    modifiers: {
+      scale: 1000,
+      inflationAdjust: true,
+      minCount: { threshold: HOUSING_MIN_COUNT, counts: [of(HOUSING_COUNT_LABEL)] },
+    },
+  }
 }
 
 export const housingDefinition: IndicatorDefinition = { indicator: HOUSING, build: buildHousing }

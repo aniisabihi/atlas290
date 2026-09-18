@@ -5,6 +5,7 @@ import {
   statusCode,
 } from '../../../shared/pantry'
 import { existed } from '../municipalities'
+import { buildDefined, type Definition } from './define'
 import { parseMetadata, type Selection, type TableMeta } from '../scb/client'
 import {
   freezeData,
@@ -222,9 +223,39 @@ export async function buildIncome(ctx: BuildContext): Promise<IndicatorSeries> {
   // until Task 13 wires it, per the plan.
   const { index: cpiIndex, frozen: cpiFrozen } = await fetchCpi(ctx.freeze)
 
-  const series = buildIncomeSeries(ctx.municipalities, chunks, INCOME_YEARS, cpiIndex)
-  ctx.frozen.push(...chunks, meta, ...cpiFrozen)
+  void chunks
+  void meta
+  // cpi.ts is deliberately independent of registry.ts, so this reaches ctx.cpi here rather than
+  // relying on something upstream having filled it.
+  ctx.cpi = cpiIndex
+  const series = await buildDefined(incomeDefined(), ctx)
+  ctx.frozen.push(...cpiFrozen)
   return series
+}
+
+/**
+ * Median earned income, as a definition (Plan 14).
+ *
+ * SCB publishes it in thousands of kronor, so `scale: 1000` turns it into the whole kronor the
+ * pantry stores, and the adjustment then expresses every year in the price index's own base year.
+ * `regions: 'known'` because TAB3554 carries regions that are no longer municipalities, and this
+ * indicator wants the 290 population established.
+ */
+export function incomeDefined(): Definition {
+  return {
+    indicator: INCOME,
+    sources: [
+      {
+        table: INCOME_TABLE,
+        content: INCOME_CONTENT_LABEL,
+        years: INCOME_YEARS,
+        dims: { Kon: 'total', Alder: 'total', Inkomstklass: 'total' },
+        regions: 'known',
+      },
+    ],
+    spec: { kind: 'direct' },
+    modifiers: { scale: 1000, inflationAdjust: true },
+  }
 }
 
 export const incomeDefinition: IndicatorDefinition = { indicator: INCOME, build: buildIncome }
