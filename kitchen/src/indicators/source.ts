@@ -110,13 +110,18 @@ export async function resolveSources(
   const merged = new Map<string, number | null>()
   const frozen: Array<FrozenData | FrozenMeta> = []
 
+  // Data chunks first, then the metadata responses — the order ruling R2 established, kept so
+  // the provenance manifest reads the same way it always has.
+  const metas: FrozenMeta[] = []
   for (const source of sources) {
     const meta = await freezeMetadata(source.table, 'sv', freeze)
     const parsed = parseMetadata(source.table, meta.response)
     const chunks = await freezeData(source.table, selectionFor(parsed, source), 'sv', freeze)
     for (const [key, value] of sumByRegionYear(chunks)) merged.set(key, value)
-    frozen.push(...chunks, meta)
+    frozen.push(...chunks)
+    metas.push(meta)
   }
+  frozen.push(...metas)
 
   return { values: merged, frozen }
 }

@@ -28,6 +28,7 @@ import {
 // call time, once every module has finished loading, not while population.ts and density.ts are
 // still being linked.
 import { CKM_FROM } from './population'
+import { buildDefined, type Definition } from './define'
 
 export const DENSITY_TABLE = 'TAB628'
 
@@ -173,22 +174,44 @@ export async function buildDensity(ctx: BuildContext): Promise<IndicatorSeries> 
   const meta = await freezeMetadata(DENSITY_TABLE, 'sv', ctx.freeze)
   const parsed = parseMetadata(DENSITY_TABLE, meta.response)
   const years = DENSITY_YEARS.map(String)
-  const densityChunks = await freezeData(
-    DENSITY_TABLE,
-    densitySelection(parsed, years),
-    'sv',
-    ctx.freeze,
-  )
   const areaChunks = await freezeData(
     DENSITY_TABLE,
     landAreaSelection(parsed, years),
     'sv',
     ctx.freeze,
   )
-  const series = buildDensitySeries(ctx.municipalities, densityChunks, DENSITY_YEARS)
+  const series = await buildDefined(densityDefined(), ctx)
   fillLandArea(ctx.municipalities, areaChunks, DENSITY_YEARS)
-  ctx.frozen.push(...densityChunks, ...areaChunks, meta)
+  // The density chunks and this table's metadata are recorded by buildDefined; only the
+  // land-area fetch, which no definition describes, is this module's own to record.
+  ctx.frozen.push(...areaChunks)
   return series
+}
+
+/**
+ * Density, as a definition (Plan 14).
+ *
+ * TAB628's `Kon` carries its own total code, `1+2`, so this selects it rather than summing the
+ * two sexes — ruling R1, and the reason `TOTAL_CODES` exists at all.
+ *
+ * The land-area fetch stays in `buildDensity` below rather than moving here: it fills
+ * `Municipality.landAreaKm2` as a side effect and publishes no series of its own, so it is not
+ * something a definition describes.
+ */
+export function densityDefined(): Definition {
+  return {
+    indicator: DENSITY,
+    sources: [
+      {
+        table: DENSITY_TABLE,
+        content: DENSITY_CONTENT_LABEL,
+        years: DENSITY_YEARS,
+        dims: { Kon: 'total' },
+      },
+    ],
+    spec: { kind: 'direct' },
+    perturbedFrom: CKM_FROM,
+  }
 }
 
 export const densityDefinition: IndicatorDefinition = { indicator: DENSITY, build: buildDensity }

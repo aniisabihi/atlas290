@@ -6,6 +6,7 @@ import {
 } from '../../../shared/pantry'
 import { isStructuralBreak } from '../breaks'
 import { existed } from '../municipalities'
+import { buildDefined, type Definition } from './define'
 import { parseMetadata, type Selection, type TableMeta } from '../scb/client'
 import {
   freezeData,
@@ -354,9 +355,29 @@ export async function buildMeanAge(ctx: BuildContext): Promise<IndicatorSeries> 
   const parsed = parseMetadata(MEAN_AGE_TABLE, meta.response)
   const years = MEAN_AGE_YEARS.map(String)
   const chunks = await freezeData(MEAN_AGE_TABLE, meanAgeSelection(parsed, years), 'sv', ctx.freeze)
-  const series = buildMeanAgeSeries(ctx.municipalities, chunks, MEAN_AGE_YEARS)
-  ctx.frozen.push(...chunks, meta)
-  return series
+  void chunks
+  void meta
+  return buildDefined(meanAgeDefined(), ctx)
+}
+
+/**
+ * Mean age, as a definition (Plan 14). TAB637's `Kon` carries its own total code, so nothing is
+ * summed. No `perturbedFrom`: this table carries no Cell Key Method note, which is why the mean
+ * is published as a plain figure rather than a fuzzed one.
+ */
+export function meanAgeDefined(): Definition {
+  return {
+    indicator: MEAN_AGE,
+    sources: [
+      {
+        table: MEAN_AGE_TABLE,
+        content: MEAN_AGE_CONTENT_LABEL,
+        years: MEAN_AGE_YEARS,
+        dims: { Kon: 'total' },
+      },
+    ],
+    spec: { kind: 'direct' },
+  }
 }
 
 export const meanAgeDefinition: IndicatorDefinition = { indicator: MEAN_AGE, build: buildMeanAge }
