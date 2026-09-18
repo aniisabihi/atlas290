@@ -42,7 +42,8 @@ it exists; read that before changing it.
 | `state/title.ts`                                      | The tab title for a given state.                                            |
 | `state/useMorph.ts`                                   | The clock driving the map↔cartogram morph. Deliberately not in the URL.     |
 | `state/useMediaQuery.ts`, `state/useReducedMotion.ts` | Media queries read in JS where the difference is behavioural.               |
-| `data/pantry.ts`                                      | Loads and validates the six pantry files.                                   |
+| `data/pantry.ts`                                      | Loads the index, then each series as it is needed.                          |
+| `test/pantry.ts`                                      | Test-only: the published pantry, reassembled from its files.                |
 | `data/select.ts`                                      | The only module that knows the pantry's columnar layout.                    |
 | `data/compare.ts`                                     | Two municipalities side by side, with no verdict.                           |
 | `data/similar.ts`                                     | Reads "places like this" from the published file; computes nothing.         |
@@ -88,52 +89,53 @@ it exists; read that before changing it.
 
 ## The kitchen — `kitchen/src/`
 
-| Path                       | Purpose                                                                 |
-| -------------------------- | ----------------------------------------------------------------------- |
-| `cli.ts`                   | The three stages.                                                       |
-| `indicators/registry.ts`   | The registry and the shared build context every indicator uses.         |
-| `indicators/population.ts` | Population; also owns the CKM cutover between the old and new tables.   |
-| `indicators/derived.ts`    | `population-change`, computed from population — fetches nothing.        |
-| `indicators/tax.ts`        | Municipal tax rate, 2000–2026.                                          |
-| `indicators/density.ts`    | Inhabitants per km², and land area.                                     |
-| `indicators/migration.ts`  | Net migration rate, stitched across three tables.                       |
-| `indicators/income.ts`     | Median income, inflation-adjusted.                                      |
-| `indicators/housing.ts`    | House prices, with a minimum-sale-count rule.                           |
-| `indicators/education.ts`  | Post-secondary education share.                                         |
-| `indicators/cpi.ts`        | The national CPI deflator — the one table with no `Region` dimension.   |
-| `municipalities.ts`        | The 290, their codes, and the code-history fixes SCB's data needs.      |
-| `scb/client.ts`            | PxWeb v2 requests, cell-limit splitting, rate limiting.                 |
-| `scb/freeze.ts`            | Writing and reading frozen response chunks.                             |
-| `scb/jsonstat.ts`          | Parsing JSON-stat into series.                                          |
-| `check.ts`, `breaks.ts`    | The check stage, and parent-municipality break years.                   |
-| `geometry/build.ts`        | Topology from the SCB boundary shapefile.                               |
-| `geometry/adjacency.ts`    | Keyboard adjacency, including curated edges with recorded reasons.      |
-| `geometry/bubbles.ts`      | The Dorling layout, seeded so it is deterministic.                      |
-| `geometry/props.ts`        | Validated `{ code, name }` extraction from a geometry's properties.     |
-| `similar/standardise.ts`   | Ten units into comparable numbers.                                      |
-| `similar/distance.ts`      | The metric itself, knowing nothing about indicators.                    |
-| `similar/build.ts`         | Five nearest per municipality.                                          |
-| `facts/families.ts`        | The five families of fact and how each ranks candidates.                |
-| `facts/build.ts`           | One fact per family, assembled.                                         |
-| `facts/phrasing.ts`        | Candidate → sentence, written out in both languages.                    |
-| `stats.ts`                 | The arithmetic behind the facts, and nothing else.                      |
-| `round.ts`                 | Rounding to the precision each unit honestly carries.                   |
-| `cmp.ts`                   | Structural ordering for anything whose order lands in a committed file. |
-| `publish.ts`               | Assembles, verifies and lands the pantry.                               |
-| `no-dom.test.ts`           | Asserts the kitchen depends on no browser API.                          |
+| Path                       | Purpose                                                                           |
+| -------------------------- | --------------------------------------------------------------------------------- |
+| `cli.ts`                   | The three stages.                                                                 |
+| `indicators/registry.ts`   | The registry and the shared build context every indicator uses.                   |
+| `indicators/population.ts` | Population; also owns the CKM cutover between the old and new tables.             |
+| `indicators/derived.ts`    | `population-change`, computed from population — fetches nothing.                  |
+| `indicators/tax.ts`        | Municipal tax rate, 2000–2026.                                                    |
+| `indicators/density.ts`    | Inhabitants per km², and land area.                                               |
+| `indicators/migration.ts`  | Net migration rate, stitched across three tables.                                 |
+| `indicators/income.ts`     | Median income, inflation-adjusted.                                                |
+| `indicators/housing.ts`    | House prices, with a minimum-sale-count rule.                                     |
+| `indicators/education.ts`  | Post-secondary education share.                                                   |
+| `indicators/cpi.ts`        | The national CPI deflator — the one table with no `Region` dimension.             |
+| `municipalities.ts`        | The 290, their codes, and the code-history fixes SCB's data needs.                |
+| `scb/client.ts`            | PxWeb v2 requests, cell-limit splitting, rate limiting.                           |
+| `scb/freeze.ts`            | Writing and reading frozen response chunks.                                       |
+| `scb/jsonstat.ts`          | Parsing JSON-stat into series.                                                    |
+| `check.ts`, `breaks.ts`    | The check stage, and parent-municipality break years.                             |
+| `geometry/build.ts`        | Topology from the SCB boundary shapefile.                                         |
+| `geometry/adjacency.ts`    | Keyboard adjacency, including curated edges with recorded reasons.                |
+| `geometry/bubbles.ts`      | The Dorling layout, seeded so it is deterministic.                                |
+| `geometry/props.ts`        | Validated `{ code, name }` extraction from a geometry's properties.               |
+| `similar/standardise.ts`   | Ten units into comparable numbers.                                                |
+| `similar/distance.ts`      | The metric itself, knowing nothing about indicators.                              |
+| `similar/build.ts`         | Five nearest per municipality.                                                    |
+| `facts/families.ts`        | The five families of fact and how each ranks candidates.                          |
+| `facts/build.ts`           | One fact per family, assembled.                                                   |
+| `facts/phrasing.ts`        | Candidate → sentence, written out in both languages.                              |
+| `stats.ts`                 | The arithmetic behind the facts, and nothing else.                                |
+| `round.ts`                 | Rounding to the precision each unit honestly carries.                             |
+| `cmp.ts`                   | Structural ordering for anything whose order lands in a committed file.           |
+| `publish.ts`               | Assembles, verifies and lands the pantry; `writePantryParts` / `readPantryParts`. |
+| `no-dom.test.ts`           | Asserts the kitchen depends on no browser API.                                    |
 
 ## Shared — `shared/`
 
-| File          | Purpose                                                                           |
-| ------------- | --------------------------------------------------------------------------------- |
-| `pantry.ts`   | zod schemas for every pantry file. The absence-status enum is append-only.        |
-| `geometry.ts` | The projection and render frame, identical on both sides.                         |
-| `slug.ts`     | The `name-code` path grammar. The code is the identifier; the slug is decoration. |
+| File          | Purpose                                                                                                                            |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `pantry.ts`   | zod schemas for every pantry file, plus `splitPantry`/`assemblePantry`, which are inverse. The absence-status enum is append-only. |
+| `geometry.ts` | The projection and render frame, identical on both sides.                                                                          |
+| `slug.ts`     | The `name-code` path grammar. The code is the identifier; the slug is decoration.                                                  |
 
 ## Tools — `tools/`
 
 | File                    | Run by               | Purpose                                               |
 | ----------------------- | -------------------- | ----------------------------------------------------- |
+| `read-pantry.mjs`       | the three below      | Reassembles the pantry from its files, in plain JS.   |
 | `build-pages.mjs`       | `yarn build`         | The 580 municipality pages, with their own head tags. |
 | `build-cards.mjs`       | `yarn cards`         | The 290 preview PNGs. Deliberately outside the build. |
 | `pantry-guard.mjs`      | the refresh workflow | Refuses a refresh that loses observations.            |
