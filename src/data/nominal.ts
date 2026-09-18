@@ -1,4 +1,4 @@
-import type { Indicator, PantryData } from '../../shared/pantry'
+import type { IndicatorMeta, PantryView } from '../../shared/pantry'
 
 /**
  * The figure SCB actually published, recovered from the inflation-adjusted one.
@@ -14,8 +14,8 @@ import type { Indicator, PantryData } from '../../shared/pantry'
  * `nominal.test.ts` proves it for all 20,260 money cells against the frozen SCB responses.
  */
 export function nominalOf(
-  data: PantryData,
-  indicator: Indicator,
+  data: PantryView,
+  indicator: IndicatorMeta,
   adjusted: number | null,
   year: number,
 ): number | null {

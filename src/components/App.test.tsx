@@ -10,9 +10,8 @@ import { Adjacency, Bubbles, Facts, Similar } from '../../shared/pantry'
 import type { MunicipalityTopology } from '../../shared/geometry'
 import { App } from './App'
 import { SETTLE_MS } from './LiveRegion'
-import { publishedPantry } from '../test/pantry'
+import { loadedDataFor } from '../test/pantry'
 
-const data = publishedPantry
 const topology = rawTopology as unknown as MunicipalityTopology
 const adjacency = Adjacency.parse(rawAdjacency)
 const bubbles = Bubbles.parse(rawBubbles)
@@ -28,14 +27,7 @@ const facts = Facts.parse(rawFacts)
 const open = (url: string) => {
   window.history.replaceState(null, '', url)
   return render(
-    <App
-      data={data}
-      topology={topology}
-      adjacency={adjacency}
-      bubbles={bubbles}
-      similar={similar}
-      facts={facts}
-    />,
+    <App loaded={{ ...loadedDataFor(), topology, adjacency, bubbles, similar, facts }} />,
   )
 }
 

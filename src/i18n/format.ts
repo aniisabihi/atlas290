@@ -1,4 +1,4 @@
-import { UNIT_DECIMALS, type Indicator, type ObservationStatus } from '../../shared/pantry'
+import { UNIT_DECIMALS, type IndicatorMeta, type ObservationStatus } from '../../shared/pantry'
 import type { Lang } from '../state/url'
 
 /**
@@ -15,11 +15,11 @@ const LOCALE: Record<Lang, string> = { sv: 'sv-SE', en: 'en-GB' }
 export const ABSENT = '–'
 
 /** Which year's kronor a money value is expressed in, or null if it is not money. */
-export function priceBasisYear(indicator: Indicator): number | null {
+export function priceBasisYear(indicator: IndicatorMeta): number | null {
   return indicator.priceBasis === 'fixed-latest-year' ? (indicator.priceBasisYear ?? null) : null
 }
 
-export function formatValue(value: number | null, indicator: Indicator, lang: Lang): string {
+export function formatValue(value: number | null, indicator: IndicatorMeta, lang: Lang): string {
   if (value === null) return ABSENT
   const decimals = UNIT_DECIMALS[indicator.unit]
   return new Intl.NumberFormat(LOCALE[lang], {
@@ -32,7 +32,7 @@ export function formatValue(value: number | null, indicator: Indicator, lang: La
   }).format(value)
 }
 
-const UNITS: Record<Indicator['unit'], Record<Lang, string>> = {
+const UNITS: Record<IndicatorMeta['unit'], Record<Lang, string>> = {
   count: { sv: 'invånare', en: 'residents' },
   percent: { sv: '%', en: '%' },
   years: { sv: 'år', en: 'years' },
@@ -41,14 +41,14 @@ const UNITS: Record<Indicator['unit'], Record<Lang, string>> = {
   'per-km2': { sv: 'inv/km²', en: 'people/km²' },
 }
 
-export function unitSuffix(indicator: Indicator, lang: Lang): string {
+export function unitSuffix(indicator: IndicatorMeta, lang: Lang): string {
   return UNITS[indicator.unit][lang]
 }
 
 /** A percent sign hugs its number; a word does not. */
-const TIGHT: ReadonlySet<Indicator['unit']> = new Set(['percent'])
+const TIGHT: ReadonlySet<IndicatorMeta['unit']> = new Set(['percent'])
 
-export function formatWithUnit(value: number | null, indicator: Indicator, lang: Lang): string {
+export function formatWithUnit(value: number | null, indicator: IndicatorMeta, lang: Lang): string {
   const number = formatValue(value, indicator, lang)
   if (value === null) return number
   const unit = unitSuffix(indicator, lang)

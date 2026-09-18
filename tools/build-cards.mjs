@@ -22,6 +22,7 @@
  */
 import { chromium } from 'playwright'
 import { mkdirSync, readFileSync, writeFileSync, readdirSync, rmSync } from 'node:fs'
+import { readPantry } from './read-pantry.mjs'
 import { join, resolve } from 'node:path'
 
 /** 1200x630 is Facebook's own recommendation and the 1.91:1 every platform crops to. */
@@ -67,7 +68,7 @@ function escapeHtml(s) {
   return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
 }
 
-const data = JSON.parse(readFileSync(join(root, 'public/pantry/data/indicators.json'), 'utf8'))
+const data = readPantry()
 
 mkdirSync(outDir, { recursive: true })
 // Anything already there that no municipality claims is stale — a code SCB retired, or a

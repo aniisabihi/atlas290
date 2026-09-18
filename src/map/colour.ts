@@ -1,5 +1,5 @@
 import { schemeBlues, schemePuOr } from 'd3-scale-chromatic'
-import type { Indicator } from '../../shared/pantry'
+import type { IndicatorMeta } from '../../shared/pantry'
 import type { CellStatus } from '../i18n/format'
 import { classOf } from '../data/select'
 
@@ -46,7 +46,7 @@ export const FOCUS_RING = { core: '#111111', halo: '#ffffff' } as const
  * for RdBu and 1.08 for BrBG) — still not enough to read direction by lightness alone, which is
  * why the legend and the announcement say it in words.
  */
-export function paletteFor(indicator: Indicator): string[] {
+export function paletteFor(indicator: IndicatorMeta): string[] {
   const classes = indicator.scale.breaks.length + 1
   const scheme = indicator.scale.kind === 'diverging' ? schemePuOr : schemeBlues
   const ramp = scheme[classes]
@@ -73,7 +73,11 @@ export const NO_VALUE_FILLS: Record<NoValueStatus, { patternId: string; ground: 
   'outside-coverage': { patternId: 'fill-not-yet-published', ground: '#f7f7f7' },
 }
 
-export function fillFor(indicator: Indicator, value: number | null, status: CellStatus): string {
+export function fillFor(
+  indicator: IndicatorMeta,
+  value: number | null,
+  status: CellStatus,
+): string {
   // 'perturbed' is the one non-present status that carries a number: SCB has added noise to it,
   // which is a caveat to state rather than a value to withhold. It keeps its class colour and is
   // annotated in the legend and the announcement instead.
@@ -95,7 +99,7 @@ export function fillFor(indicator: Indicator, value: number | null, status: Cell
  * [-6.47, -2.32, 0.61, 3.28, 6.15, 10.5] and zero sits inside the third class. The legend marks
  * where it actually falls rather than pretending the ramp is centred on it.
  */
-export function zeroClassOf(indicator: Indicator): number | null {
+export function zeroClassOf(indicator: IndicatorMeta): number | null {
   if (indicator.scale.kind !== 'diverging') return null
   return classOf(indicator, 0)
 }

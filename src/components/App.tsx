@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { MunicipalityTopology } from '../../shared/geometry'
-import type { Adjacency, Bubbles, Facts, PantryData, Similar } from '../../shared/pantry'
+import { fetchIndicatorPart, withPart, type LoadedPantry } from '../data/pantry'
 import { classOf, lookup, observationAt, observationSentence } from '../data/select'
 import { t } from '../i18n/strings'
 import { titleFor } from '../state/title'
@@ -35,29 +34,65 @@ import { YearSlider } from './YearSlider'
 /** Matches the layout breakpoint in app.css, so CSS and behaviour cannot disagree. */
 export const NARROW = '(max-width: 60rem)'
 
-export function App({
-  data,
-  topology,
-  adjacency,
-  bubbles,
-  similar,
-  facts,
-}: {
-  data: PantryData
-  topology: MunicipalityTopology
-  adjacency: Adjacency
-  bubbles: Bubbles
-  similar: Similar
-  facts: Facts
-}) {
-  // Memoised on the pantry, which never changes after load, because `lookup` promises in its own
-  // docstring to be "built once per load" and rebuilding it here was quietly breaking that. The
-  // cost of the rebuild itself is small; the cost that mattered is that `ranksFor` caches into a
-  // WeakMap keyed on the Lookup OBJECT, so a fresh one every render threw the rank cache away
-  // every render and re-sorted all 290 municipalities each time.
-  const meta = useMemo(() => metaFrom(data), [data])
-  const lk = useMemo(() => lookup(data), [data])
+export function App({ loaded: opened }: { loaded: LoadedPantry }) {
+  // The pantry GROWS after load: Plan 13 fetches the index plus the one series the URL asks for,
+  // and the rest as they are needed. Every arrival replaces this with a new object rather than
+  // mutating it, which is what keeps the two memos below honest.
+  const [loaded, setLoaded] = useState(opened)
+  const { view: pantry, parts, topology, adjacency, bubbles, similar, facts } = loaded
+
+  // Memoised on the INDEX, which genuinely never changes after load — so `meta` keeps one
+  // identity for the life of the page even as series arrive, and `useAppState` is not rebuilt
+  // underneath the history listener.
+  const meta = useMemo(() => metaFrom(loaded.index), [loaded.index])
+  // Memoised on the view, which changes only when a series arrives, because `lookup` promises in
+  // its own docstring to be "built once per load" and rebuilding it per render was quietly
+  // breaking that. The cost of the rebuild itself is small; the cost that mattered is that
+  // `ranksFor` caches into a WeakMap keyed on the Lookup OBJECT, so a fresh one every render
+  // threw the rank cache away every render and re-sorted all 290 municipalities each time.
+  const lk = useMemo(() => lookup(pantry), [pantry])
   const [state, update] = useAppState(meta)
+
+  /**
+   * Which indicators this view needs on disk right now. The map needs one; the profile and the
+   * comparison show a row per indicator and so need all of them.
+   */
+  const wanted = useMemo(() => {
+    const ids = [state.indicator]
+    if (state.selected !== null || state.compare !== null) ids.push(...meta.indicators)
+    return ids
+  }, [state.indicator, state.selected, state.compare, meta])
+
+  /**
+   * Fetches what is missing, once each.
+   *
+   * Out-of-order responses need no guard, and that is a property of the design rather than luck:
+   * an arriving series is ADDED under its own id and never replaces the one being drawn, and what
+   * is drawn is chosen by the URL. So A→B→A settles on A the moment A is in hand — it already is —
+   * and B landing late adds data nobody is looking at.
+   */
+  const requested = useRef(new Set<string>())
+  useEffect(() => {
+    for (const id of wanted) {
+      if (loaded.parts.has(id) || requested.current.has(id)) continue
+      requested.current.add(id)
+      fetchIndicatorPart(id)
+        .then((part) => setLoaded((previous) => withPart(previous, part)))
+        .catch((error: unknown) => {
+          // Let it be retried rather than leaving the indicator permanently unfetchable.
+          requested.current.delete(id)
+          throw error
+        })
+    }
+  }, [wanted, loaded.parts])
+
+  /**
+   * The indicator actually drawn. While a newly chosen one is in flight the map keeps showing the
+   * last one that arrived, rather than blanking: there is no visual language on this site for "a
+   * map that is loading", and inventing one is not this change's job.
+   */
+  const [drawn, setDrawn] = useState(state.indicator)
+  if (drawn !== state.indicator && parts.has(state.indicator)) setDrawn(state.indicator)
   const strings = t(state.lang)
   const [playing, setPlaying] = useState(false)
   /**
@@ -72,7 +107,7 @@ export function App({
    */
   const [highlight, setHighlight] = useState<string | null>(null)
   const reducedMotion = useReducedMotion()
-  const indicator = lk.indicator(state.indicator)
+  const indicator = lk.indicator(drawn)
   const covered = state.year >= indicator.coverage.from && state.year <= indicator.coverage.to
   /**
    * Which class on the ramp the highlighted municipality sits in, so the legend can tick it.
@@ -80,7 +115,7 @@ export function App({
    * the figure is not on.
    */
   const highlightClass = highlight
-    ? classOf(indicator, observationAt(lk, state.indicator, highlight, state.year).value)
+    ? classOf(indicator, observationAt(lk, drawn, highlight, state.year).value)
     : null
 
   // The tab, and what a screen reader announces on arrival. Set from the state rather than
@@ -112,7 +147,7 @@ export function App({
   const announcement =
     notice ||
     (state.selected
-      ? observationSentence(lk, state.indicator, state.selected, state.year, state.lang)
+      ? observationSentence(lk, drawn, state.selected, state.year, state.lang)
       : strings.selectionCleared)
 
   return (
@@ -152,7 +187,7 @@ export function App({
         />
 
         <SearchBox
-          municipalities={data.municipalities}
+          municipalities={pantry.municipalities}
           lang={state.lang}
           onSelect={(code) => {
             interrupt()
@@ -219,7 +254,7 @@ export function App({
             {state.table ? (
               <DataTable
                 lk={lk}
-                indicatorId={state.indicator}
+                indicatorId={drawn}
                 year={state.year}
                 selected={state.selected}
                 lang={state.lang}
@@ -238,7 +273,7 @@ export function App({
                   adjacency={adjacency}
                   bubbles={bubbles}
                   view={view}
-                  indicatorId={state.indicator}
+                  indicatorId={drawn}
                   year={state.year}
                   selected={state.selected}
                   lang={state.lang}
@@ -260,14 +295,14 @@ export function App({
 
           <div className="reading-column">
             <p className="kicker">
-              {lk.indicator(state.indicator).name[state.lang]} · {meta.years.min}–{meta.years.max}
+              {lk.indicator(drawn).name[state.lang]} · {meta.years.min}–{meta.years.max}
             </p>
             <p className="tagline">{strings.tagline}</p>
 
             {!covered && (
               <EmptyYear
                 lk={lk}
-                indicatorId={state.indicator}
+                indicatorId={drawn}
                 year={state.year}
                 lang={state.lang}
                 onYear={(year) => {
@@ -282,7 +317,7 @@ export function App({
               <YearSlider
                 lk={lk}
                 meta={meta}
-                indicatorId={state.indicator}
+                indicatorId={drawn}
                 year={state.year}
                 lang={state.lang}
                 playing={playing}
@@ -296,13 +331,14 @@ export function App({
 
             <Legend
               lk={lk}
-              indicatorId={state.indicator}
+              indicatorId={drawn}
               year={state.year}
               lang={state.lang}
               highlightClass={highlightClass}
             />
 
-            <AboutIndicator lk={lk} indicatorId={state.indicator} lang={state.lang} />
+            {/* The drawn indicator is always one whose file has arrived, so its prose is here. */}
+            <AboutIndicator indicator={parts.get(drawn)!.indicator} lang={state.lang} />
           </div>
           {/*
            * The place, in a row of its own under the map.

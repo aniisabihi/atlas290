@@ -1,4 +1,4 @@
-import type { Indicator } from '../../shared/pantry'
+import type { IndicatorMeta } from '../../shared/pantry'
 import { observationAt, ranksFor, type Lookup } from '../data/select'
 import { formatValue, formatWithUnit } from '../i18n/format'
 import type { Lang } from '../state/url'
@@ -171,7 +171,7 @@ function turn(lk: Lookup, code: string, year: number, lang: Lang): Sentence | nu
  * across rebuilds rather than depending on object iteration order.
  */
 function standing(lk: Lookup, code: string, year: number, lang: Lang): Sentence | null {
-  let best: { indicator: Indicator; rank: number; outOf: number; share: number } | null = null
+  let best: { indicator: IndicatorMeta; rank: number; outOf: number; share: number } | null = null
   for (const indicator of lk.data.indicators) {
     const { value } = observationAt(lk, indicator.id, code, year)
     if (value === null) continue

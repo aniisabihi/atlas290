@@ -1,4 +1,4 @@
-import type { Indicator, IndicatorSeries, Municipality, PantryData } from '../../shared/pantry'
+import type { IndicatorMeta, IndicatorSeries, Municipality, PantryView } from '../../shared/pantry'
 import { OBSERVATION_STATUS } from '../../shared/pantry'
 import { formatWithUnit, statusPhrase, OUTSIDE_COVERAGE, type CellStatus } from '../i18n/format'
 import { t } from '../i18n/strings'
@@ -12,9 +12,18 @@ import type { Lang } from '../state/url'
 export type Cell = { value: number | null; status: CellStatus }
 
 export type Lookup = {
-  data: PantryData
-  indicator(id: string): Indicator
+  data: PantryView
+  indicator(id: string): IndicatorMeta
   series(id: string): IndicatorSeries
+  /**
+   * Whether this indicator's series has been fetched yet.
+   *
+   * Plan 13: the site holds every indicator's metadata from the first byte but fetches series one
+   * at a time, so anything that walks ALL indicators — the profile, the comparison — has to ask
+   * before it reads. `series()` stays strict and throws, because everywhere else the answer is
+   * already known.
+   */
+  hasSeries(id: string): boolean
   municipality(code: string): Municipality | undefined
   rowOf(code: string): number | undefined
   colOf(indicatorId: string, year: number): number | undefined
@@ -24,7 +33,7 @@ export type Lookup = {
  * Built once per load. The map draws 290 shapes and the slider moves 59 times; doing a linear
  * `find` per shape per year would be 17,000 scans for one drag across the century.
  */
-export function lookup(data: PantryData): Lookup {
+export function lookup(data: PantryView): Lookup {
   const indicators = new Map(data.indicators.map((i) => [i.id, i]))
   const series = new Map(data.series.map((s) => [s.indicator, s]))
   const municipalities = new Map(data.municipalities.map((m) => [m.code, m]))
@@ -44,6 +53,7 @@ export function lookup(data: PantryData): Lookup {
       if (!s) throw new Error(`no series for indicator "${id}" in the pantry`)
       return s
     },
+    hasSeries: (id) => series.has(id),
     municipality: (code) => municipalities.get(code),
     rowOf: (code) => rows.get(code),
     colOf: (indicatorId, year) => cols.get(indicatorId)?.get(year),
@@ -69,7 +79,7 @@ export function observationAt(lk: Lookup, indicatorId: string, code: string, yea
  * A value sitting exactly on a break belongs to the class above it, matching how a threshold
  * scale reads and how the legend is written.
  */
-export function classOf(indicator: Indicator, value: number | null): number | null {
+export function classOf(indicator: IndicatorMeta, value: number | null): number | null {
   if (value === null) return null
   const breaks = indicator.scale.breaks
   let klass = 0
@@ -77,7 +87,7 @@ export function classOf(indicator: Indicator, value: number | null): number | nu
   return klass
 }
 
-export function nearestCoveredYear(indicator: Indicator, year: number): number {
+export function nearestCoveredYear(indicator: IndicatorMeta, year: number): number {
   const { from, to } = indicator.coverage
   return Math.min(to, Math.max(from, year))
 }

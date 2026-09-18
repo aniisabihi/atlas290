@@ -20,6 +20,7 @@
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import subsetFont from 'subset-font'
+import { pantryDataFiles } from './read-pantry.mjs'
 
 const root = resolve(import.meta.dirname, '..')
 const outDir = join(root, 'public/fonts')
@@ -66,14 +67,10 @@ function charset() {
 
   // And everything the pantry and the string tables can render. Read as raw text rather than
   // parsed: over-inclusive by a few punctuation marks, and incapable of missing one.
-  for (const file of [
-    'public/pantry/data/indicators.json',
-    'public/pantry/data/facts.json',
-    'public/pantry/data/similar.json',
-    'src/i18n/strings.ts',
-  ]) {
-    add(readFileSync(join(root, file), 'utf8'))
-  }
+  // Every published data file, found rather than listed (Plan 13 turned one into twelve, and a
+  // list would silently stop sampling an indicator added later).
+  for (const file of pantryDataFiles()) add(readFileSync(file, 'utf8'))
+  add(readFileSync(join(root, 'src/i18n/strings.ts'), 'utf8'))
 
   const outside = [...chars].filter((ch) => !inLatin(ch.codePointAt(0)))
   if (outside.length > 0) {

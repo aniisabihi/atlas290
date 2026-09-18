@@ -1,4 +1,4 @@
-import type { Lookup } from '../data/select'
+import type { Indicator } from '../../shared/pantry'
 import { priceBasisYear } from '../i18n/format'
 import { t } from '../i18n/strings'
 import type { Lang } from '../state/url'
@@ -13,17 +13,13 @@ import type { Lang } from '../state/url'
  *
  * Collapsed by default and never truncated. The caveats are long because the truth about this
  * data is long, and cutting them off with an ellipsis would undo the point of writing them.
+ *
+ * Takes the whole `Indicator` rather than looking one up through the `Lookup`, because since
+ * Plan 13 the lookup carries only metadata: prose lives in each indicator's own file, and this is
+ * the one component that reads it. The indicator it describes is always the one on screen, which
+ * is by definition the one whose file has been fetched.
  */
-export function AboutIndicator({
-  lk,
-  indicatorId,
-  lang,
-}: {
-  lk: Lookup
-  indicatorId: string
-  lang: Lang
-}) {
-  const indicator = lk.indicator(indicatorId)
+export function AboutIndicator({ indicator, lang }: { indicator: Indicator; lang: Lang }) {
   const strings = t(lang)
   const basis = priceBasisYear(indicator)
 
