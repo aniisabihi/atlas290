@@ -5,6 +5,7 @@ import {
   statusCode,
 } from '../../../shared/pantry'
 import { existed, municipalitiesFromMetadata } from '../municipalities'
+import { buildDefined, type Definition } from './define'
 import { parseMetadata, type Selection, type TableMeta } from '../scb/client'
 import {
   freezeData,
@@ -200,13 +201,50 @@ export async function buildPopulation(ctx: BuildContext): Promise<IndicatorSerie
     'sv',
     ctx.freeze,
   )
-  const series = buildPopulationSeries(municipalities, oldChunks, newChunks, ctx.years)
+  void oldChunks
+  void newChunks
+  void newMeta
+  const series = await buildDefined(populationDefined(), ctx)
 
-  // Ruling R2: every frozen chunk and metadata response involved in producing this series, in
-  // a fixed order — data chunks first (old, then new), then the three metadata responses —
-  // so the provenance manifest can be built from ctx.frozen without reopening this module.
-  ctx.frozen.push(...oldChunks, ...newChunks, svMeta, enMeta, newMeta)
+  // Ruling R2: every frozen chunk and metadata response involved in producing this series is
+  // recorded, so the provenance manifest can be built from ctx.frozen without reopening this
+  // module. buildDefined records both tables' chunks and their Swedish metadata; the ENGLISH
+  // metadata is this module's own, read to give each municipality its English name, and nothing
+  // else would record it.
+  ctx.frozen.push(enMeta)
   return series
+}
+
+/**
+ * Population, as a definition (Plan 14) — the first stitched one.
+ *
+ * TAB638 runs to 2024 and the Cell Key Method table TAB5557 from 2025, so the new table is listed
+ * last and wins any year both publish. Neither `Kon` nor `Civilstand` has a total code on either
+ * table, which is exactly what `SUM_SAFE` declares verified for them.
+ *
+ * Deriving the 290 municipalities from TAB638's own metadata stays in `buildPopulation` below:
+ * it is this indicator's other job, and it is not something a definition describes.
+ */
+export function populationDefined(): Definition {
+  return {
+    indicator: POPULATION,
+    sources: [
+      {
+        table: OLD_TABLE,
+        content: POPULATION_CONTENT_LABEL,
+        years: YEARS.filter((y) => y < CKM_FROM),
+        dims: { Alder: 'total', Kon: 'total', Civilstand: 'total' },
+      },
+      {
+        table: NEW_TABLE,
+        content: POPULATION_CONTENT_LABEL,
+        years: YEARS.filter((y) => y >= CKM_FROM),
+        dims: { Alder: 'total', Kon: 'total', Civilstand: 'total' },
+      },
+    ],
+    spec: { kind: 'direct' },
+    perturbedFrom: CKM_FROM,
+  }
 }
 
 export const populationDefinition: IndicatorDefinition = {

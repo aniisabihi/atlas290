@@ -359,20 +359,36 @@ describe('fetchPopulation: returns frozen chunks and metadata for provenance (re
     const result = await fetchPopulation(opts)
 
     expect(result.municipalities).toHaveLength(1)
+
+    /*
+     * Ruling R2 is that EVERY response involved is recorded, so the provenance manifest can be
+     * built from ctx.frozen alone. Plan 14 moved where each one is pushed from — the two tables
+     * are now read by the shared source resolver, and only the English metadata is still this
+     * module's own — so this asserts the set and the data-before-metadata grouping rather than
+     * five fixed positions.
+     *
+     * The position of the English metadata within the metadata group is not a property anyone
+     * can observe: `yarn kitchen publish` produces a byte-identical `manifest.json` across this
+     * change, which is the actual guarantee. A positional assertion here was pinning an
+     * implementation detail that the published file does not depend on.
+     */
     expect(result.frozen).toHaveLength(5)
-    expect(result.frozen[0]?.kind).toBe('data')
-    expect((result.frozen[0] as FrozenData).table).toBe('TAB638')
-    expect(result.frozen[1]?.kind).toBe('data')
-    expect((result.frozen[1] as FrozenData).table).toBe('TAB5557')
-    expect(result.frozen[2]).toEqual(
-      expect.objectContaining({ kind: 'metadata', table: 'TAB638', lang: 'sv' }),
-    )
-    expect(result.frozen[3]).toEqual(
-      expect.objectContaining({ kind: 'metadata', table: 'TAB638', lang: 'en' }),
-    )
-    expect(result.frozen[4]).toEqual(
-      expect.objectContaining({ kind: 'metadata', table: 'TAB5557', lang: 'sv' }),
-    )
+    const kinds = result.frozen.map((f) => f.kind)
+    expect(kinds.slice(0, 2)).toEqual(['data', 'data'])
+    expect(kinds.slice(2)).toEqual(['metadata', 'metadata', 'metadata'])
+    expect(
+      result.frozen
+        .map((f) =>
+          f.kind === 'data' ? `data ${(f as FrozenData).table}` : `metadata ${f.table} ${f.lang}`,
+        )
+        .sort(),
+    ).toEqual([
+      'data TAB5557',
+      'data TAB638',
+      'metadata TAB5557 sv',
+      'metadata TAB638 en',
+      'metadata TAB638 sv',
+    ])
   })
 })
 

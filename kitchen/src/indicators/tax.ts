@@ -5,15 +5,10 @@ import {
   statusCode,
 } from '../../../shared/pantry'
 import { existed } from '../municipalities'
-import { parseMetadata, type Selection, type TableMeta } from '../scb/client'
-import {
-  freezeData,
-  freezeMetadata,
-  type FreezeOpts,
-  type FrozenData,
-  type FrozenMeta,
-} from '../scb/freeze'
+import { type Selection, type TableMeta } from '../scb/client'
+import { type FreezeOpts, type FrozenData, type FrozenMeta } from '../scb/freeze'
 import { toRows } from '../scb/jsonstat'
+import { buildDefined, type Definition } from './define'
 import {
   buildRows,
   resolveContentCode,
@@ -119,16 +114,32 @@ export function buildTaxSeries(
 }
 
 export async function buildTax(ctx: BuildContext): Promise<IndicatorSeries> {
-  const meta = await freezeMetadata(TAX_TABLE, 'sv', ctx.freeze)
-  const parsed = parseMetadata(TAX_TABLE, meta.response)
-  const years = TAX_YEARS.map(String)
-  const chunks = await freezeData(TAX_TABLE, taxSelection(parsed, years), 'sv', ctx.freeze)
-  const series = buildTaxSeries(ctx.municipalities, chunks, TAX_YEARS)
-  ctx.frozen.push(...chunks, meta)
-  return series
+  return buildDefined(taxDefined(), ctx)
 }
 
-export const taxDefinition: IndicatorDefinition = { indicator: TAX, build: buildTax }
+/**
+ * Tax rate, as a definition rather than a module (Plan 14).
+ *
+ * TAB2017 has no dimension beyond Region and Tid, so there is nothing to total and nothing to
+ * sum — which is why this is the first indicator migrated: it exercises the declaration and the
+ * status rules without exercising anything else.
+ */
+export function taxDefined(): Definition {
+  return {
+    indicator: TAX,
+    sources: [{ table: TAX_TABLE, content: TAX_CONTENT_LABEL, years: TAX_YEARS }],
+    spec: { kind: 'direct' },
+  }
+}
+
+/**
+ * The registry entry, now a thin adapter over the declaration above. `buildAll` still sees an
+ * `IndicatorDefinition`; what it calls is the shared builder rather than a module of its own.
+ */
+export const taxDefinition: IndicatorDefinition = {
+  indicator: TAX,
+  build: (ctx) => buildDefined(taxDefined(), ctx),
+}
 
 /**
  * Standalone real-fetch entry point, mirroring population.ts's fetchPopulation — used for the

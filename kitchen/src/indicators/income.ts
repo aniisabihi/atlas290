@@ -5,14 +5,9 @@ import {
   statusCode,
 } from '../../../shared/pantry'
 import { existed } from '../municipalities'
-import { parseMetadata, type Selection, type TableMeta } from '../scb/client'
-import {
-  freezeData,
-  freezeMetadata,
-  type FreezeOpts,
-  type FrozenData,
-  type FrozenMeta,
-} from '../scb/freeze'
+import { buildDefined, type Definition } from './define'
+import { type Selection, type TableMeta } from '../scb/client'
+import { type FreezeOpts, type FrozenData, type FrozenMeta } from '../scb/freeze'
 import { assertCpiLatestYear, CPI_LATEST_YEAR, fetchCpi, toCurrentKronor } from './cpi'
 import { toRows } from '../scb/jsonstat'
 import {
@@ -206,25 +201,39 @@ export function buildIncomeSeries(
 }
 
 export async function buildIncome(ctx: BuildContext): Promise<IndicatorSeries> {
-  const meta = await freezeMetadata(INCOME_TABLE, 'sv', ctx.freeze)
-  const parsed = parseMetadata(INCOME_TABLE, meta.response)
-  const years = INCOME_YEARS.map(String)
-  const codes = ctx.municipalities.map((m) => m.code)
-  const chunks = await freezeData(
-    INCOME_TABLE,
-    incomeSelection(parsed, codes, years),
-    'sv',
-    ctx.freeze,
-  )
-
   // cpi.ts is deliberately independent of registry.ts (see its own module comment), so this
-  // indicator calls it directly rather than reading ctx.cpi — that slot stays unpopulated
-  // until Task 13 wires it, per the plan.
-  const { index: cpiIndex, frozen: cpiFrozen } = await fetchCpi(ctx.freeze)
-
-  const series = buildIncomeSeries(ctx.municipalities, chunks, INCOME_YEARS, cpiIndex)
-  ctx.frozen.push(...chunks, meta, ...cpiFrozen)
+  // indicator fetches the index itself and hands it to the shared builder through ctx.cpi rather
+  // than relying on something upstream having filled that slot.
+  const { index, frozen } = await fetchCpi(ctx.freeze)
+  ctx.cpi = index
+  const series = await buildDefined(incomeDefined(), ctx)
+  ctx.frozen.push(...frozen)
   return series
+}
+
+/**
+ * Median earned income, as a definition (Plan 14).
+ *
+ * SCB publishes it in thousands of kronor, so `scale: 1000` turns it into the whole kronor the
+ * pantry stores, and the adjustment then expresses every year in the price index's own base year.
+ * `regions: 'known'` because TAB3554 carries regions that are no longer municipalities, and this
+ * indicator wants the 290 population established.
+ */
+export function incomeDefined(): Definition {
+  return {
+    indicator: INCOME,
+    sources: [
+      {
+        table: INCOME_TABLE,
+        content: INCOME_CONTENT_LABEL,
+        years: INCOME_YEARS,
+        dims: { Kon: 'total', Alder: 'total', Inkomstklass: 'total' },
+        regions: 'known',
+      },
+    ],
+    spec: { kind: 'direct' },
+    modifiers: { scale: 1000, inflationAdjust: true },
+  }
 }
 
 export const incomeDefinition: IndicatorDefinition = { indicator: INCOME, build: buildIncome }

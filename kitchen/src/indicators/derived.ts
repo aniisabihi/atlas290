@@ -6,14 +6,9 @@ import {
 } from '../../../shared/pantry'
 import { isStructuralBreak } from '../breaks'
 import { existed } from '../municipalities'
-import { parseMetadata, type Selection, type TableMeta } from '../scb/client'
-import {
-  freezeData,
-  freezeMetadata,
-  type FreezeOpts,
-  type FrozenData,
-  type FrozenMeta,
-} from '../scb/freeze'
+import { buildDefined, type Definition } from './define'
+import { type Selection, type TableMeta } from '../scb/client'
+import { type FreezeOpts, type FrozenData, type FrozenMeta } from '../scb/freeze'
 import { toRows } from '../scb/jsonstat'
 import {
   buildRows,
@@ -33,7 +28,7 @@ import {
 // finished, so importing the binding is unconditionally safe — but per this same file's
 // SHARE_65_YEARS comment below, it is still only ever READ inside a function body here
 // (buildShare65PlusSeries), never used to compute anything at this module's own top level.
-import { CKM_FROM, POPULATION } from './population'
+import { CKM_FROM, NEW_TABLE, OLD_TABLE, POPULATION, YEARS } from './population'
 
 /**
  * Population change is the first indicator with NO fetch at all (Task 10 of
@@ -350,13 +345,27 @@ export function buildMeanAgeSeries(
 }
 
 export async function buildMeanAge(ctx: BuildContext): Promise<IndicatorSeries> {
-  const meta = await freezeMetadata(MEAN_AGE_TABLE, 'sv', ctx.freeze)
-  const parsed = parseMetadata(MEAN_AGE_TABLE, meta.response)
-  const years = MEAN_AGE_YEARS.map(String)
-  const chunks = await freezeData(MEAN_AGE_TABLE, meanAgeSelection(parsed, years), 'sv', ctx.freeze)
-  const series = buildMeanAgeSeries(ctx.municipalities, chunks, MEAN_AGE_YEARS)
-  ctx.frozen.push(...chunks, meta)
-  return series
+  return buildDefined(meanAgeDefined(), ctx)
+}
+
+/**
+ * Mean age, as a definition (Plan 14). TAB637's `Kon` carries its own total code, so nothing is
+ * summed. No `perturbedFrom`: this table carries no Cell Key Method note, which is why the mean
+ * is published as a plain figure rather than a fuzzed one.
+ */
+export function meanAgeDefined(): Definition {
+  return {
+    indicator: MEAN_AGE,
+    sources: [
+      {
+        table: MEAN_AGE_TABLE,
+        content: MEAN_AGE_CONTENT_LABEL,
+        years: MEAN_AGE_YEARS,
+        dims: { Kon: 'total' },
+      },
+    ],
+    spec: { kind: 'direct' },
+  }
 }
 
 export const meanAgeDefinition: IndicatorDefinition = { indicator: MEAN_AGE, build: buildMeanAge }
@@ -628,43 +637,49 @@ export function buildShare65PlusSeries(
  * as it must for migration and population-change.
  */
 export async function buildShare65Plus(ctx: BuildContext): Promise<IndicatorSeries> {
-  const population = ctx.series.get(POPULATION.id)
-  if (!population) {
-    throw new Error(
-      `${SHARE_65_PLUS.id}: population series not yet built — population must come before ` +
-        'share-65-plus in REGISTRY, since its denominator is read from that series',
-    )
+  return buildDefined(share65PlusDefined(), ctx)
+}
+
+/**
+ * Share aged 65 and over, as a definition (Plan 14).
+ *
+ * The numerator stitches TAB638 to 2024 and the Cell Key Method table from 2025, selecting every
+ * age from 65 up. The two tables disagree about what to call the open-ended top band — `100+` and
+ * `100+1` — so the age rule is expressed as "leading digits of at least 65" and neither code is
+ * written down.
+ *
+ * The denominator is population's already-built series rather than a second sum of the same
+ * table, so numerator and denominator can never quietly disagree.
+ */
+export function share65PlusDefined(): Definition {
+  return {
+    indicator: SHARE_65_PLUS,
+    sources: [
+      {
+        table: OLD_TABLE,
+        content: SHARE_65_CONTENT_LABEL,
+        years: YEARS.filter((y) => y < CKM_FROM),
+        dims: {
+          Alder: { singleFrom: 65, alsoInclude: ['100+'] },
+          Kon: 'total',
+          Civilstand: 'total',
+        },
+        regions: 'known',
+      },
+      {
+        table: NEW_TABLE,
+        content: SHARE_65_CONTENT_LABEL,
+        years: YEARS.filter((y) => y >= CKM_FROM),
+        dims: {
+          Alder: { singleFrom: 65, alsoInclude: ['100+1'] },
+          Kon: 'total',
+          Civilstand: 'total',
+        },
+      },
+    ],
+    spec: { kind: 'ratio', of: POPULATION.id, times: 100 },
+    perturbedFrom: CKM_FROM,
   }
-  const codes = ctx.municipalities.map((m) => m.code)
-
-  const [oldMeta, newMeta] = await Promise.all([
-    freezeMetadata(SHARE_65_TABLE_OLD, 'sv', ctx.freeze),
-    freezeMetadata(SHARE_65_TABLE_NEW, 'sv', ctx.freeze),
-  ])
-  const oldYears = SHARE_65_YEARS.filter((y) => y < CKM_FROM).map(String)
-  const newYears = SHARE_65_YEARS.filter((y) => y >= CKM_FROM).map(String)
-
-  const oldChunks = await freezeData(
-    SHARE_65_TABLE_OLD,
-    share65OldSelection(parseMetadata(SHARE_65_TABLE_OLD, oldMeta.response), codes, oldYears),
-    'sv',
-    ctx.freeze,
-  )
-  const newChunks = await freezeData(
-    SHARE_65_TABLE_NEW,
-    share65NewSelection(parseMetadata(SHARE_65_TABLE_NEW, newMeta.response), newYears),
-    'sv',
-    ctx.freeze,
-  )
-  const series = buildShare65PlusSeries(
-    ctx.municipalities,
-    oldChunks,
-    newChunks,
-    SHARE_65_YEARS,
-    population,
-  )
-  ctx.frozen.push(...oldChunks, ...newChunks, oldMeta, newMeta)
-  return series
 }
 
 export const share65PlusDefinition: IndicatorDefinition = {

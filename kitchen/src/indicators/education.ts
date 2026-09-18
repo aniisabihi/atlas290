@@ -5,14 +5,9 @@ import {
   statusCode,
 } from '../../../shared/pantry'
 import { existed } from '../municipalities'
-import { parseMetadata, type Selection, type TableMeta } from '../scb/client'
-import {
-  freezeData,
-  freezeMetadata,
-  type FreezeOpts,
-  type FrozenData,
-  type FrozenMeta,
-} from '../scb/freeze'
+import { buildDefined, type Definition } from './define'
+import { type Selection, type TableMeta } from '../scb/client'
+import { type FreezeOpts, type FrozenData, type FrozenMeta } from '../scb/freeze'
 import { toRows } from '../scb/jsonstat'
 import {
   buildRows,
@@ -299,21 +294,32 @@ export function buildEducationSeries(
 }
 
 export async function buildEducation(ctx: BuildContext): Promise<IndicatorSeries> {
-  const meta = await freezeMetadata(EDUCATION_TABLE, 'sv', ctx.freeze)
-  const parsed = parseMetadata(EDUCATION_TABLE, meta.response)
-  const years = EDUCATION_YEARS.map(String)
-  const codes = ctx.municipalities.map((m) => m.code)
+  return buildDefined(educationDefined(), ctx)
+}
 
-  const chunks = await freezeData(
-    EDUCATION_TABLE,
-    educationSelection(parsed, codes, years),
-    'sv',
-    ctx.freeze,
-  )
-
-  const series = buildEducationSeries(ctx.municipalities, chunks, EDUCATION_YEARS)
-  ctx.frozen.push(...chunks, meta)
-  return series
+/**
+ * Share with post-secondary education, as a definition (Plan 14).
+ *
+ * One fetch of every education level, partitioned by `UtbildningsNiva`: levels 5, 6 and 7 over
+ * all of them. Numerator and denominator cannot be two selections, because only the all-levels
+ * one is frozen — and asking SCB twice for what one request already answered would be the
+ * pipeline paying twice for the same number.
+ */
+export function educationDefined(): Definition {
+  return {
+    indicator: EDUCATION,
+    sources: [
+      {
+        table: EDUCATION_TABLE,
+        content: EDUCATION_CONTENT_LABEL,
+        years: EDUCATION_YEARS,
+        dims: { Alder: 'total', UtbildningsNiva: 'all', Kon: 'total' },
+        regions: 'known',
+      },
+    ],
+    spec: { kind: 'share', over: 'UtbildningsNiva', numerator: POST_SECONDARY_LEVELS, times: 100 },
+    shareOver: ALL_LEVELS,
+  }
 }
 
 export const educationDefinition: IndicatorDefinition = {

@@ -5,14 +5,10 @@ import {
   statusCode,
 } from '../../../shared/pantry'
 import { existed } from '../municipalities'
-import { parseMetadata, type Selection, type TableMeta } from '../scb/client'
-import {
-  freezeData,
-  freezeMetadata,
-  type FreezeOpts,
-  type FrozenData,
-  type FrozenMeta,
-} from '../scb/freeze'
+import { buildDefined, type Definition } from './define'
+import type { Source } from './source'
+import { type Selection, type TableMeta } from '../scb/client'
+import { type FreezeOpts, type FrozenData, type FrozenMeta } from '../scb/freeze'
 import { toRows } from '../scb/jsonstat'
 import {
   buildRows,
@@ -232,54 +228,47 @@ export function buildMigrationSeries(
 }
 
 export async function buildMigration(ctx: BuildContext): Promise<IndicatorSeries> {
-  const population = ctx.series.get(POPULATION.id)
-  if (!population) {
-    throw new Error(
-      `${MIGRATION.id}: population series not yet built — population must come before ` +
-        'migration in REGISTRY, since the migration rate is computed against it',
-    )
+  return buildDefined(migrationDefined(), ctx)
+}
+
+/**
+ * Net migration per 1,000 residents, as a definition (Plan 14) — three tables stitched.
+ *
+ * TAB1211 to 1996, TAB1212 to 2024 and the Cell Key Method table from 2025, listed in that
+ * order so a later one wins any year two of them publish. The denominator is population's
+ * already-built series rather than a second fetch, so the two can never disagree.
+ *
+ * The existence gate is shifted a year: a migration figure stamped with year Y describes moves
+ * made during Y, under the boundary that existed then.
+ */
+export function migrationDefined(): Definition {
+  const of = (table: string, years: readonly number[]): Source => ({
+    table,
+    content: MIGRATION_CONTENT_LABEL,
+    years,
+    dims: { Alder: 'total', Kon: 'total' },
+    regions: 'known',
+  })
+  return {
+    indicator: MIGRATION,
+    sources: [
+      of(
+        MIGRATION_TABLE_OLD,
+        MIGRATION_YEARS.filter((y) => y <= 1996),
+      ),
+      of(
+        MIGRATION_TABLE_MID,
+        MIGRATION_YEARS.filter((y) => y >= 1997 && y <= 2024),
+      ),
+      of(
+        MIGRATION_TABLE_NEW,
+        MIGRATION_YEARS.filter((y) => y >= 2025),
+      ),
+    ],
+    spec: { kind: 'ratio', of: POPULATION.id, times: 1000 },
+    existsShift: 1,
+    perturbedFrom: CKM_FROM,
   }
-  const codes = ctx.municipalities.map((m) => m.code)
-
-  const [oldMeta, midMeta, newMeta] = await Promise.all([
-    freezeMetadata(MIGRATION_TABLE_OLD, 'sv', ctx.freeze),
-    freezeMetadata(MIGRATION_TABLE_MID, 'sv', ctx.freeze),
-    freezeMetadata(MIGRATION_TABLE_NEW, 'sv', ctx.freeze),
-  ])
-
-  const oldYears = MIGRATION_YEARS.filter((y) => y <= 1996).map(String)
-  const midYears = MIGRATION_YEARS.filter((y) => y >= 1997 && y <= 2024).map(String)
-  const newYears = MIGRATION_YEARS.filter((y) => y >= 2025).map(String)
-
-  const oldChunks = await freezeData(
-    MIGRATION_TABLE_OLD,
-    migrationSelection(parseMetadata(MIGRATION_TABLE_OLD, oldMeta.response), codes, oldYears),
-    'sv',
-    ctx.freeze,
-  )
-  const midChunks = await freezeData(
-    MIGRATION_TABLE_MID,
-    migrationSelection(parseMetadata(MIGRATION_TABLE_MID, midMeta.response), codes, midYears),
-    'sv',
-    ctx.freeze,
-  )
-  const newChunks = await freezeData(
-    MIGRATION_TABLE_NEW,
-    migrationSelection(parseMetadata(MIGRATION_TABLE_NEW, newMeta.response), codes, newYears),
-    'sv',
-    ctx.freeze,
-  )
-
-  const series = buildMigrationSeries(
-    ctx.municipalities,
-    oldChunks,
-    midChunks,
-    newChunks,
-    MIGRATION_YEARS,
-    population,
-  )
-  ctx.frozen.push(...oldChunks, ...midChunks, ...newChunks, oldMeta, midMeta, newMeta)
-  return series
 }
 
 export const migrationDefinition: IndicatorDefinition = {

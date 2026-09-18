@@ -38,6 +38,51 @@ export const NEIGHBOURS = 5
 export const MAX_MISSING = 2
 
 /**
+ * The indicators "places like this" is measured over, named rather than inferred.
+ *
+ * Until Plan 14 this was "whatever the pantry contains", which was the same ten by accident of
+ * there being only ten. Plan 15 adds fifteen more, and every one of them would have silently
+ * changed every neighbour on the site — including the ones people have already linked to.
+ *
+ * Decision 0002 measured this metric on exactly these ten and recorded what it weighs and what it
+ * over-weighs. Changing the set is changing the metric, so it is a decision with a record, not a
+ * consequence of adding an indicator.
+ */
+export const CORE_INDICATORS: readonly string[] = [
+  'population',
+  'population-change',
+  'mean-age',
+  'share-65-plus',
+  'net-migration-rate',
+  'median-income',
+  'post-secondary-education',
+  'house-prices',
+  'tax-rate',
+  'density',
+]
+
+/**
+ * The core set, in the pantry's own published order, refusing anything it cannot find.
+ *
+ * Refusing rather than skipping: an indicator named here and missing from the pantry means the
+ * two have drifted apart, and quietly measuring over nine indicators while the published method
+ * says ten is exactly the kind of silence this project does not allow.
+ */
+export function coreOf(
+  data: PantryData,
+  core: readonly string[] = CORE_INDICATORS,
+): PantryData['indicators'] {
+  const missing = core.filter((id) => !data.indicators.some((i) => i.id === id))
+  if (missing.length > 0) {
+    throw new Error(
+      `similar: the core set names ${missing.join(', ')}, which the pantry does not publish — ` +
+        'the metric and the data have drifted apart',
+    )
+  }
+  return data.indicators.filter((i) => core.includes(i.id))
+}
+
+/**
  * The last year EVERY indicator covers, which is what the window has to end on: an indicator
  * missing from the final year would otherwise be silently averaged over nine years while the
  * rest got ten, and the published method would say ten.
@@ -45,15 +90,23 @@ export const MAX_MISSING = 2
  * Read from the data rather than written down, so the day SCB publishes 2025 median income the
  * window moves on its own instead of needing an edit nobody remembers to make.
  */
-export function windowFor(data: PantryData): { from: number; to: number } {
-  if (data.indicators.length === 0) throw new Error('similar: no indicators to compare')
-  const to = Math.min(...data.indicators.map((i) => i.coverage.to))
+export function windowFor(
+  data: PantryData,
+  coreIds: readonly string[] = CORE_INDICATORS,
+): { from: number; to: number } {
+  const core = coreOf(data, coreIds)
+  if (core.length === 0) throw new Error('similar: no indicators to compare')
+  const to = Math.min(...core.map((i) => i.coverage.to))
   return { from: to - WINDOW_YEARS + 1, to }
 }
 
 /** One row per municipality, one column per indicator, in the pantry's own published order. */
-export function featuresFor(data: PantryData, window: { from: number; to: number }): Feature[] {
-  const columns: Array<Array<number | null>> = data.indicators.map((indicator) => {
+export function featuresFor(
+  data: PantryData,
+  window: { from: number; to: number },
+  coreIds: readonly string[] = CORE_INDICATORS,
+): Feature[] {
+  const columns: Array<Array<number | null>> = coreOf(data, coreIds).map((indicator) => {
     const series = data.series.find((s) => s.indicator === indicator.id)
     if (!series) throw new Error(`similar: no series for indicator '${indicator.id}'`)
     const perYear: Array<Array<number | null> | null> = []
@@ -126,9 +179,16 @@ export function assertUsable(
   }
 }
 
-export function buildSimilar(data: PantryData): Similar {
-  const window = windowFor(data)
-  const features = featuresFor(data, window)
+export function buildSimilar(
+  data: PantryData,
+  /**
+   * Which indicators the metric is measured over. Defaults to the ten decision 0002 measured;
+   * tests pass their own so a fabricated pantry can still exercise the guards.
+   */
+  coreIds: readonly string[] = CORE_INDICATORS,
+): Similar {
+  const window = windowFor(data, coreIds)
+  const features = featuresFor(data, window, coreIds)
   const codeAt = (index: number) => data.municipalities[index]!.code
 
   const result: Similar['nearest'] = {}
@@ -141,10 +201,14 @@ export function buildSimilar(data: PantryData): Similar {
   return {
     schemaVersion: 1,
     method: {
-      indicators: data.indicators.map((i) => i.id) as [string, ...string[]],
+      // The core set, not everything the pantry publishes. The published method has to name what
+      // the metric actually measured over, or the page states a method it did not use.
+      indicators: coreOf(data, coreIds).map((i) => i.id) as [string, ...string[]],
       // Only the logged indicators that are actually being compared — the schema refuses a
       // `logged` entry naming an indicator the metric never saw.
-      logged: data.indicators.map((i) => i.id).filter((id) => isLogged(id)),
+      logged: coreOf(data, coreIds)
+        .map((i) => i.id)
+        .filter((id) => isLogged(id)),
       window,
       neighbours: NEIGHBOURS,
     },

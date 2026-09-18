@@ -717,3 +717,55 @@ id must be unique, because the id IS the file name; and a file's series must bel
 indicator, which nothing else would have noticed.
 
 Why these choices: [docs/decisions/0013-the-pantry-splits.md](decisions/0013-the-pantry-splits.md).
+
+## What an indicator is (Plan 14, 2026-09-18)
+
+Nine of the ten indicators are **declarations**, not modules. One is not, for a stated reason.
+
+A declaration names a table, a content **label** (never a code — codes vary by table and by era,
+labels are stable), a rule per dimension, and a year range:
+
+```ts
+export function taxDefined(): Definition {
+  return {
+    indicator: TAX,
+    sources: [{ table: TAX_TABLE, content: TAX_CONTENT_LABEL, years: TAX_YEARS }],
+    spec: { kind: 'direct' },
+  }
+}
+```
+
+Seven lines, against the 153-line module it replaced. The nine range from 7 to 30 lines, mean 19.
+
+**A definition is a function, not a constant.** `CKM_FROM` lives in `population.ts`, which the
+other indicator modules import from and which imports back; reading it at module-load time races
+that cycle, and `registry.load-order.test.ts` exists because it did.
+
+| Dimension rule                | Means                                                                                             |
+| ----------------------------- | ------------------------------------------------------------------------------------------------- |
+| `'total'`                     | The dimension's own total code, or every value where `SUM_SAFE` verifies it — otherwise it throws |
+| `'all'`                       | Every value, deliberately, where the whole set IS the thing wanted                                |
+| `{ values }`                  | An explicit list                                                                                  |
+| `{ label }`                   | The one value carrying that Swedish label, refusing none and refusing several                     |
+| `{ singleFrom, alsoInclude }` | Single years of age from N up, plus the named open-ended top band                                 |
+
+That last rule is worth its own sentence: the obvious version — "every code whose leading digits
+reach 65" — silently includes TAB5557's aggregate bands (`65-69`, `70-74`, `90-99`) alongside the
+single ages and counts the same people twice. The frozen-response layer caught it, because the
+selection no longer matched anything ever fetched.
+
+| Builder  | Means                                                         | Users                                                                |
+| -------- | ------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `direct` | Select a cell and publish it                                  | population, mean-age, tax-rate, density, median-income, house-prices |
+| `ratio`  | This count over another indicator's series, times a factor    | share-65-plus (×100), net-migration-rate (×1,000)                    |
+| `share`  | Some values of one dimension over all of them, times a factor | post-secondary-education                                             |
+
+Modifiers: `scale` (SCB publishes money in thousands), `inflationAdjust`, and `minCount` (a mean
+price resting on a handful of sales is noise wearing a number's clothes).
+
+**`population-change` is not a definition.** It reads population's series, propagates four statuses
+through a year-over-year comparison and applies the structural-break rule for the years a
+municipality split. Forcing it into a generic builder would produce one with a single user.
+
+Why these choices:
+[docs/decisions/0014-indicators-become-definitions.md](decisions/0014-indicators-become-definitions.md).
