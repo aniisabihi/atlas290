@@ -5,6 +5,8 @@ import { PantryData, Similar, type Indicator } from '../../../shared/pantry'
 import {
   assertUsable,
   buildSimilar,
+  CORE_INDICATORS,
+  coreOf,
   featuresFor,
   MAX_MISSING,
   NEIGHBOURS,
@@ -140,6 +142,9 @@ describe('buildSimilar against the committed pantry', () => {
 })
 
 /** A deliberately small pantry, so each guard can be violated on its own. */
+/** The fabricated pantry's own core set: it names its four indicators, not the published ten. */
+const TINY_CORE = ['a', 'b', 'c', 'd']
+
 function tinyPantry(overrides: { coverageTo?: number; coverageFrom?: number } = {}): PantryData {
   const indicator = (id: string): Indicator => ({
     id,
@@ -179,12 +184,12 @@ function tinyPantry(overrides: { coverageTo?: number; coverageFrom?: number } = 
 
 describe('the guards', () => {
   it('builds the tiny pantry cleanly, so the failures below are the guards and nothing else', () => {
-    expect(() => buildSimilar(tinyPantry())).not.toThrow()
+    expect(() => buildSimilar(tinyPantry(), TINY_CORE)).not.toThrow()
   })
 
   it('refuses a window shorter than the declared span', () => {
     const tiny = tinyPantry()
-    const features = featuresFor(tiny, { from: 2020, to: 2024 })
+    const features = featuresFor(tiny, { from: 2020, to: 2024 }, TINY_CORE)
     expect(() => assertUsable(tiny, features, {}, { from: 2020, to: 2024 })).toThrow(
       /window 2020-2024 is 5 years, and 10 are needed/,
     )
@@ -192,7 +197,7 @@ describe('the guards', () => {
 
   it('refuses a window that starts before an indicator does', () => {
     const tiny = tinyPantry({ coverageFrom: 2010 })
-    const features = featuresFor(tiny, { from: 2000, to: 2024 })
+    const features = featuresFor(tiny, { from: 2000, to: 2024 }, TINY_CORE)
     expect(() => assertUsable(tiny, features, {}, { from: 2000, to: 2024 })).toThrow(
       /starts in 2000, before a, b, c, d begin/,
     )
@@ -200,8 +205,8 @@ describe('the guards', () => {
 
   it('refuses a municipality with the wrong number of neighbours', () => {
     const tiny = tinyPantry()
-    const window = windowFor(tiny)
-    const features = featuresFor(tiny, window)
+    const window = windowFor(tiny, TINY_CORE)
+    const features = featuresFor(tiny, window, TINY_CORE)
     const short = Object.fromEntries(
       tiny.municipalities.map((m) => [m.code, ['0002', '0003', '0004', '0005']]),
     )
@@ -215,8 +220,8 @@ describe('the guards', () => {
     // involving another shares one dimension of four — three missing, one more than
     // MAX_MISSING allows.
     const tiny = tinyPantry()
-    const window = windowFor(tiny)
-    const features = featuresFor(tiny, window).map((f, i) =>
+    const window = windowFor(tiny, TINY_CORE)
+    const features = featuresFor(tiny, window, TINY_CORE).map((f, i) =>
       i === 0 ? f : [f[0]!, null, null, null],
     )
     const result = Object.fromEntries(
@@ -231,5 +236,44 @@ describe('the guards', () => {
     expect(() => assertUsable(tiny, features, result, window)).toThrow(
       new RegExp(`compared on only 1 of 4 indicators, and at most ${MAX_MISSING} may be missing`),
     )
+  })
+})
+
+describe('the core set (Plan 14)', () => {
+  /**
+   * Decision 0002 measured this metric on exactly ten indicators. Until now the set was
+   * "whatever the pantry contains", which was the same ten by accident. Plan 15 adds fifteen
+   * more, and each one would have silently moved every neighbour on the site — including the
+   * ones people have already shared links to.
+   */
+  it('names exactly the ten the published metric was measured on', () => {
+    expect([...CORE_INDICATORS].sort()).toEqual(data.indicators.map((i) => i.id).sort())
+  })
+
+  it('keeps every neighbour unchanged when an eleventh indicator joins the pantry', () => {
+    const extra: Indicator = {
+      ...data.indicators[0]!,
+      id: 'an-eleventh-indicator',
+      coverage: { from: 2015, to: 2024 },
+    }
+    const withExtra = PantryData.parse({
+      ...data,
+      indicators: [...data.indicators, extra],
+      series: [...data.series, { ...data.series[0]!, indicator: extra.id }],
+    })
+    expect(buildSimilar(withExtra)).toEqual(built)
+  })
+
+  it('refuses a pantry missing one of the ten, rather than measuring over nine', () => {
+    const short = PantryData.parse({
+      ...data,
+      indicators: data.indicators.filter((i) => i.id !== 'density'),
+      series: data.series.filter((s) => s.indicator !== 'density'),
+    })
+    expect(() => buildSimilar(short)).toThrow(/density/)
+  })
+
+  it('returns the core in the pantry’s own published order, not the order it is listed in', () => {
+    expect(coreOf(data).map((i) => i.id)).toEqual(data.indicators.map((i) => i.id))
   })
 })
