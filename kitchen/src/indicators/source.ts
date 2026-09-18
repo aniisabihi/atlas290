@@ -19,11 +19,28 @@ import { resolveContentCode, totalOrDeclaredSum, values } from './registry'
  * - `{ values }` — an explicit list, for a range that is not a total: single ages 65 and over,
  *   for instance.
  * - `'all'` — every value, deliberately, where the whole set IS the thing wanted.
+ * - `{ singleFrom, alsoInclude }` — every SINGLE year of age from that number up, plus the named
+ *   open-ended top band.
+ *
+ *   The two halves are both load-bearing. `singleFrom` matches only purely numeric codes,
+ *   because TAB5557's age dimension also carries aggregate bands — `65-69`, `70-74`, `90-99` —
+ *   and a rule that swept those in alongside the single ages would count the same people twice.
+ *   A first version of this rule matched "leading digits at least 65" and did exactly that; it
+ *   was caught by the frozen-response layer, which refused a selection nobody had ever fetched.
+ *
+ *   The top band is named per source rather than pattern-matched, because the tables genuinely
+ *   disagree about what to call it — `100+` on TAB638 and `100+1` on TAB5557 — and that
+ *   disagreement is data, not something to be clever about.
  * - `{ label }` — the one value carrying that Swedish label. The same principle content codes
  *   already follow: the code varies by table and by era, the label is stable. Refuses a label no
  *   value carries, and refuses one several carry, rather than taking the first.
  */
-export type DimRule = 'total' | 'all' | { values: readonly string[] } | { label: string }
+export type DimRule =
+  | 'total'
+  | 'all'
+  | { values: readonly string[] }
+  | { label: string }
+  | { singleFrom: number; alsoInclude?: readonly string[] }
 
 /** Resolves a dimension VALUE by its label, with the guards `resolveContentCode` applies. */
 function valueByLabel(meta: TableMeta, dim: string, label: string): string {
@@ -108,7 +125,13 @@ export function selectionFor(
           ? values(meta, dim)
           : 'label' in rule
             ? [valueByLabel(meta, dim, rule.label)]
-            : [...rule.values]
+            : 'singleFrom' in rule
+              ? values(meta, dim).filter(
+                  (code) =>
+                    (/^\d+$/.test(code) && Number(code) >= rule.singleFrom) ||
+                    (rule.alsoInclude ?? []).includes(code),
+                )
+              : [...rule.values]
   }
   selection['ContentsCode'] = [resolveContentCode(meta, source.content)]
   selection['Tid'] = source.years.map(String)
@@ -124,11 +147,16 @@ export function selectionFor(
  * it is a smaller number that looks like one. That rule is carried over unchanged from
  * `population.ts`, which established it.
  */
-function sumByRegionYear(chunks: readonly FrozenData[]): Map<string, number | null> {
+function sumByRegionYear(
+  chunks: readonly FrozenData[],
+  groupBy?: string,
+): Map<string, number | null> {
   const parts = new Map<string, { sum: number; sawNull: boolean }>()
   for (const chunk of chunks) {
     for (const row of toRows(chunk.response)) {
-      const key = `${row.dims['Region']}|${row.dims['Tid']}`
+      const key = groupBy
+        ? `${row.dims['Region']}|${row.dims['Tid']}|${row.dims[groupBy]}`
+        : `${row.dims['Region']}|${row.dims['Tid']}`
       const entry = parts.get(key) ?? { sum: 0, sawNull: false }
       if (row.value === null) entry.sawNull = true
       else entry.sum += row.value
@@ -155,6 +183,15 @@ export async function resolveSources(
   sources: readonly Source[],
   freeze: FreezeOpts,
   knownCodes?: readonly string[],
+  /**
+   * Keep one dimension's breakdown instead of summing it away, keying by
+   * `region|year|value`.
+   *
+   * Education needs it: its share is one fetch of every education level, of which some are the
+   * numerator and all are the denominator. Fetching numerator and denominator as two selections
+   * would be two different requests, and only one of them is frozen.
+   */
+  groupBy?: string,
 ): Promise<ResolvedRows> {
   const merged = new Map<string, number | null>()
   const frozen: Array<FrozenData | FrozenMeta> = []
@@ -171,7 +208,7 @@ export async function resolveSources(
       'sv',
       freeze,
     )
-    for (const [key, value] of sumByRegionYear(chunks)) merged.set(key, value)
+    for (const [key, value] of sumByRegionYear(chunks, groupBy)) merged.set(key, value)
     frozen.push(...chunks)
     metas.push(meta)
   }

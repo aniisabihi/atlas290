@@ -5,14 +5,8 @@ import {
   statusCode,
 } from '../../../shared/pantry'
 import { existed } from '../municipalities'
-import { parseMetadata, type Selection, type TableMeta } from '../scb/client'
-import {
-  freezeData,
-  freezeMetadata,
-  type FreezeOpts,
-  type FrozenData,
-  type FrozenMeta,
-} from '../scb/freeze'
+import { type Selection, type TableMeta } from '../scb/client'
+import { type FreezeOpts, type FrozenData, type FrozenMeta } from '../scb/freeze'
 import { toRows } from '../scb/jsonstat'
 import { buildDefined, type Definition } from './define'
 import {
@@ -120,13 +114,7 @@ export function buildTaxSeries(
 }
 
 export async function buildTax(ctx: BuildContext): Promise<IndicatorSeries> {
-  const meta = await freezeMetadata(TAX_TABLE, 'sv', ctx.freeze)
-  const parsed = parseMetadata(TAX_TABLE, meta.response)
-  const years = TAX_YEARS.map(String)
-  const chunks = await freezeData(TAX_TABLE, taxSelection(parsed, years), 'sv', ctx.freeze)
-  const series = buildTaxSeries(ctx.municipalities, chunks, TAX_YEARS)
-  ctx.frozen.push(...chunks, meta)
-  return series
+  return buildDefined(taxDefined(), ctx)
 }
 
 /**

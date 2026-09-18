@@ -11,7 +11,23 @@ import { resolveSources, type Source } from './source'
  * by the same gate — the published pantry, byte for byte. Adding all five before any of them had
  * a caller would be five guesses at what the migration needs.
  */
-export type BuildSpec = { kind: 'direct' }
+export type BuildSpec =
+  | { kind: 'direct' }
+  /**
+   * This indicator's count over another indicator's series, times a factor.
+   *
+   * Share aged 65 and over is the 65+ count over population, times 100; net migration is the
+   * migration count over population, times 1,000. They are one shape, not two.
+   *
+   * The denominator is READ from the already-built series rather than refetched, so numerator and
+   * denominator can never quietly disagree about what a municipality's population was.
+   */
+  | { kind: 'ratio'; of: string; times: number }
+  /**
+   * A share of one fetch, partitioned by a dimension: these values over all of them, times a
+   * factor. Post-secondary education is the post-secondary levels over every level.
+   */
+  | { kind: 'share'; over: string; numerator: readonly string[]; times: number }
 
 /**
  * An indicator as data: what it is, where it comes from, and how the values are computed.
@@ -39,6 +55,14 @@ export type Definition = {
    */
   existsShift?: number
   modifiers?: Modifiers
+  /**
+   * Every value of the dimension a `share` is partitioned by — the whole denominator.
+   *
+   * Listed rather than read from the table's metadata, because "every level SCB happens to
+   * publish" and "every level this share is defined over" are different claims, and only the
+   * second one belongs in a published figure. education.ts validates the two against each other.
+   */
+  shareOver?: readonly string[]
 }
 
 export type Modifiers = {
@@ -142,8 +166,19 @@ export async function buildDefined(
   ctx: BuildContext,
 ): Promise<IndicatorSeries> {
   const codes = ctx.municipalities.map((m) => m.code)
-  const resolved = await resolveSources(definition.sources, ctx.freeze, codes)
+  const spec = definition.spec
+  const groupBy = spec.kind === 'share' ? spec.over : undefined
+  const resolved = await resolveSources(definition.sources, ctx.freeze, codes, groupBy)
   ctx.frozen.push(...resolved.frozen)
+
+  const years = [...new Set(definition.sources.flatMap((s) => [...s.years]))].sort((a, b) => a - b)
+
+  if (spec.kind === 'ratio') {
+    return ratioSeries(definition, spec, ctx, years, resolved.values)
+  }
+  if (spec.kind === 'share') {
+    return shareSeries(definition, spec, ctx, years, resolved.values, definition.shareOver ?? [])
+  }
 
   let counts: ReadonlyMap<string, number | null> | undefined
   const minCount = definition.modifiers?.minCount
@@ -153,6 +188,87 @@ export async function buildDefined(
     counts = resolvedCounts.values
   }
 
-  const years = [...new Set(definition.sources.flatMap((s) => [...s.years]))].sort((a, b) => a - b)
   return directSeries(definition, ctx.municipalities, years, resolved.values, counts, ctx.cpi)
+}
+
+/** Reads the series this one divides by, refusing to guess if it has not been built yet. */
+function denominatorOf(ctx: BuildContext, of: string, id: string): IndicatorSeries {
+  const series = ctx.series.get(of)
+  if (!series) {
+    throw new Error(
+      `${id}: needs ${of}'s series as its denominator, but ${of} has not been built yet — ` +
+        `it must come first in REGISTRY`,
+    )
+  }
+  return series
+}
+
+/** One count over another indicator's series, times a factor. */
+function ratioSeries(
+  definition: Definition,
+  spec: { of: string; times: number },
+  ctx: BuildContext,
+  years: readonly number[],
+  counts: ReadonlyMap<string, number | null>,
+): IndicatorSeries {
+  const denominator = denominatorOf(ctx, spec.of, definition.indicator.id)
+  const colOf = new Map(denominator.years.map((y, i) => [y, i]))
+  const rowOf = new Map(ctx.municipalities.map((m, i) => [m.code, i]))
+  const shift = definition.existsShift ?? 0
+
+  const cells = buildRows(ctx.municipalities, [...years], (m, y) => {
+    if (!existed(m.code, y - shift)) {
+      return { v: null as number | null, s: statusCode('did-not-exist') }
+    }
+    const count = counts.get(`${m.code}|${y}`) ?? null
+    if (count === null) return { v: null, s: statusCode('not-yet-published') }
+    const row = rowOf.get(m.code)
+    const col = colOf.get(y)
+    const denom =
+      row === undefined || col === undefined ? null : (denominator.values[row]?.[col] ?? null)
+    // A zero denominator is not a ratio of zero, it is a question with no answer.
+    if (denom === null || denom === 0) return { v: null, s: statusCode('not-yet-published') }
+    const perturbed = definition.perturbedFrom !== undefined && y >= definition.perturbedFrom
+    return { v: (count / denom) * spec.times, s: statusCode(perturbed ? 'perturbed' : 'present') }
+  })
+  return {
+    indicator: definition.indicator.id,
+    years: [...years],
+    values: cells.map((row) => row.map((c) => c.v)),
+    status: cells.map((row) => row.map((c) => c.s)),
+  }
+}
+
+/** A share of one fetch, partitioned by a dimension. */
+function shareSeries(
+  definition: Definition,
+  spec: { over: string; numerator: readonly string[]; times: number },
+  ctx: BuildContext,
+  years: readonly number[],
+  parts: ReadonlyMap<string, number | null>,
+  all: readonly string[],
+): IndicatorSeries {
+  const cells = buildRows(ctx.municipalities, [...years], (m, y) => {
+    if (!existed(m.code, y)) return { v: null as number | null, s: statusCode('did-not-exist') }
+    const perLevel = all.map((value) => parts.get(`${m.code}|${y}|${value}`) ?? null)
+    // Every part must be present: a denominator missing one of its parts is a smaller number
+    // that looks like a total, and the share computed from it would be too large.
+    if (perLevel.some((v) => v === null)) return { v: null, s: statusCode('not-yet-published') }
+    const denominator = (perLevel as number[]).reduce((a, b) => a + b, 0)
+    if (denominator === 0) return { v: null, s: statusCode('not-yet-published') }
+    const numerator = spec.numerator
+      .map((value) => (parts.get(`${m.code}|${y}|${value}`) ?? 0) as number)
+      .reduce((a, b) => a + b, 0)
+    const perturbed = definition.perturbedFrom !== undefined && y >= definition.perturbedFrom
+    return {
+      v: (numerator / denominator) * spec.times,
+      s: statusCode(perturbed ? 'perturbed' : 'present'),
+    }
+  })
+  return {
+    indicator: definition.indicator.id,
+    years: [...years],
+    values: cells.map((row) => row.map((c) => c.v)),
+    status: cells.map((row) => row.map((c) => c.s)),
+  }
 }

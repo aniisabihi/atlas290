@@ -6,14 +6,8 @@ import {
 } from '../../../shared/pantry'
 import { existed } from '../municipalities'
 import { buildDefined, type Definition } from './define'
-import { parseMetadata, type Selection, type TableMeta } from '../scb/client'
-import {
-  freezeData,
-  freezeMetadata,
-  type FreezeOpts,
-  type FrozenData,
-  type FrozenMeta,
-} from '../scb/freeze'
+import { type Selection, type TableMeta } from '../scb/client'
+import { type FreezeOpts, type FrozenData, type FrozenMeta } from '../scb/freeze'
 import { assertCpiLatestYear, CPI_LATEST_YEAR, fetchCpi, toCurrentKronor } from './cpi'
 import { toRows } from '../scb/jsonstat'
 import {
@@ -207,29 +201,13 @@ export function buildIncomeSeries(
 }
 
 export async function buildIncome(ctx: BuildContext): Promise<IndicatorSeries> {
-  const meta = await freezeMetadata(INCOME_TABLE, 'sv', ctx.freeze)
-  const parsed = parseMetadata(INCOME_TABLE, meta.response)
-  const years = INCOME_YEARS.map(String)
-  const codes = ctx.municipalities.map((m) => m.code)
-  const chunks = await freezeData(
-    INCOME_TABLE,
-    incomeSelection(parsed, codes, years),
-    'sv',
-    ctx.freeze,
-  )
-
   // cpi.ts is deliberately independent of registry.ts (see its own module comment), so this
-  // indicator calls it directly rather than reading ctx.cpi — that slot stays unpopulated
-  // until Task 13 wires it, per the plan.
-  const { index: cpiIndex, frozen: cpiFrozen } = await fetchCpi(ctx.freeze)
-
-  void chunks
-  void meta
-  // cpi.ts is deliberately independent of registry.ts, so this reaches ctx.cpi here rather than
-  // relying on something upstream having filled it.
-  ctx.cpi = cpiIndex
+  // indicator fetches the index itself and hands it to the shared builder through ctx.cpi rather
+  // than relying on something upstream having filled that slot.
+  const { index, frozen } = await fetchCpi(ctx.freeze)
+  ctx.cpi = index
   const series = await buildDefined(incomeDefined(), ctx)
-  ctx.frozen.push(...cpiFrozen)
+  ctx.frozen.push(...frozen)
   return series
 }
 
