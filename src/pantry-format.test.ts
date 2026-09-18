@@ -66,6 +66,10 @@ describe('published pantry: file format (regression guards, this task)', () => {
     'per-thousand': 2,
     'per-km2': 1,
     years: 1,
+    // Plan 16. Both carry 2 decimals because 0 would destroy the measure: a fertility rate of
+    // 1.45 children per woman publishes as 1, and 4.17 tonnes of CO2e per resident as 4.
+    'children-per-woman': 2,
+    'tonnes-per-resident': 2,
   }
 
   /** Counts the decimal digits a number's own JS string representation actually carries —

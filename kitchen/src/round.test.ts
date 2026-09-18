@@ -3,7 +3,10 @@ import type { Indicator, IndicatorSeries } from '../../shared/pantry'
 import { roundIndicatorBreaks, roundSeriesValues, roundToUnit, UNIT_DECIMALS } from './round'
 
 describe('UNIT_DECIMALS', () => {
-  it('declares exactly the six units Indicator.unit allows, per this task', () => {
+  it('declares exactly the eight units Indicator.unit allows, and no more', () => {
+    // A full-map equality rather than a spot check, so a unit added to the enum and forgotten
+    // here — which would round it to `undefined` decimals — fails loudly. Plan 16 added the
+    // last two, and this is what told it to.
     expect(UNIT_DECIMALS).toEqual({
       count: 0,
       sek: 0,
@@ -11,6 +14,8 @@ describe('UNIT_DECIMALS', () => {
       'per-thousand': 2,
       'per-km2': 1,
       years: 1,
+      'children-per-woman': 2,
+      'tonnes-per-resident': 2,
     })
   })
 })
