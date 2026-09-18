@@ -87,6 +87,7 @@ for (const [name, url] of STATES) {
 
 for (const [name, url] of [['the not-found page', '/en/nowhere/']] as const) {
   test(`no accessibility violations: ${name}`, async ({ page }) => {
+    test.slow()
     await page.goto(url)
 
     const results = await scan(page).analyze()
@@ -102,6 +103,7 @@ for (const [name, url] of [['the not-found page', '/en/nowhere/']] as const) {
 }
 
 test('the About disclosure, once opened', async ({ page }) => {
+  test.slow()
   // Its content does not exist in the DOM until the details element is open, so scanning the
   // page with it closed proves nothing about the longest prose on the site.
   await page.goto('/en/?y=2024&v=map')

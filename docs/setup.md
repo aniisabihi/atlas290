@@ -70,15 +70,16 @@ from the language entry page, and 404s an unknown code exactly as a static host 
 
 ## Troubleshooting
 
-| Symptom                                                                      | Cause and fix                                                                                                      |
-| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `pantry files missing; run yarn kitchen publish`                             | A pantry file under `public/pantry/` is absent or unreadable. Run `yarn kitchen publish` (offline, no SCB needed). |
-| `…municipalities.topo.json has no objects.municipalities.geometries array`   | The topology file is truncated or corrupt; republish as above.                                                     |
-| A municipality URL 404s in dev but the front page works                      | The four-digit code is not in the pantry. The code is the identifier; the slug is decoration (`shared/slug.ts`).   |
-| Yarn refuses to install, or installs the wrong version                       | `corepack enable` first — the pinned Yarn 4 comes from `packageManager`, not from a global install.                |
-| `yarn e2e` cannot launch a browser                                           | `yarn playwright install --with-deps chromium firefox webkit`.                                                     |
-| CI fails with "Publishing from the committed frozen data changed the pantry" | A kitchen change altered published output. Commit the regenerated pantry with the code change, and read the diff.  |
-| Link previews show no card                                                   | Expected locally: `SITE_ORIGIN` is unset, so `og:image` is root-relative. The deploy sets it.                      |
+| Symptom                                                                      | Cause and fix                                                                                                                                                  |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pantry files missing; run yarn kitchen publish`                             | A pantry file under `public/pantry/` is absent or unreadable. Run `yarn kitchen publish` (offline, no SCB needed).                                             |
+| `…municipalities.topo.json has no objects.municipalities.geometries array`   | The topology file is truncated or corrupt; republish as above.                                                                                                 |
+| A municipality URL 404s in dev but the front page works                      | The four-digit code is not in the pantry. The code is the identifier; the slug is decoration (`shared/slug.ts`).                                               |
+| Yarn refuses to install, or installs the wrong version                       | `corepack enable` first — the pinned Yarn 4 comes from `packageManager`, not from a global install.                                                            |
+| `yarn e2e` cannot launch a browser                                           | `yarn playwright install --with-deps chromium firefox webkit`.                                                                                                 |
+| CI fails with "Publishing from the committed frozen data changed the pantry" | A kitchen change altered published output. Commit the regenerated pantry with the code change, and read the diff.                                              |
+| A browser test times out on `page.goto`, a different one each run            | Not your change. Firefox loses a navigation when `Cross-Origin-Opener-Policy` swaps the browsing-context group — [runbook.md](runbook.md) has the whole of it. |
+| Link previews show no card                                                   | Expected locally: `SITE_ORIGIN` is unset, so `og:image` is root-relative. The deploy sets it.                                                                  |
 
 ## See also
 

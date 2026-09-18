@@ -98,6 +98,13 @@ The browser suite runs against the **built** site via `yarn preview`, not the de
 three engines — keyboard behaviour in particular differs, and a WebKit-only pass has already
 misled this project once. Coverage and its gaps: [accessibility.md](accessibility.md).
 
+Firefox runs with one launch preference the other two do not: it does not act on
+`Cross-Origin-Opener-Policy`, because its Playwright driver intermittently loses the navigation
+that policy's browsing-context-group swap triggers, which cost this suite a different test every
+run until it was found. The site still serves the header and `e2e/headers.spec.ts` still asserts
+it. [Decision 0017](decisions/0017-the-flake-was-a-security-header.md), and
+[runbook.md](runbook.md) for what it looks like when it happens.
+
 ## Verify before you push
 
 ```bash

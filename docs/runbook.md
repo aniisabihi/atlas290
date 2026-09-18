@@ -69,3 +69,36 @@ from then on turns `main` red on merge.
 **Seen:** 2026-09-17, caught by running `prettier --check` against the generated file on the
 release branch before the first release pull request was merged. It would otherwise have failed on
 `main`, after the release, on every release.
+
+## `page.goto` never returns, in Firefox, on a page that has clearly loaded
+
+**Symptom:** a browser test fails with a timeout on its first navigation, and the call log says the
+navigation simply never finished:
+
+```
+Error: page.goto: Test timeout of 30000ms exceeded.
+Call log:
+  - navigating to "http://localhost:4173/en/atlantis-9999/", waiting until "load"
+```
+
+A different test every run, Firefox and WebKit but never Chromium, and a re-run of the same commit
+goes green. Read at the moment it fails, the page is fine: `document.readyState` is `complete`,
+the `load` event has already fired, and no request is in flight.
+
+**Cause:** `Cross-Origin-Opener-Policy: same-origin`, which `dist/_headers` serves and the preview
+server replays. A page starts life at `about:blank`, which carries no COOP; its first navigation to
+a document that does swaps the browsing-context group, and Playwright's Firefox driver
+intermittently loses the navigation. It is a hang, not slowness — measured against a 90-second
+ceiling on a median of 27 ms — so no timeout rescues it. Only the first navigation of a page is at
+risk, which is why the culprit was never one test: every test navigates once.
+
+**Fix:** already in place. `playwright.config.ts` gives the Firefox project
+`firefoxUserPrefs: { 'browser.tabs.remote.useCrossOriginOpenerPolicy': false }`. The site still
+serves the header and `e2e/headers.spec.ts` still asserts it arrives; only the test browser stops
+acting on it. If that line is ever removed, this comes back — see
+[decision 0017](decisions/0017-the-flake-was-a-security-header.md).
+
+**Seen:** five CI runs across PRs #23, #25, #29 and #30, filed as
+[issue #26](https://github.com/aniisabihi/atlas290/issues/26), diagnosed 2026-09-18 by serving each
+response header on its own from a bare Node server: COOP alone reproduced it 29 times in 150 fresh
+pages, every other header 0.
