@@ -89,3 +89,11 @@ municipalities dominate it, so this holds as the fourth slice adds indicators.
   together by asserting they agree on the real pantry.
 - The 290 preview cards come out byte-identical, which is an end-to-end proof that the split lost
   nothing: they are drawn from the reassembled data and were generated from the single file.
+- **Rebuilding the view on each arrival is quadratic, and measured rather than assumed.** Every
+  fetched series re-parses the whole view through `PantryView.parse`, so opening a profile costs
+  ten rebuilds. Measured with zod's JIT off — the path the browser takes, because the deployed
+  CSP refuses the `new Function` zod compiles with — that is 3.8 ms rising to 23.3 ms, **131 ms in
+  total**, spread across ten renders. Acceptable at ten indicators and left alone deliberately. At
+  twenty-five it is roughly six times the work, so plan 15 should either validate each part once
+  on arrival instead of re-parsing the view, or adopt the per-municipality file that removes the
+  profile's need for every series at all. `kitchen/spikes/bench-view.ts` is the measurement.
