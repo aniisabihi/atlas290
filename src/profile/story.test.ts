@@ -150,9 +150,17 @@ describe('the standing', () => {
   it('names the measure first and uses the uninflected form, so Swedish agreement cannot go wrong', () => {
     // "landets 2:e högsta eftergymnasial utbildning" is what the obvious phrasing produced,
     // and it should be "eftergymnasiala". Naming the measure first avoids the agreement.
-    expect(sentence('1281', 'standing')?.text.sv).toBe(
-      'Eftergymnasial utbildning — näst högst i landet, av 290 kommuner med siffror för 2024.',
-    )
+    //
+    // This pinned Lund's whole sentence until plan 16, which is a snapshot of WHICH fact won
+    // rather than of the phrasing the test is about. Lund's strongest standing is now its
+    // employment rate — the lowest in the country, because a university town's 20-64 year olds
+    // are disproportionately students — and that is the facts engine working, not breaking.
+    //
+    // So the assertion is now the shape: the measure's own name, then an em dash, then the
+    // standing. No measure name is ever inflected into the sentence.
+    const lund = sentence('1281', 'standing')?.text.sv
+    expect(lund).toMatch(/^[A-ZÅÄÖ][^—]+ — (näst |)(högst|lägst) i landet, av 290 kommuner/)
+    expect(lund).not.toMatch(/landets \d/)
   })
 
   it('says näst rather than 2:a for second place in Swedish', () => {
@@ -196,10 +204,17 @@ describe('coverage across the whole country', () => {
     expect(counts.turn).toBeLessThan(200)
   })
 
-  it('tells about two thirds of them where they stand', () => {
-    expect(counts.standing).toBe(185)
+  it('tells most of them where they stand', () => {
+    // 185 before plan 16 and 249 after, and the rise is the point rather than a regression: a
+    // standing sentence needs the municipality to be near the top or the bottom of SOME measure,
+    // and there are more measures now. Design D4 predicted exactly this — "the facts may simply
+    // become different overnight, which is correct behaviour and will still be surprising".
+    //
+    // The bounds are what the test really defends: every municipality having a standing would
+    // mean the threshold is meaningless, and very few would mean the sentence never fires.
+    expect(counts.standing).toBe(249)
     expect(counts.standing).toBeGreaterThan(120)
-    expect(counts.standing).toBeLessThan(260)
+    expect(counts.standing).toBeLessThan(280)
   })
 
   it('always says something, and never more than three things', () => {

@@ -48,7 +48,12 @@ describe('buildSimilar against the committed pantry', () => {
   })
 
   it('records the method it actually used', () => {
-    expect(built.method.indicators).toEqual(data.indicators.map((i) => i.id))
+    // The CORE set in published order — not every indicator the pantry carries. Since plan 16
+    // those differ, and a method description naming an indicator the metric never reads is a
+    // published claim that is simply untrue.
+    expect(built.method.indicators).toEqual(
+      data.indicators.map((i) => i.id).filter((id) => CORE_INDICATORS.includes(id)),
+    )
     expect(built.method.logged).toEqual(['population', 'density', 'median-income', 'house-prices'])
     expect(built.method.window).toEqual({ from: 2015, to: 2024 })
     expect(built.method.neighbours).toBe(NEIGHBOURS)
@@ -190,7 +195,7 @@ describe('the guards', () => {
   it('refuses a window shorter than the declared span', () => {
     const tiny = tinyPantry()
     const features = featuresFor(tiny, { from: 2020, to: 2024 }, TINY_CORE)
-    expect(() => assertUsable(tiny, features, {}, { from: 2020, to: 2024 })).toThrow(
+    expect(() => assertUsable(tiny, features, {}, { from: 2020, to: 2024 }, TINY_CORE)).toThrow(
       /window 2020-2024 is 5 years, and 10 are needed/,
     )
   })
@@ -198,7 +203,7 @@ describe('the guards', () => {
   it('refuses a window that starts before an indicator does', () => {
     const tiny = tinyPantry({ coverageFrom: 2010 })
     const features = featuresFor(tiny, { from: 2000, to: 2024 }, TINY_CORE)
-    expect(() => assertUsable(tiny, features, {}, { from: 2000, to: 2024 })).toThrow(
+    expect(() => assertUsable(tiny, features, {}, { from: 2000, to: 2024 }, TINY_CORE)).toThrow(
       /starts in 2000, before a, b, c, d begin/,
     )
   })
@@ -210,7 +215,7 @@ describe('the guards', () => {
     const short = Object.fromEntries(
       tiny.municipalities.map((m) => [m.code, ['0002', '0003', '0004', '0005']]),
     )
-    expect(() => assertUsable(tiny, features, short, window)).toThrow(
+    expect(() => assertUsable(tiny, features, short, window, TINY_CORE)).toThrow(
       /0001 \(M0\) has 4 neighbours, not 5/,
     )
   })
@@ -233,7 +238,7 @@ describe('the guards', () => {
           .map((o) => o.code),
       ]),
     )
-    expect(() => assertUsable(tiny, features, result, window)).toThrow(
+    expect(() => assertUsable(tiny, features, result, window, TINY_CORE)).toThrow(
       new RegExp(`compared on only 1 of 4 indicators, and at most ${MAX_MISSING} may be missing`),
     )
   })
@@ -247,7 +252,27 @@ describe('the core set (Plan 14)', () => {
    * ones people have already shared links to.
    */
   it('names exactly the ten the published metric was measured on', () => {
-    expect([...CORE_INDICATORS].sort()).toEqual(data.indicators.map((i) => i.id).sort())
+    // Written out rather than compared against whatever the pantry holds. Until plan 16 the two
+    // were the same list, and asserting one against the other could not have caught a core set
+    // that silently grew — which is the entire failure this pinning exists to prevent. The ten
+    // are decision 0002's, and they are a fact about the METRIC, not about the pantry.
+    expect([...CORE_INDICATORS].sort()).toEqual(
+      [
+        'density',
+        'house-prices',
+        'mean-age',
+        'median-income',
+        'net-migration-rate',
+        'population',
+        'population-change',
+        'post-secondary-education',
+        'share-65-plus',
+        'tax-rate',
+      ].sort(),
+    )
+    for (const id of CORE_INDICATORS) {
+      expect(data.indicators.map((i) => i.id)).toContain(id)
+    }
   })
 
   it('keeps every neighbour unchanged when an eleventh indicator joins the pantry', () => {
@@ -274,6 +299,27 @@ describe('the core set (Plan 14)', () => {
   })
 
   it('returns the core in the pantry’s own published order, not the order it is listed in', () => {
-    expect(coreOf(data).map((i) => i.id)).toEqual(data.indicators.map((i) => i.id))
+    const published = data.indicators.map((i) => i.id)
+    expect(coreOf(data).map((i) => i.id)).toEqual(
+      published.filter((id) => CORE_INDICATORS.includes(id)),
+    )
+  })
+
+  it('is not disturbed by an indicator whose coverage starts after the window does', () => {
+    // Plan 16 adds employment-rate and unemployment-rate, whose register begins in 2020 — well
+    // inside a window that starts in 2015. The usability guard read EVERY published indicator's
+    // coverage rather than the core set it actually measures, so a short new series made the
+    // whole pantry unpublishable. The metric never looked at it.
+    const late: Indicator = {
+      ...data.indicators[0]!,
+      id: 'a-short-new-series',
+      coverage: { from: 2020, to: 2024 },
+    }
+    const withLate = PantryData.parse({
+      ...data,
+      indicators: [...data.indicators, late],
+      series: [...data.series, { ...data.series[0]!, indicator: late.id }],
+    })
+    expect(buildSimilar(withLate)).toEqual(built)
   })
 })

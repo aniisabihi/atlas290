@@ -1,10 +1,14 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
+  PantryIndex,
   statusCode,
   type Indicator,
   type IndicatorSeries,
   type Municipality,
 } from '../../shared/pantry'
+import { DEFAULT_PANTRY_DIR } from './publish'
 import { buildAll } from './indicators/registry'
 import {
   check,
@@ -185,19 +189,19 @@ describe('rule 6: no indicator has zero non-null values', () => {
 })
 
 describe('PLAUSIBLE_RANGES', () => {
-  it('declares a range for exactly the ten indicators this pantry currently publishes', () => {
-    const expected = [
-      'population',
-      'tax-rate',
-      'density',
-      'net-migration-rate',
-      'median-income',
-      'house-prices',
-      'post-secondary-education',
-      'population-change',
-      'mean-age',
-      'share-65-plus',
-    ].sort()
+  it('declares a range for exactly the indicators the pantry publishes, no more and no fewer', () => {
+    // Read from the committed index rather than restated. This listed the ten by hand until plan
+    // 16, which is a list that can only ever say how many indicators there were on the day it was
+    // typed — and check.ts's own rule is precisely "every published indicator must declare one",
+    // so the test should assert that rule rather than a snapshot of its result.
+    //
+    // Asserted in both directions: a published indicator with no range would make check.ts throw
+    // at publish time, and a range for an indicator nobody publishes is a stale entry that would
+    // silently outlive it.
+    const published = PantryIndex.parse(
+      JSON.parse(readFileSync(join(DEFAULT_PANTRY_DIR, 'data/index.json'), 'utf8')) as unknown,
+    ).indicators.map((i) => i.id)
+    const expected = [...published].sort()
     expect(Object.keys(PLAUSIBLE_RANGES).sort()).toEqual(expected)
   })
 })

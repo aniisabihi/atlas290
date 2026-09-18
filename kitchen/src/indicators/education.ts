@@ -207,3 +207,131 @@ export const educationDefinition: IndicatorDefinition = {
   indicator: EDUCATION,
   build: buildEducation,
 }
+
+/**
+ * The same share as `post-secondary-education`, for one sex.
+ *
+ * The architect's data-shape decision for this slice was flat: each split is its own indicator
+ * rather than a new axis on the data contract. These two are that decision applied, and they are
+ * also what `post-secondary-education-gap` is derived from — a gap needs both sides published,
+ * or the number on the page could not be checked against anything.
+ *
+ * `Kon` is an explicit value rather than a total, which is the only difference from the combined
+ * indicator's own declaration.
+ */
+function educationForSex(indicator: Indicator, kon: string): Definition {
+  return {
+    indicator,
+    sources: [
+      {
+        table: EDUCATION_TABLE,
+        content: EDUCATION_CONTENT_LABEL,
+        years: EDUCATION_YEARS,
+        dims: { Alder: 'total', UtbildningsNiva: 'all', Kon: { values: [kon] } },
+        regions: 'known',
+        verify: validateLevels,
+      },
+    ],
+    spec: { kind: 'share', over: 'UtbildningsNiva', numerator: POST_SECONDARY_LEVELS, times: 100 },
+    shareOver: ALL_LEVELS,
+  }
+}
+
+function educationSplit(id: string, sv: string, en: string, who: string, whoEn: string): Indicator {
+  return Indicator.parse({
+    id,
+    name: { sv, en },
+    description: {
+      sv: `Andel av ${who} 16–74 år med eftergymnasial utbildning (utbildningsnivå 5, 6 eller 7). Nämnaren är alla ${who} 16–74 år, inklusive dem vars utbildningsnivå är okänd.`,
+      en: `Share of ${whoEn} aged 16–74 with post-secondary education (levels 5, 6 or 7). The denominator is all ${whoEn} aged 16–74, including those whose level is unknown.`,
+    },
+    unit: 'percent',
+    priceBasis: 'none',
+    scale: { kind: 'sequential', breaks: [] },
+    coverage: { from: EDUCATION_YEARS[0]!, to: EDUCATION_YEARS[EDUCATION_YEARS.length - 1]! },
+    caveat: {
+      sv: `Samma definition och samma nämnarval som den sammanslagna indikatorn: nivå 5, 6 och 7 av samtliga åtta nivåer, inklusive "uppgift saknas". Skillnaden är att endast ${who} räknas, i både täljare och nämnare. SCB:s två tidsseriebrott gäller även här: registrets kvalitet höjdes 1990 och klassificeringen byttes 2000.`,
+      en: `The same definition and the same denominator choice as the combined indicator: levels 5, 6 and 7 out of all eight, "not recorded" included. The difference is that only ${whoEn} are counted, in both the numerator and the denominator. SCB's two series breaks apply here too: register quality rose in 1990 and the classification changed in 2000.`,
+    },
+    sensitivity: 'none',
+    sources: [{ table: EDUCATION_TABLE, contentCode: 'UF0506A1', note: '1985–2025' }],
+    derivation:
+      'Levels 5, 6 and 7 over all eight levels, times 100, from one fetch of TAB3981 at a ' +
+      'single Kon value. Identical to post-secondary-education except that the sex dimension ' +
+      'is selected rather than totalled.',
+  })
+}
+
+export const EDUCATION_WOMEN = educationSplit(
+  'post-secondary-education-women',
+  'Eftergymnasial utbildning, kvinnor',
+  'Post-secondary education, women',
+  'kvinnor',
+  'women',
+)
+
+export const EDUCATION_MEN = educationSplit(
+  'post-secondary-education-men',
+  'Eftergymnasial utbildning, män',
+  'Post-secondary education, men',
+  'män',
+  'men',
+)
+
+export const EDUCATION_GAP: Indicator = Indicator.parse({
+  id: 'post-secondary-education-gap',
+  name: {
+    sv: 'Utbildningsgap mellan kvinnor och män',
+    en: 'Education gap between women and men',
+  },
+  description: {
+    sv: 'Kvinnors andel med eftergymnasial utbildning minus mäns, i procentenheter. Positivt tal betyder att fler kvinnor än män har eftergymnasial utbildning.',
+    en: 'Women’s share with post-secondary education minus men’s, in percentage points. A positive figure means more women than men have post-secondary education.',
+  },
+  unit: 'percent',
+  priceBasis: 'none',
+  scale: { kind: 'diverging', reference: 'zero', breaks: [] },
+  coverage: { from: EDUCATION_YEARS[0]!, to: EDUCATION_YEARS[EDUCATION_YEARS.length - 1]! },
+  caveat: {
+    sv: 'Procentenheter, inte procent: ett gap på 10 betyder att andelen kvinnor är tio enheter högre än andelen män, inte tio procent högre. Gapet säger ingenting om nivån — två kommuner med samma gap kan ha helt olika utbildningsnivå. Räknas ur de två publicerade delserierna, så varje tal här går att kontrollera mot dem.',
+    en: 'Percentage points, not percent: a gap of 10 means women’s share is ten points above men’s, not ten percent higher. The gap says nothing about the level — two municipalities with the same gap can have entirely different education levels. Computed from the two published split series, so every figure here can be checked against them.',
+  },
+  sensitivity: 'none',
+  sources: [{ table: EDUCATION_TABLE, contentCode: 'UF0506A1', note: '1985–2025' }],
+  derivation:
+    'post-secondary-education-women minus post-secondary-education-men, cell by cell, from this ' +
+    'pantry’s own published series rather than from a third fetch. Where either side is absent ' +
+    'the gap is absent: a difference between a known share and an unknown one is not the known ' +
+    'one.',
+})
+
+export function educationWomenDefined(): Definition {
+  return educationForSex(EDUCATION_WOMEN, '2')
+}
+
+export function educationMenDefined(): Definition {
+  return educationForSex(EDUCATION_MEN, '1')
+}
+
+export function educationGapDefined(): Definition {
+  return {
+    indicator: EDUCATION_GAP,
+    sources: [],
+    spec: { kind: 'difference', of: EDUCATION_WOMEN.id, minus: EDUCATION_MEN.id },
+  }
+}
+
+export const educationWomenDefinition: IndicatorDefinition = {
+  indicator: EDUCATION_WOMEN,
+  build: (ctx) => buildDefined(educationWomenDefined(), ctx),
+}
+
+export const educationMenDefinition: IndicatorDefinition = {
+  indicator: EDUCATION_MEN,
+  build: (ctx) => buildDefined(educationMenDefined(), ctx),
+}
+
+export const educationGapDefinition: IndicatorDefinition = {
+  indicator: EDUCATION_GAP,
+  build: (ctx) => buildDefined(educationGapDefined(), ctx),
+}

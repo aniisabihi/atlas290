@@ -28,6 +28,19 @@ export type BuildSpec =
    * factor. Post-secondary education is the post-secondary levels over every level.
    */
   | { kind: 'share'; over: string; numerator: readonly string[]; times: number }
+  /**
+   * One already-published series over another. `house-price-to-income` is a house price over an
+   * income: how many years of the median income a house costs.
+   *
+   * Both operands are read from the pantry being built, never refetched, so the two can never
+   * quietly disagree about which year they describe.
+   */
+  | { kind: 'quotient'; of: string; by: string }
+  /**
+   * One already-published series minus another, in the same unit.
+   * `post-secondary-education-gap` is women's share minus men's.
+   */
+  | { kind: 'difference'; of: string; minus: string }
 
 /**
  * An indicator as data: what it is, where it comes from, and how the values are computed.
@@ -167,6 +180,29 @@ export async function buildDefined(
 ): Promise<IndicatorSeries> {
   const codes = ctx.municipalities.map((m) => m.code)
   const spec = definition.spec
+
+  // Computed from the pantry alone: no source to read, so nothing to fetch or freeze.
+  if (spec.kind === 'quotient') {
+    const id = definition.indicator.id
+    return combinedSeries(
+      definition,
+      ctx,
+      seriesOf(ctx, spec.of, id, 'numerator'),
+      seriesOf(ctx, spec.by, id, 'divisor'),
+      // A zero divisor is not a quotient of zero, it is a question with no answer.
+      (a, b) => (b === 0 ? null : a / b),
+    )
+  }
+  if (spec.kind === 'difference') {
+    const id = definition.indicator.id
+    return combinedSeries(
+      definition,
+      ctx,
+      seriesOf(ctx, spec.of, id, 'left operand'),
+      seriesOf(ctx, spec.minus, id, 'right operand'),
+      (a, b) => a - b,
+    )
+  }
   const groupBy = spec.kind === 'share' ? spec.over : undefined
   const resolved = await resolveSources(definition.sources, ctx.freeze, codes, groupBy)
   ctx.frozen.push(...resolved.frozen)
@@ -191,16 +227,85 @@ export async function buildDefined(
   return directSeries(definition, ctx.municipalities, years, resolved.values, counts, ctx.cpi)
 }
 
-/** Reads the series this one divides by, refusing to guess if it has not been built yet. */
-function denominatorOf(ctx: BuildContext, of: string, id: string): IndicatorSeries {
+/** Reads a series this one is computed from, refusing to guess if it has not been built yet. */
+function seriesOf(ctx: BuildContext, of: string, id: string, role: string): IndicatorSeries {
   const series = ctx.series.get(of)
   if (!series) {
     throw new Error(
-      `${id}: needs ${of}'s series as its denominator, but ${of} has not been built yet — ` +
+      `${id}: needs ${of}'s series as its ${role}, but ${of} has not been built yet — ` +
         `it must come first in REGISTRY`,
     )
   }
   return series
+}
+
+/** One cell of an already-published series, by municipality code and year. */
+function cellReader(series: IndicatorSeries, municipalities: BuildContext['municipalities']) {
+  const colOf = new Map(series.years.map((y, i) => [y, i]))
+  const rowOf = new Map(municipalities.map((m, i) => [m.code, i]))
+  return (code: string, year: number) => {
+    const row = rowOf.get(code)
+    const col = colOf.get(year)
+    if (row === undefined || col === undefined) return { value: null, status: undefined }
+    return {
+      value: series.values[row]?.[col] ?? null,
+      status: series.status[row]?.[col],
+    }
+  }
+}
+
+/**
+ * Two already-published series combined cell by cell — divided, or subtracted.
+ *
+ * Three rules the arithmetic alone does not give, each the same one an indicator built from a
+ * fetch already follows:
+ *
+ * The years are the ones BOTH series publish. A quotient over a year only one side covers would
+ * be a cell with one operand, and there is no honest value for that.
+ *
+ * An absent operand makes the result absent, and the reason is carried rather than flattened: if
+ * either side says the municipality did not exist, so does the result; otherwise it is
+ * not-yet-published. A difference of two unknowns is not zero.
+ *
+ * Perturbation propagates. A figure computed from a Cell Key Method value is itself fuzzed, and
+ * publishing it as `present` would claim a precision the source never had.
+ */
+function combinedSeries(
+  definition: Definition,
+  ctx: BuildContext,
+  left: IndicatorSeries,
+  right: IndicatorSeries,
+  combine: (a: number, b: number) => number | null,
+): IndicatorSeries {
+  const years = left.years.filter((y) => right.years.includes(y)).sort((a, b) => a - b)
+  const readLeft = cellReader(left, ctx.municipalities)
+  const readRight = cellReader(right, ctx.municipalities)
+  const shift = definition.existsShift ?? 0
+
+  const cells = buildRows(ctx.municipalities, years, (m, y) => {
+    if (!existed(m.code, y - shift)) {
+      return { v: null as number | null, s: statusCode('did-not-exist') }
+    }
+    const a = readLeft(m.code, y)
+    const b = readRight(m.code, y)
+    const absent = [a.status, b.status].some((s) => s === statusCode('did-not-exist'))
+      ? 'did-not-exist'
+      : 'not-yet-published'
+    if (a.value === null || b.value === null) return { v: null, s: statusCode(absent) }
+    const value = combine(a.value, b.value)
+    if (value === null) return { v: null, s: statusCode('not-yet-published') }
+    const fuzzed =
+      a.status === statusCode('perturbed') ||
+      b.status === statusCode('perturbed') ||
+      (definition.perturbedFrom !== undefined && y >= definition.perturbedFrom)
+    return { v: value, s: statusCode(fuzzed ? 'perturbed' : 'present') }
+  })
+  return {
+    indicator: definition.indicator.id,
+    years,
+    values: cells.map((row) => row.map((c) => c.v)),
+    status: cells.map((row) => row.map((c) => c.s)),
+  }
 }
 
 /** One count over another indicator's series, times a factor. */
@@ -211,7 +316,7 @@ function ratioSeries(
   years: readonly number[],
   counts: ReadonlyMap<string, number | null>,
 ): IndicatorSeries {
-  const denominator = denominatorOf(ctx, spec.of, definition.indicator.id)
+  const denominator = seriesOf(ctx, spec.of, definition.indicator.id, 'denominator')
   const colOf = new Map(denominator.years.map((y, i) => [y, i]))
   const rowOf = new Map(ctx.municipalities.map((m, i) => [m.code, i]))
   const shift = definition.existsShift ?? 0

@@ -215,3 +215,49 @@ describe('resolveSources', () => {
     expect(rows.frozen.length).toBeGreaterThan(0)
   })
 })
+
+/**
+ * Plan 16 Task 2: a source whose values are subtracted from what earlier sources left.
+ *
+ * `natural-change-rate` is births minus deaths over population. Expressing the subtraction at the
+ * source rather than in a new builder means the rate itself is the `ratio` builder that already
+ * exists, with no new arithmetic anywhere.
+ */
+describe('a subtracting source', () => {
+  // TAX_YEARS, not a single year: only the full range was ever fetched, and the frozen-response
+  // layer refuses a selection nobody has frozen rather than reaching for the network.
+  const TAX: Source = { table: TAX_TABLE, content: 'Skattesats, total kommunal', years: TAX_YEARS }
+
+  it('leaves zero wherever a source is subtracted from itself, and null exactly where the cell was unknown', async () => {
+    // The strongest available check that the subtraction lands on the right key: any mismatch
+    // between the two passes' region|year keys would leave a non-zero cell somewhere.
+    //
+    // Not "every cell is zero", which is what this asserted first and which is false: SCB has not
+    // published every municipality's 2026 rate, and an unknown minus an unknown is unknown, not
+    // nought. The nulls therefore have to fall on exactly the cells that were null to begin with.
+    const plain = await resolveSources([TAX], { deps: { fetchImpl: offline } })
+    const rows = await resolveSources([TAX, { ...TAX, subtract: true }], {
+      deps: { fetchImpl: offline },
+    })
+    expect(rows.values.size).toBe(290 * TAX_YEARS.length)
+    const unknown = [...plain.values].filter(([, v]) => v === null).map(([k]) => k)
+    expect(unknown.length).toBeGreaterThan(0)
+    for (const [key, value] of rows.values) {
+      expect(value).toBe(unknown.includes(key) ? null : 0)
+    }
+  })
+
+  it('subtracts rather than replacing, so the first source still decides the magnitude', async () => {
+    const plain = await resolveSources([TAX], { deps: { fetchImpl: offline } })
+    const doubled = await resolveSources([TAX, TAX], { deps: { fetchImpl: offline } })
+    // Two plain sources: the later wins, so the value is unchanged, not doubled.
+    expect(doubled.values.get('0180|2024')).toBe(plain.values.get('0180|2024'))
+  })
+
+  it('has no value to subtract from when nothing came before, and says so with null', async () => {
+    const rows = await resolveSources([{ ...TAX, subtract: true }], {
+      deps: { fetchImpl: offline },
+    })
+    expect(rows.values.get('0180|2024')).toBeNull()
+  })
+})

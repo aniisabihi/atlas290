@@ -108,6 +108,8 @@ export const UNIT_DECIMALS: Record<Indicator['unit'], number> = {
   'per-thousand': 2,
   'per-km2': 1,
   years: 1,
+  'children-per-woman': 2,
+  'tonnes-per-resident': 2,
 }
 
 /**
@@ -122,7 +124,22 @@ const IndicatorFields = z.object({
   id: IndicatorId,
   name: Bilingual,
   description: Bilingual,
-  unit: z.enum(['count', 'percent', 'years', 'sek', 'per-thousand', 'per-km2']),
+  unit: z.enum([
+    'count',
+    'percent',
+    'years',
+    'sek',
+    'per-thousand',
+    'per-km2',
+    // Plan 16. Two measures whose denominator is part of the unit, following 'per-km2': a rate
+    // of children per woman, and tonnes of CO2 equivalent per resident. Both were published as
+    // 'count' in a first draft, which rounds to 0 decimals and would have turned 1.45 into 1.
+    //
+    // Unlike OBSERVATION_STATUS, this enum's ORDER means nothing — a unit is stored as its own
+    // string in every indicator, never as an index — so appending to it relabels nothing.
+    'children-per-woman',
+    'tonnes-per-resident',
+  ]),
   /** 'fixed-latest-year' means values are inflation-adjusted to the latest year's kronor. */
   priceBasis: z.enum(['none', 'fixed-latest-year']),
   /**

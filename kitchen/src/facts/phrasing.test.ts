@@ -44,8 +44,12 @@ describe('the country sentence', () => {
     // municipality possesses an education. The indicator is a share of residents, and only
     // some of the ten are things a place can have more of.
     const { text } = best('country')
-    expect(text.sv).toBe('Eftergymnasial utbildning har stigit i alla 284 kommuner sedan 1985.')
-    expect(text.en).toBe('Post-secondary education has risen in all 284 municipalities since 1985.')
+    expect(text.sv).toBe(
+      'Utbildningsgap mellan kvinnor och män har stigit i alla 284 kommuner sedan 1985.',
+    )
+    expect(text.en).toBe(
+      'Education gap between women and men has risen in all 284 municipalities since 1985.',
+    )
   })
 
   it('says "all" rather than "284 of 284" when the country is unanimous', () => {
@@ -110,9 +114,11 @@ describe('the other three sentences', () => {
     // decimals; English groups with a comma and uses a full stop. Written as an escape
     // rather than a literal space, because the two are indistinguishable in a diff and the
     // non-breaking one is what stops a figure splitting across two lines.
-    expect(text.sv).toContain('6\u00a0446,0')
-    expect(text.sv).not.toContain('6 446,0')
-    expect(text.en).toContain('6,446.0')
+    // 6,529.2 rather than 6,446.0: plan 16 gave each extreme its own indicator's last year, so
+    // density's is quoted for 2025 rather than for the last year the whole pantry shared.
+    expect(text.sv).toContain('6\u00a0529,2')
+    expect(text.sv).not.toContain('6 529,2')
+    expect(text.en).toContain('6,529.2')
   })
 
   it('shows each value at its own indicator precision, never more', () => {

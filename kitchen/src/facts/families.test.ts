@@ -31,13 +31,25 @@ describe('countryCandidates', () => {
     expect(first.matching).toBe(first.comparable)
   })
 
-  it('breaks a tie on the length of the record, not the spelling of an indicator', () => {
+  it('breaks a tie on the length of the record before the spelling of an indicator', () => {
     // Median income since 1999 and post-secondary education since 1985 are both unanimous.
-    // Sorting by id would pick median-income; the longer record is the stronger statement.
+    // Sorting by id alone would pick median-income; the longer record is the stronger statement,
+    // so span is compared first and 1985 wins.
+    //
+    // Plan 16 made the LAST tier decide a real case for the first time. The education gap is
+    // unanimous over exactly the same 284 municipalities and exactly the same 1985-2025 record
+    // as post-secondary education itself, so score and span both tie and the id decides — and
+    // '...-gap-higher' sorts before '...-higher'. The fact that results is a true and rather
+    // more striking one, so it is accepted rather than engineered around: inventing a rule to
+    // prefer a level over a contrast would be choosing the tie-break for its answer.
     const first = top(list)
     if (first.family !== 'country') throw new Error('not a country fact')
-    expect(first.indicator.id).toBe('post-secondary-education')
     expect(first.from).toBe(1985)
+    expect(first.indicator.id).toBe('post-secondary-education-gap')
+    const level = list.find((c) => c.id === 'country-post-secondary-education-higher')
+    if (level?.family !== 'country') throw new Error('no level candidate')
+    expect(level.score).toBe(first.score)
+    expect(level.from).toBe(first.from)
   })
 
   it('never assumes 290 as the denominator', () => {
@@ -221,7 +233,11 @@ describe('extremeCandidates', () => {
     expect(first.indicator.id).toBe('density')
     expect(name.get(first.highest.code)).toBe('Sundbyberg')
     expect(name.get(first.lowest.code)).toBe('Arjeplog')
-    expect(Math.round(first.score)).toBe(32230)
+    // 2025 rather than 2024, and 32,646 rather than 32,230: plan 16 gave every extreme its own
+    // indicator's last year instead of a year shared with the whole pantry, so density's extreme
+    // is now quoted for the latest year density HAS.
+    expect(first.year).toBe(2025)
+    expect(Math.round(first.score)).toBe(32646)
   })
 
   it('excludes indicators that go negative, where a ratio means nothing', () => {
@@ -230,11 +246,16 @@ describe('extremeCandidates', () => {
     expect(ids).not.toContain('population-change')
   })
 
-  it('names the real denominator, which is 285 for house prices', () => {
+  it('names the real denominator, which is not 290 for house prices', () => {
+    // Not every municipality has enough house sales in a year to publish a mean price, so the
+    // claim has to say how many it could actually ask — 285 of 290 in both 2024 and 2025. The
+    // municipality at the bottom moved with the year: Åsele in 2024, Malå in 2025.
     const prices = list.find((c) => c.family === 'extreme' && c.indicator.id === 'house-prices')
     if (prices?.family !== 'extreme') throw new Error('no house prices')
+    expect(prices.year).toBe(2025)
     expect(prices.comparable).toBe(285)
-    expect(name.get(prices.lowest.code)).toBe('Åsele')
+    expect(prices.comparable).toBeLessThan(290)
+    expect(name.get(prices.lowest.code)).toBe('Malå')
   })
 
   it('asks every indicator for a year it actually covers', () => {

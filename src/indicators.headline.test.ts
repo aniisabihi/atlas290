@@ -51,7 +51,7 @@ describe('published pantry: headline facts', () => {
     expect(data.municipalities).toHaveLength(290)
   })
 
-  it('publishes exactly the ten registered indicators', () => {
+  it('publishes exactly the registered indicators, by name', () => {
     expect(data.indicators.map((i) => i.id).sort()).toEqual(
       [
         'population',
@@ -64,6 +64,24 @@ describe('published pantry: headline facts', () => {
         'population-change',
         'mean-age',
         'share-65-plus',
+        // Plan 16.
+        'fertility-rate',
+        'dependency-ratio',
+        'employment-rate',
+        'unemployment-rate',
+        'taxable-income-per-resident',
+        'disposable-household-income',
+        'median-rent-per-sqm',
+        'natural-change-rate',
+        'dwellings-completed-rate',
+        'dwellings-per-1000',
+        'greenhouse-gas-per-resident',
+        'share-houses',
+        'share-rentals',
+        'post-secondary-education-women',
+        'post-secondary-education-men',
+        'post-secondary-education-gap',
+        'house-price-to-income',
       ].sort(),
     )
   })

@@ -238,6 +238,245 @@ describe('published pantry: edge cells and status semantics', () => {
     })
   })
 
+  describe('fertility-rate (TAB4805, women)', () => {
+    // Read from TAB4805 on 2026-09-18 through a separate single-municipality request, before
+    // this indicator was declared: Stockholm 2024 = 1.33, Borgholm = 1.42. The published cells
+    // reproduce both, which is the check that the Kon=2 selection landed where it was meant to.
+    it('reproduces the 2024 rates for Stockholm and Borgholm', () => {
+      expect(cell('fertility-rate', 'Stockholm', 2024)).toEqual({ value: 1.33, status: 'present' })
+      expect(cell('fertility-rate', 'Borgholm', 2024)).toEqual({ value: 1.42, status: 'present' })
+    })
+
+    // The measure this indicator is NOT. TAB4805 has no sex total, and a rate summed over men
+    // and women would land near 2.7 rather than near 1.4 — far outside anything a fertility
+    // rate can be, which is what makes this assertion worth making.
+    it('is a womens rate, so no cell approaches the sum of both sexes', () => {
+      const s = seriesOf('fertility-rate')
+      const values = s.values.flat().filter((v): v is number => v !== null)
+      expect(Math.max(...values)).toBeLessThan(4)
+    })
+  })
+
+  describe('dependency-ratio (TAB4642)', () => {
+    it('reproduces the 2024 ratios for Stockholm and Borgholm', () => {
+      expect(cell('dependency-ratio', 'Stockholm', 2024)).toEqual({
+        value: 59.5,
+        status: 'present',
+      })
+      expect(cell('dependency-ratio', 'Borgholm', 2024)).toEqual({
+        value: 123.8,
+        status: 'present',
+      })
+    })
+
+    // The one indicator on this site whose unit is `percent` and whose values legitimately pass
+    // 100: it counts people per 100 of working age, not a share of anything. A plausible-range
+    // ceiling of 100 would have refused the real data.
+    it('passes 100 where the young and the old outnumber the working age', () => {
+      const values = seriesOf('dependency-ratio')
+        .values.flat()
+        .filter((v): v is number => v !== null)
+      expect(Math.max(...values)).toBeGreaterThan(100)
+    })
+  })
+
+  describe('employment-rate and unemployment-rate (TAB3200, ages 20-64)', () => {
+    it('reproduces both 2024 rates for Stockholm and Borgholm', () => {
+      expect(cell('employment-rate', 'Stockholm', 2024)).toEqual({
+        value: 80.3,
+        status: 'present',
+      })
+      expect(cell('employment-rate', 'Borgholm', 2024)).toEqual({ value: 82.6, status: 'present' })
+      expect(cell('unemployment-rate', 'Stockholm', 2024)).toEqual({
+        value: 5.3,
+        status: 'present',
+      })
+      expect(cell('unemployment-rate', 'Borgholm', 2024)).toEqual({
+        value: 3.5,
+        status: 'present',
+      })
+    })
+
+    // Both are published for 20-64 so that they describe the same people. They still do not sum
+    // to 100, because unemployment is a share of the labour force and employment a share of the
+    // population — and asserting that they do NOT is what keeps the caveat honest.
+    it('do not sum to 100, because their denominators differ', () => {
+      const e = cell('employment-rate', 'Stockholm', 2024).value!
+      const u = cell('unemployment-rate', 'Stockholm', 2024).value!
+      expect(e + u).not.toBeCloseTo(100, 1)
+    })
+
+    it('covers every municipality in every year of its short register, 2020 to 2024', () => {
+      for (const id of ['employment-rate', 'unemployment-rate']) {
+        const s = seriesOf(id)
+        expect(s.years).toEqual([2020, 2021, 2022, 2023, 2024])
+        const present = s.values.flat().filter((v) => v !== null).length
+        expect(present).toBe(290 * 5)
+      }
+    })
+  })
+
+  describe('the three money measures SCB publishes ready-made', () => {
+    // Read from each table on 2026-09-18 through a separate single-municipality request, before
+    // any of them was declared. Stockholm 2024: skattekraft 329,390 NOMINAL kronor, disposable
+    // 533.8 tkr, rent 1,619 kr per square metre per year. Borgholm: 212,862, 426.6, 1,182.
+    it('reproduces the disposable income and the rent exactly, since neither is adjusted here', () => {
+      expect(cell('disposable-household-income', 'Stockholm', 2024)).toEqual({
+        value: 533_800,
+        status: 'present',
+      })
+      expect(cell('disposable-household-income', 'Borgholm', 2024)).toEqual({
+        value: 426_600,
+        status: 'present',
+      })
+      expect(cell('median-rent-per-sqm', 'Stockholm', 2024)).toEqual({
+        value: 1619,
+        status: 'present',
+      })
+      expect(cell('median-rent-per-sqm', 'Borgholm', 2024)).toEqual({
+        value: 1182,
+        status: 'present',
+      })
+    })
+
+    // The tax base IS adjusted, so it must NOT reproduce the nominal figure — and the gap has to
+    // be the right size. 2024 kronor expressed in 2025 kronor is a little more, not a lot: if
+    // this ever equalled the nominal figure the adjustment silently stopped running, and if it
+    // were far larger the wrong base year was used.
+    it('publishes the tax base in the price index base year, a little above the nominal figure', () => {
+      const stockholm = cell('taxable-income-per-resident', 'Stockholm', 2024)
+      expect(stockholm.status).toBe('present')
+      expect(stockholm.value).toBe(331_635)
+      expect(stockholm.value! / 329_390).toBeGreaterThan(1)
+      expect(stockholm.value! / 329_390).toBeLessThan(1.05)
+      expect(cell('taxable-income-per-resident', 'Borgholm', 2024).value).toBe(214_313)
+    })
+
+    // TAB3600 publishes 2026 and the price index does not reach it. Dropping the year is the
+    // decision; this is what makes it visible if anyone ever quietly adds it back unadjusted.
+    it('stops the tax base at the price index, not at the table', () => {
+      const years = seriesOf('taxable-income-per-resident').years
+      expect(years[years.length - 1]).toBe(2025)
+      expect(seriesOf('tax-rate').years).toContain(2026)
+    })
+  })
+
+  describe('the four rates, each hand-computed from its own raw counts', () => {
+    // Every figure below was reconstructed on 2026-09-18 from a separate read of the source
+    // table's raw counts and this pantry's own published population, then compared with what
+    // the pipeline published. Stockholm 2024: 11,430 births, 5,850 deaths, 4,959 dwellings
+    // completed, 522,654 dwellings standing, over a population of 995,574. Borgholm: 51, 187,
+    // 157, 6,317, over 10,666. Emissions are 2022: 3,736 and 145 kilotonnes over 984,748 and
+    // 10,857 residents.
+    it('reproduces natural change, including a negative rate where deaths outnumber births', () => {
+      expect(cell('natural-change-rate', 'Stockholm', 2024)).toEqual({
+        value: 5.6,
+        status: 'present',
+      })
+      // Borgholm had 51 births against 187 deaths. A rate that could not go negative would have
+      // to publish something here, and everything it could publish would be false.
+      expect(cell('natural-change-rate', 'Borgholm', 2024)).toEqual({
+        value: -12.75,
+        status: 'present',
+      })
+    })
+
+    it('reproduces both dwelling rates', () => {
+      expect(cell('dwellings-completed-rate', 'Stockholm', 2024).value).toBe(4.98)
+      expect(cell('dwellings-completed-rate', 'Borgholm', 2024).value).toBe(14.72)
+      expect(cell('dwellings-per-1000', 'Stockholm', 2024).value).toBe(524.98)
+      expect(cell('dwellings-per-1000', 'Borgholm', 2024).value).toBe(592.26)
+    })
+
+    it('reproduces emissions in tonnes per resident, not kilotonnes', () => {
+      // 3,736 kilotonnes over 984,748 people is 3.79 tonnes each, not 0.0038. The unit
+      // conversion is the whole reason this indicator has a unit of its own.
+      expect(cell('greenhouse-gas-per-resident', 'Stockholm', 2022).value).toBe(3.79)
+      expect(cell('greenhouse-gas-per-resident', 'Borgholm', 2022).value).toBe(13.36)
+    })
+
+    // Every other series in this pantry that reaches the present ends in 2025. This one ends in
+    // 2022, and saying so is more honest than quietly letting the slider run past it.
+    it('ends emissions in 2022, three years before the rest', () => {
+      const years = seriesOf('greenhouse-gas-per-resident').years
+      expect(years[years.length - 1]).toBe(2022)
+    })
+  })
+
+  describe('the two computed from the pantry alone', () => {
+    // Neither fetches anything, so the whole point is that a reader can check them against the
+    // two numbers already on the page. These assertions do exactly that.
+    it('derives the education gap as women minus men, from the two published splits', () => {
+      for (const place of ['Stockholm', 'Borgholm', 'Lund']) {
+        const women = cell('post-secondary-education-women', place, 2024).value!
+        const men = cell('post-secondary-education-men', place, 2024).value!
+        const gap = cell('post-secondary-education-gap', place, 2024).value!
+        // Within half a rounding step, not exactly equal: the gap is computed from the two
+        // UNROUNDED shares and rounded once at the end, which is the same rule every other
+        // derived figure in this pantry follows. Lund publishes 5.94 where the rounded shares
+        // differ by 5.93, and that is the rounding working rather than failing.
+        expect(gap).toBeCloseTo(women - men, 1)
+      }
+    })
+
+    // A property neither split asserts on its own: the combined share has to sit between them,
+    // because it is the same measure over both sexes together.
+    it('leaves the combined share between the two splits, for every municipality and year', () => {
+      const women = seriesOf('post-secondary-education-women')
+      const men = seriesOf('post-secondary-education-men')
+      const both = seriesOf('post-secondary-education')
+      let checked = 0
+      for (let i = 0; i < both.values.length; i++) {
+        for (let j = 0; j < both.years.length; j++) {
+          const w = women.values[i]?.[j]
+          const m = men.values[i]?.[j]
+          const b = both.values[i]?.[j]
+          if (w === null || m === null || b === null) continue
+          if (w === undefined || m === undefined || b === undefined) continue
+          expect(b).toBeGreaterThanOrEqual(Math.min(w, m) - 0.01)
+          expect(b).toBeLessThanOrEqual(Math.max(w, m) + 0.01)
+          checked++
+        }
+      }
+      expect(checked).toBeGreaterThan(10_000)
+    })
+
+    it('derives house price in years of income from the two published money series', () => {
+      const price = cell('house-prices', 'Stockholm', 2024).value!
+      const income = cell('median-income', 'Stockholm', 2024).value!
+      expect(cell('house-price-to-income', 'Stockholm', 2024).value).toBeCloseTo(price / income, 1)
+      expect(cell('house-price-to-income', 'Borgholm', 2024).value).toBe(9)
+    })
+
+    // Both operands run further than the overlap — house prices from 1981, income to 2024 — and
+    // a quotient over a year only one of them covers would have one operand.
+    it('covers only the years both its operands publish', () => {
+      const years = seriesOf('house-price-to-income').years
+      expect(years[0]).toBe(1999)
+      expect(years[years.length - 1]).toBe(2024)
+      expect(seriesOf('house-prices').years[0]).toBe(1981)
+    })
+  })
+
+  describe('the two housing shares (TAB824)', () => {
+    // Each partitions the same stock a different way, so each share is a fraction of the whole
+    // and neither can exceed 100.
+    it('reproduces both shares for a city, an island and a university town', () => {
+      expect(cell('share-houses', 'Stockholm', 2024).value).toBe(8.74)
+      expect(cell('share-houses', 'Borgholm', 2024).value).toBe(71.39)
+      expect(cell('share-rentals', 'Stockholm', 2024).value).toBe(42.82)
+      expect(cell('share-rentals', 'Borgholm', 2024).value).toBe(23.22)
+    })
+
+    it.each(['share-houses', 'share-rentals'])('keeps %s inside 0 and 100', (id) => {
+      const values = seriesOf(id)
+        .values.flat()
+        .filter((v): v is number => v !== null)
+      expect(Math.min(...values)).toBeGreaterThanOrEqual(0)
+      expect(Math.max(...values)).toBeLessThanOrEqual(100)
+    })
+  })
+
   /**
    * Which tables carry SCB's Cell Key Method note is a per-table fact, and getting it wrong in
    * either direction is a published lie: a perturbed cell presented as exact, or an exact cell
@@ -252,11 +491,14 @@ describe('published pantry: edge cells and status semantics', () => {
       },
     )
 
-    it.each(['population', 'density', 'share-65-plus', 'net-migration-rate'])(
-      'does mark cells of %s perturbed, from the 2025 CKM tables',
-      (id) => {
-        expect(statusesIn(id)).toContain('perturbed')
-      },
-    )
+    it.each([
+      'population',
+      'density',
+      'share-65-plus',
+      'net-migration-rate',
+      'natural-change-rate',
+    ])('does mark cells of %s perturbed, from the 2025 CKM tables', (id) => {
+      expect(statusesIn(id)).toContain('perturbed')
+    })
   })
 })

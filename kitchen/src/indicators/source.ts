@@ -104,6 +104,18 @@ export type Source = {
    * Runs before the selection, so a codelist drift fails loudly rather than being fetched under.
    */
   verify?: (meta: TableMeta) => void
+  /**
+   * Subtract this source's values from what the earlier sources left, instead of replacing them.
+   *
+   * `natural-change-rate` is births minus deaths: the two birth tables resolve normally, stitched
+   * by year, and the two death tables subtract. The rate is then the `ratio` builder that already
+   * exists, over a numerator that is already the difference — no new arithmetic in the builder.
+   *
+   * A subtraction with nothing before it yields null rather than a negative number, because
+   * "deaths, with no births figure to set them against" is not a natural change of minus that
+   * many.
+   */
+  subtract?: boolean
 }
 
 /** What a resolved source yields: one value per `region|year`, and what was read to get it. */
@@ -189,6 +201,10 @@ function sumByRegionYear(
  * stitching population, share-65-plus and net-migration-rate each do by hand today, where a newer
  * table continues an older one: the new table is listed last and its years take precedence.
  *
+ * A source marked `subtract` is the exception: it is taken away from what came before rather than
+ * replacing it, which is how `natural-change-rate` says births minus deaths without needing a
+ * builder of its own.
+ *
  * Summing happens strictly WITHIN a source. Two tables are never added together — they are
  * alternative publications of the same measure for different years, and adding them would double
  * any year they share.
@@ -222,7 +238,19 @@ export async function resolveSources(
       'sv',
       freeze,
     )
-    for (const [key, value] of sumByRegionYear(chunks, groupBy)) merged.set(key, value)
+    for (const [key, value] of sumByRegionYear(chunks, groupBy)) {
+      if (!source.subtract) {
+        merged.set(key, value)
+        continue
+      }
+      const before = merged.get(key)
+      // Either side unknown makes the difference unknown: a subtraction from an absent figure is
+      // not that figure negated, and a known figure minus an unknown one is not itself.
+      merged.set(
+        key,
+        before === undefined || before === null || value === null ? null : before - value,
+      )
+    }
     frozen.push(...chunks)
     metas.push(meta)
   }

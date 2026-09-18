@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { lookup } from '../data/select'
 import { IndicatorPicker } from './IndicatorPicker'
-import { publishedPantry } from '../test/pantry'
+import { publishedIndex, publishedPantry } from '../test/pantry'
 
 const lk = lookup(publishedPantry)
 
@@ -16,11 +16,15 @@ const draw = (selected = 'population', lang: 'sv' | 'en' = 'en') => {
 }
 
 describe('IndicatorPicker', () => {
-  it('is a labelled select of ten indicators', () => {
+  it('is a labelled select of every published indicator', () => {
     draw()
     const select = screen.getByRole('combobox', { name: 'Measure' })
     expect(select).toBeTruthy()
-    expect(screen.getAllByRole('option')).toHaveLength(10)
+    // Derived from the published index rather than written down: plan 16 takes the pantry
+    // from ten indicators to twenty-seven, and a literal here would only ever say how many
+    // there were on the day it was typed. src/indicators.headline.test.ts is the one place
+    // that pins the list itself.
+    expect(screen.getAllByRole('option')).toHaveLength(publishedIndex.indicators.length)
   })
 
   it('shows exactly the one the URL says', () => {

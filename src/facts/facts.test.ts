@@ -31,17 +31,21 @@ describe('every published claim re-derives from the pantry', () => {
   }
   const claimOf = (id: string) => FACTS.find((f) => f.id === id)!.claim
 
-  it('country: post-secondary education has risen everywhere since 1985', () => {
+  it('country: the education gap has widened everywhere since 1985', () => {
+    // Plan 16: the published country fact is now the GAP rather than the level. Both are
+    // unanimous over the same 284 municipalities and the same 1985-2025 record, so the ranking
+    // ties down to the last tier. The re-derivation below is the same either way — what it
+    // proves is that the claim on the page can be rebuilt from the pantry.
     let matching = 0
     let comparable = 0
     for (const m of data.municipalities) {
-      const then = at('post-secondary-education', m.code, 1985)
-      const now = at('post-secondary-education', m.code, 2025)
+      const then = at('post-secondary-education-gap', m.code, 1985)
+      const now = at('post-secondary-education-gap', m.code, 2025)
       if (then === null || now === null) continue
       comparable += 1
       if (now > then) matching += 1
     }
-    expect(claimOf('country-post-secondary-education-higher')).toBe(
+    expect(claimOf('country-post-secondary-education-gap-higher')).toBe(
       `${matching} of ${comparable} higher in 2025 than 1985`,
     )
   })
@@ -89,7 +93,11 @@ describe('every published claim re-derives from the pantry', () => {
 
   it('extreme: Sundbyberg against Arjeplog on density, of 290', () => {
     const s = series('density')
-    const col = s.years.indexOf(2024)
+    // The indicator's own last year, read from the pantry rather than written down. Plan 16 gave
+    // each extreme fact its own indicator's latest year instead of one shared across the pantry,
+    // and a literal here would pin the year this test was written rather than the rule it checks.
+    const year = s.years[s.years.length - 1]!
+    const col = s.years.indexOf(year)
     const present = data.municipalities
       .map((m) => ({ code: m.code, value: s.values[rowOf(m.code)]?.[col] ?? null }))
       .filter((x): x is { code: string; value: number } => x.value !== null)
@@ -97,7 +105,7 @@ describe('every published claim re-derives from the pantry', () => {
     const high = present[0]!
     const low = present[present.length - 1]!
     expect(claimOf('extreme-density')).toBe(
-      `density 2024: ${high.code} ${high.value} vs ${low.code} ${low.value}, of ${present.length}`,
+      `density ${year}: ${high.code} ${high.value} vs ${low.code} ${low.value}, of ${present.length}`,
     )
   })
 

@@ -8,13 +8,13 @@ import compareSource from './compare.ts?raw'
 import stringsSource from '../i18n/strings.ts?raw'
 import { lookup } from './select'
 import { compareOf, summarise } from './compare'
-import { partialPantry, publishedPantry } from '../test/pantry'
+import { publishedIndex, partialPantry, publishedPantry } from '../test/pantry'
 
 const lk = lookup(publishedPantry)
 
 describe('compareOf', () => {
-  it('compares all ten indicators', () => {
-    expect(compareOf(lk, '0180', '1280', 2024)).toHaveLength(10)
+  it('compares every published indicator', () => {
+    expect(compareOf(lk, '0180', '1280', 2024)).toHaveLength(publishedIndex.indicators.length)
   })
 
   it('says which side is higher, using real figures', () => {
@@ -46,7 +46,7 @@ describe('summarise', () => {
   it('counts both sides and the ties, adding up to what was comparable', () => {
     const s = summarise(compareOf(lk, '0180', '1280', 2024))
     expect(s.aHigher + s.bHigher + s.equal).toBe(s.comparable)
-    expect(s.comparable + s.notComparable).toBe(10)
+    expect(s.comparable + s.notComparable).toBe(publishedIndex.indicators.length)
   })
 
   it('excludes what it could not compare from the denominator', () => {
@@ -54,7 +54,7 @@ describe('summarise', () => {
     // density in 1991, education in 1985. Saying "higher on 3 of 10" would be false.
     const s = summarise(compareOf(lk, '0180', '1280', 1970))
     expect(s.notComparable).toBeGreaterThan(0)
-    expect(s.comparable).toBeLessThan(10)
+    expect(s.comparable).toBeLessThan(publishedIndex.indicators.length)
     expect(s.aHigher + s.bHigher + s.equal).toBe(s.comparable)
   })
 })
@@ -110,7 +110,9 @@ describe('while the pantry is still loading', () => {
     expect(summary.comparable + summary.notComparable).toBe(1)
   })
 
-  it('compares all ten once every file has arrived', () => {
-    expect(compareOf(lookup(publishedPantry), '0180', '1280', 2024)).toHaveLength(10)
+  it('compares them all once every file has arrived', () => {
+    expect(compareOf(lookup(publishedPantry), '0180', '1280', 2024)).toHaveLength(
+      publishedIndex.indicators.length,
+    )
   })
 })

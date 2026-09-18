@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { PantryIndex, PantryIndicator, type IndicatorSeries } from '../../../shared/pantry'
+import {
+  Indicator,
+  OBSERVATION_STATUS,
+  PantryIndex,
+  PantryIndicator,
+  statusCode,
+  type IndicatorSeries,
+  type Municipality,
+} from '../../../shared/pantry'
 import { DEFAULT_PANTRY_DIR } from '../publish'
 import { roundSeriesValues } from '../round'
 import { buildDefined, type Definition } from './define'
@@ -14,6 +22,18 @@ import { housingDefined } from './housing'
 import { educationDefined } from './education'
 import { migrationDefined } from './migration'
 import { meanAgeDefined, share65PlusDefined } from './derived'
+import { dependencyDefined, fertilityDefined, naturalChangeDefined } from './demography'
+import { employmentDefined, unemploymentDefined } from './labour'
+import { disposableDefined, taxBaseDefined } from './finance'
+import {
+  completedDefined,
+  rentDefined,
+  shareHousesDefined,
+  shareRentalsDefined,
+  stockDefined,
+} from './dwellings'
+import { educationMenDefined, educationWomenDefined } from './education'
+import { emissionsDefined } from './environment'
 
 /**
  * Plan 14, widened by plan 15: an indicator built from its definition must equal the one the
@@ -68,6 +88,21 @@ const DEFINED: ReadonlyArray<readonly [id: string, definition: () => Definition]
   ['post-secondary-education', educationDefined],
   ['share-65-plus', share65PlusDefined],
   ['net-migration-rate', migrationDefined],
+  ['fertility-rate', fertilityDefined],
+  ['dependency-ratio', dependencyDefined],
+  ['employment-rate', employmentDefined],
+  ['unemployment-rate', unemploymentDefined],
+  ['taxable-income-per-resident', taxBaseDefined],
+  ['disposable-household-income', disposableDefined],
+  ['median-rent-per-sqm', rentDefined],
+  ['natural-change-rate', naturalChangeDefined],
+  ['dwellings-completed-rate', completedDefined],
+  ['dwellings-per-1000', stockDefined],
+  ['greenhouse-gas-per-resident', emissionsDefined],
+  ['share-houses', shareHousesDefined],
+  ['share-rentals', shareRentalsDefined],
+  ['post-secondary-education-women', educationWomenDefined],
+  ['post-secondary-education-men', educationMenDefined],
 ]
 
 /**
@@ -82,7 +117,8 @@ const DEFINED: ReadonlyArray<readonly [id: string, definition: () => Definition]
  */
 async function contextFor(id: string): Promise<Parameters<typeof buildDefined>[1]> {
   const freeze = { deps: { fetchImpl: offline } }
-  const needsCpi = id === 'median-income' || id === 'house-prices'
+  const needsCpi =
+    id === 'median-income' || id === 'house-prices' || id === 'taxable-income-per-resident'
   return {
     municipalities: index.municipalities,
     years: [],
@@ -119,5 +155,226 @@ describe('an indicator built from its definition', () => {
     const ctx = await contextFor('tax-rate')
     await buildDefined(taxDefined(), ctx)
     expect(ctx.frozen.length).toBeGreaterThan(0)
+  })
+})
+
+/**
+ * Plan 16 Task 2: the two builders that compute from the pantry alone.
+ *
+ * `house-price-to-income` is one published series over another; `post-secondary-education-gap`
+ * is one minus another. Neither fetches anything, so both are tested against fabricated series
+ * rather than frozen responses — there is no SCB request to freeze.
+ */
+const TWO: Municipality[] = [
+  { code: '0180', name: { sv: 'Stockholm', en: 'Stockholm' }, county: '01' },
+  { code: '0330', name: { sv: 'Knivsta', en: 'Knivsta' }, county: '03' }, // created 2002
+]
+
+function fakeSeries(
+  id: string,
+  years: number[],
+  values: Array<Array<number | null>>,
+  status?: Array<Array<number>>,
+): IndicatorSeries {
+  return {
+    indicator: id,
+    years,
+    values,
+    status:
+      status ??
+      values.map((row) => row.map((v) => statusCode(v === null ? 'not-yet-published' : 'present'))),
+  }
+}
+
+function ctxWith(series: IndicatorSeries[]): Parameters<typeof buildDefined>[1] {
+  return {
+    municipalities: TWO,
+    years: [],
+    freeze: { deps: { fetchImpl: offline } },
+    frozen: [],
+    series: new Map(series.map((s) => [s.indicator, s])),
+  }
+}
+
+const QUOTIENT: Indicator = Indicator.parse({
+  id: 'a-over-b',
+  name: { sv: 'A', en: 'A' },
+  description: { sv: 'x', en: 'x' },
+  unit: 'years',
+  priceBasis: 'none',
+  scale: { kind: 'sequential', breaks: [] },
+  coverage: { from: 2020, to: 2021 },
+  caveat: { sv: 'x', en: 'x' },
+  derivation: 'x',
+  sources: [{ table: 'TAB1', contentCode: 'C', note: 'n' }],
+  sensitivity: 'none',
+})
+
+describe('quotient: one published series over another', () => {
+  const defn = (): Definition => ({
+    indicator: QUOTIENT,
+    sources: [],
+    spec: { kind: 'quotient', of: 'top', by: 'bottom' },
+  })
+
+  it('divides cell by cell, over the years both series publish', async () => {
+    const ctx = ctxWith([
+      fakeSeries(
+        'top',
+        [2020, 2021],
+        [
+          [10, 20],
+          [5, 8],
+        ],
+      ),
+      fakeSeries(
+        'bottom',
+        [2020, 2021],
+        [
+          [2, 4],
+          [5, 2],
+        ],
+      ),
+    ])
+    const s = await buildDefined(defn(), ctx)
+    expect(s.years).toEqual([2020, 2021])
+    expect(s.values[0]).toEqual([5, 5])
+  })
+
+  it('takes only the years BOTH series cover, never inventing one', async () => {
+    const ctx = ctxWith([
+      fakeSeries(
+        'top',
+        [2019, 2020, 2021],
+        [
+          [1, 10, 20],
+          [1, 5, 8],
+        ],
+      ),
+      fakeSeries(
+        'bottom',
+        [2020, 2021, 2022],
+        [
+          [2, 4, 9],
+          [5, 2, 9],
+        ],
+      ),
+    ])
+    const s = await buildDefined(defn(), ctx)
+    expect(s.years).toEqual([2020, 2021])
+  })
+
+  it('yields null, never Infinity, when the divisor is zero', async () => {
+    const ctx = ctxWith([
+      fakeSeries(
+        'top',
+        [2020, 2021],
+        [
+          [10, 20],
+          [5, 8],
+        ],
+      ),
+      fakeSeries(
+        'bottom',
+        [2020, 2021],
+        [
+          [0, 4],
+          [5, 2],
+        ],
+      ),
+    ])
+    const s = await buildDefined(defn(), ctx)
+    expect(s.values[0]![0]).toBeNull()
+    expect(OBSERVATION_STATUS[s.status[0]![0]!]).toBe('not-yet-published')
+  })
+
+  it('refuses a series that has not been built yet, naming it', async () => {
+    await expect(
+      buildDefined(defn(), ctxWith([fakeSeries('top', [2020], [[1], [1]])])),
+    ).rejects.toThrow(/a-over-b: needs bottom/)
+  })
+
+  it("keeps a municipality's did-not-exist years did-not-exist", async () => {
+    const ctx = ctxWith([
+      fakeSeries(
+        'top',
+        [2000, 2020],
+        [
+          [10, 20],
+          [null, 8],
+        ],
+        [
+          [statusCode('present'), statusCode('present')],
+          [statusCode('did-not-exist'), statusCode('present')],
+        ],
+      ),
+      fakeSeries(
+        'bottom',
+        [2000, 2020],
+        [
+          [2, 4],
+          [null, 2],
+        ],
+        [
+          [statusCode('present'), statusCode('present')],
+          [statusCode('did-not-exist'), statusCode('present')],
+        ],
+      ),
+    ])
+    const s = await buildDefined(defn(), ctx)
+    expect(OBSERVATION_STATUS[s.status[1]![0]!]).toBe('did-not-exist')
+    expect(s.values[1]![0]).toBeNull()
+  })
+
+  it('carries perturbed forward: a quotient of a fuzzed figure is fuzzed', async () => {
+    const ctx = ctxWith([
+      fakeSeries('top', [2020], [[10], [5]], [[statusCode('perturbed')], [statusCode('present')]]),
+      fakeSeries('bottom', [2020], [[2], [5]]),
+    ])
+    const s = await buildDefined(defn(), ctx)
+    expect(OBSERVATION_STATUS[s.status[0]![0]!]).toBe('perturbed')
+    expect(OBSERVATION_STATUS[s.status[1]![0]!]).toBe('present')
+  })
+})
+
+describe('difference: one published series minus another', () => {
+  const defn = (): Definition => ({
+    indicator: { ...QUOTIENT, id: 'a-minus-b', unit: 'percent' },
+    sources: [],
+    spec: { kind: 'difference', of: 'women', minus: 'men' },
+  })
+
+  it('subtracts cell by cell, and a negative difference is a real value', async () => {
+    const ctx = ctxWith([
+      fakeSeries(
+        'women',
+        [2020, 2021],
+        [
+          [40, 50],
+          [30, 20],
+        ],
+      ),
+      fakeSeries(
+        'men',
+        [2020, 2021],
+        [
+          [30, 55],
+          [30, 25],
+        ],
+      ),
+    ])
+    const s = await buildDefined(defn(), ctx)
+    expect(s.values[0]).toEqual([10, -5])
+    expect(s.values[1]).toEqual([0, -5])
+  })
+
+  it('yields null where either side is null, rather than treating it as zero', async () => {
+    const ctx = ctxWith([
+      fakeSeries('women', [2020], [[null], [30]]),
+      fakeSeries('men', [2020], [[30], [null]]),
+    ])
+    const s = await buildDefined(defn(), ctx)
+    expect(s.values[0]![0]).toBeNull()
+    expect(s.values[1]![0]).toBeNull()
   })
 })

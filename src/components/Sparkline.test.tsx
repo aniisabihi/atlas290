@@ -78,11 +78,16 @@ describe('Sparkline', () => {
     expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThan(20)
   })
 
-  it('has something to draw for every municipality and every indicator', () => {
-    // The component returns null when a series is wholly empty. That branch is defensive: no
-    // municipality in the published pantry is missing an entire indicator, and this asserts it,
-    // so the day a refresh changes that the failure names the real cause rather than surfacing
-    // as a blank row nobody notices.
+  it('has something to draw everywhere except the one pair SCB publishes nothing for', () => {
+    // The component returns null when a series is wholly empty, and that branch was purely
+    // defensive until plan 16: no municipality was missing an entire indicator.
+    //
+    // Bjurholm is now. It is Sweden's smallest municipality, at about 2,400 residents, and SCB
+    // publishes no total fertility rate for it in any of the twenty-six years — too few births
+    // for the measure to mean anything. That is SCB's own judgement, not a gap in this pipeline,
+    // and the honest thing is to name it rather than loosen the assertion to "mostly".
+    //
+    // Listing the exceptions keeps the guarantee: a second one appearing still fails here.
     const empty: string[] = []
     for (const indicator of lk.data.indicators) {
       for (const m of lk.data.municipalities) {
@@ -90,6 +95,6 @@ describe('Sparkline', () => {
           empty.push(`${indicator.id}/${m.code}`)
       }
     }
-    expect(empty).toEqual([])
+    expect(empty).toEqual(['fertility-rate/2403'])
   })
 })

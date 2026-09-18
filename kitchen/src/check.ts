@@ -81,6 +81,36 @@ export const PLAUSIBLE_RANGES: Record<string, PlausibleRange> = {
   'population-change': { min: -100, max: 500 },
   'mean-age': { min: 0, max: 100 },
   'share-65-plus': { min: 0, max: 100 },
+  // Plan 16. Same rule as above: a mathematical bound where one exists, and generous headroom
+  // over the real observed maximum where the bound is only empirical.
+  //
+  // A fertility rate is bounded below by 0 and, in practice, far below 10 anywhere in Sweden;
+  // the observed 2024 figures sit near 1.3-1.4. The dependency ratio is a count per 100
+  // working-age people and legitimately exceeds 100 — Borgholm 2024 is 123.8 — so 100 would be
+  // the wrong ceiling, and this is the one place where a "percent" indicator is not 0-100.
+  'fertility-rate': { min: 0, max: 10 },
+  'dependency-ratio': { min: 0, max: 500 },
+  'employment-rate': { min: 0, max: 100 },
+  'unemployment-rate': { min: 0, max: 100 },
+  // Money, so generous headroom above today's real maximum: these can only grow.
+  'taxable-income-per-resident': { min: 0, max: 5_000_000 },
+  'disposable-household-income': { min: 0, max: 5_000_000 },
+  'median-rent-per-sqm': { min: 0, max: 20_000 },
+  // Natural change is signed and legitimately negative — most Swedish municipalities have more
+  // deaths than births — so its range is not 0-anchored, for the same reason net migration's is
+  // not. The rest are counts over a population and cannot be negative.
+  'natural-change-rate': { min: -200, max: 200 },
+  'dwellings-completed-rate': { min: 0, max: 500 },
+  'dwellings-per-1000': { min: 0, max: 2000 },
+  'greenhouse-gas-per-resident': { min: 0, max: 1000 },
+  'share-houses': { min: 0, max: 100 },
+  'share-rentals': { min: 0, max: 100 },
+  'post-secondary-education-women': { min: 0, max: 100 },
+  'post-secondary-education-men': { min: 0, max: 100 },
+  // A gap in percentage points between two shares: bounded by -100 and 100 mathematically, and
+  // signed, because men lead in some municipalities and women in most.
+  'post-secondary-education-gap': { min: -100, max: 100 },
+  'house-price-to-income': { min: 0, max: 200 },
 }
 
 /**

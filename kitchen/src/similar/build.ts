@@ -140,8 +140,15 @@ export function assertUsable(
   features: readonly Feature[],
   result: Similar['nearest'],
   window: { from: number; to: number },
+  coreIds: readonly string[] = CORE_INDICATORS,
 ): void {
-  const from = Math.max(...data.indicators.map((i) => i.coverage.from))
+  // The CORE set, not every published indicator. Plan 14 pinned the metric to ten and fixed the
+  // published method description to match, but left this guard reading `data.indicators` — so
+  // plan 16's employment-rate, whose register only begins in 2020, made the whole pantry
+  // unpublishable over a window the metric never applies to it. A guard about a measurement has
+  // to be about what the measurement reads.
+  const core = coreOf(data, coreIds)
+  const from = Math.max(...core.map((i) => i.coverage.from))
   if (window.to - window.from + 1 < WINDOW_YEARS) {
     throw new Error(
       `similar: the window ${window.from}-${window.to} is ${window.to - window.from + 1} ` +
@@ -149,7 +156,7 @@ export function assertUsable(
     )
   }
   if (window.from < from) {
-    const late = data.indicators.filter((i) => i.coverage.from > window.from).map((i) => i.id)
+    const late = core.filter((i) => i.coverage.from > window.from).map((i) => i.id)
     throw new Error(
       `similar: the window starts in ${window.from}, before ${late.join(', ')} ` +
         `${late.length === 1 ? 'begins' : 'begin'}`,
@@ -168,11 +175,14 @@ export function assertUsable(
     const self = features[row.get(m.code)!]!
     for (const code of neighbours) {
       const shared = sharedDimensions(self, features[row.get(code)!]!)
-      const missing = data.indicators.length - shared
+      // `core.length`, not every published indicator: a feature vector has one dimension per
+      // CORE indicator, so counting the missing ones against the pantry's full list would report
+      // every non-core indicator as missing from every comparison.
+      const missing = core.length - shared
       if (missing > MAX_MISSING) {
         throw new Error(
           `similar: ${m.code} (${m.name.sv}) and ${code} were compared on only ${shared} of ` +
-            `${data.indicators.length} indicators, and at most ${MAX_MISSING} may be missing`,
+            `${core.length} indicators, and at most ${MAX_MISSING} may be missing`,
         )
       }
     }
@@ -196,7 +206,7 @@ export function buildSimilar(
     result[m.code] = nearest(features, index, NEIGHBOURS, codeAt).map((n) => codeAt(n.index))
   }
 
-  assertUsable(data, features, result, window)
+  assertUsable(data, features, result, window, coreIds)
 
   return {
     schemaVersion: 1,
