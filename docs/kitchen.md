@@ -718,7 +718,7 @@ indicator, which nothing else would have noticed.
 
 Why these choices: [docs/decisions/0013-the-pantry-splits.md](decisions/0013-the-pantry-splits.md).
 
-## What an indicator is (Plans 14 and 15, 2026-09-18)
+## What an indicator is (Plans 14, 15 and 16, 2026-09-18)
 
 Nine of the ten indicators are **declarations**, not modules. One is not, for a stated reason.
 
@@ -754,14 +754,33 @@ reach 65" — silently includes TAB5557's aggregate bands (`65-69`, `70-74`, `90
 single ages and counts the same people twice. The frozen-response layer caught it, because the
 selection no longer matched anything ever fetched.
 
-| Builder  | Means                                                         | Users                                                                |
-| -------- | ------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `direct` | Select a cell and publish it                                  | population, mean-age, tax-rate, density, median-income, house-prices |
-| `ratio`  | This count over another indicator's series, times a factor    | share-65-plus (×100), net-migration-rate (×1,000)                    |
-| `share`  | Some values of one dimension over all of them, times a factor | post-secondary-education                                             |
+| Builder      | Means                                                         | Users                                                                                  |
+| ------------ | ------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `direct`     | Select a cell and publish it                                  | thirteen, from population to median-rent-per-sqm                                       |
+| `ratio`      | This count over another indicator's series, times a factor    | share-65-plus, net-migration-rate, natural-change-rate, both dwelling rates, emissions |
+| `share`      | Some values of one dimension over all of them, times a factor | post-secondary-education and its two splits, share-houses, share-rentals               |
+| `quotient`   | One published series over another, no fetch at all            | house-price-to-income                                                                  |
+| `difference` | One published series minus another, no fetch at all           | post-secondary-education-gap                                                           |
+
+A `quotient` or a `difference` reads its operands from the pantry being built, so both must be
+registered AFTER the indicators they read — `registry.load-order.test.ts` is what says so when
+they are not. The years are the ones both operands publish; an absent operand makes the result
+absent and carries WHY, and perturbation propagates, because a figure computed from a Cell Key
+Method value is itself fuzzed.
+
+**A source can also subtract.** `Source.subtract` takes a source away from what earlier sources
+left rather than replacing it, which is how `natural-change-rate` says births minus deaths without
+a builder of its own. Either side unknown makes the difference unknown.
 
 Modifiers: `scale` (SCB publishes money in thousands), `inflationAdjust`, and `minCount` (a mean
 price resting on a handful of sales is noise wearing a number's clothes).
+
+**Before adding an indicator, read the table's own metadata.** Plan 16 verified thirteen tables
+against live SCB metadata before writing a line, and six of the fifteen the design named came out
+different: two tables had no total code where one was assumed, one was already in fixed prices,
+one measured per square metre rather than per dwelling, one ran a year past the price index, and
+two measures needed units the contract did not have. `yarn tsx kitchen/spikes/verify-fifteen-sources.ts`
+is the script that does it; point it at the next table before declaring anything.
 
 **`population-change` is not a definition.** It reads population's series, propagates four statuses
 through a year-over-year comparison and applies the structural-break rule for the years a
