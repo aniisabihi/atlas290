@@ -1,29 +1,16 @@
-import {
-  Indicator,
-  type IndicatorSeries,
-  type Municipality,
-  statusCode,
-} from '../../../shared/pantry'
-import { existed } from '../municipalities'
+import { Indicator, type IndicatorSeries, type Municipality } from '../../../shared/pantry'
 import { parseMetadata, type Selection, type TableMeta } from '../scb/client'
-import {
-  freezeData,
-  freezeMetadata,
-  type FreezeOpts,
-  type FrozenData,
-  type FrozenMeta,
-} from '../scb/freeze'
+import { freezeData, freezeMetadata, type FrozenData } from '../scb/freeze'
 import { toRows } from '../scb/jsonstat'
 import {
-  buildRows,
   resolveContentCode,
   totalOrDeclaredSum,
   values,
   type BuildContext,
   type IndicatorDefinition,
 } from './registry'
-// A plain `const` read (CKM_FROM), used only inside buildDensitySeries's default parameter and
-// buildDensity's body — never at this module's own top level — so this is safe under the same
+// A plain `const` read (CKM_FROM), used only inside densityDefined's and buildDensity's bodies
+// — never at this module's own top level — so this is safe under the same
 // circular-import reasoning registry.ts documents for populationDefinition: the read happens at
 // call time, once every module has finished loading, not while population.ts and density.ts are
 // still being linked.
@@ -71,22 +58,9 @@ export const DENSITY: Indicator = Indicator.parse({
 })
 
 /**
- * TAB628's density selection: the 4-digit municipality codes, the Kon total ('1+2', ruling R1 —
- * selected instead of summing the two sexes), the density content code resolved by label, and
- * the requested years.
- */
-export function densitySelection(meta: TableMeta, years: string[]): Selection {
-  return {
-    Region: values(meta, 'Region').filter((c) => /^\d{4}$/.test(c)),
-    Kon: totalOrDeclaredSum(meta, 'Kon'),
-    ContentsCode: [resolveContentCode(meta, DENSITY_CONTENT_LABEL)],
-    Tid: years,
-  }
-}
-
-/**
  * TAB628's land-area selection, for filling `Municipality.landAreaKm2` (optional since Plan 1).
- * Same table, same Region/Kon/Tid shape as densitySelection, differing only in ContentsCode —
+ * Same table, same Region/Kon/Tid shape as the density source itself, differing only in the
+ * ContentsCode —
  * land area does not vary by sex, but the table still requires a Kon value to be selected, and
  * the '1+2' total carries the same figure as either sex alone.
  */
@@ -113,37 +87,6 @@ function valueByRegionYear(chunks: FrozenData[]): Map<string, number | null> {
     }
   }
   return map
-}
-
-/**
- * Builds the columnar density series. Same status rule as population and tax rate: existed()
- * gates before the value is even looked at (ruling R16), and a missing cell is
- * 'not-yet-published' rather than silently absent. Unlike tax rate, density IS derived from
- * population and so carries the same Cell Key Method perturbation from `perturbedFrom`
- * (defaults to population's real CKM_FROM, 2025) onward — confirmed against TAB628's own
- * "slumpmässig osäkerhet" note, not merely assumed by analogy.
- */
-export function buildDensitySeries(
-  municipalities: Municipality[],
-  chunks: FrozenData[],
-  years: number[],
-  perturbedFrom: number = CKM_FROM,
-): IndicatorSeries {
-  const density = valueByRegionYear(chunks)
-  const cells = buildRows(municipalities, years, (m, y) => {
-    if (!existed(m.code, y)) {
-      return { v: null as number | null, s: statusCode('did-not-exist') }
-    }
-    const v = density.get(`${m.code}|${y}`) ?? null
-    if (v === null) return { v: null, s: statusCode('not-yet-published') }
-    return { v, s: y >= perturbedFrom ? statusCode('perturbed') : statusCode('present') }
-  })
-  return {
-    indicator: DENSITY.id,
-    years,
-    values: cells.map((r) => r.map((c) => c.v)),
-    status: cells.map((r) => r.map((c) => c.s)),
-  }
 }
 
 /**
@@ -215,23 +158,3 @@ export function densityDefined(): Definition {
 }
 
 export const densityDefinition: IndicatorDefinition = { indicator: DENSITY, build: buildDensity }
-
-/**
- * Standalone real-fetch entry point, mirroring population.ts's fetchPopulation and tax.ts's
- * fetchTax — used for the spike/verification run, independent of the shared REGISTRY singleton.
- * Requires municipalities to already exist (population's own responsibility).
- */
-export async function fetchDensity(
-  municipalities: Municipality[],
-  opts: FreezeOpts = {},
-): Promise<{ series: IndicatorSeries; frozen: Array<FrozenData | FrozenMeta> }> {
-  const ctx: BuildContext = {
-    municipalities,
-    years: DENSITY_YEARS,
-    freeze: opts,
-    frozen: [],
-    series: new Map(),
-  }
-  const series = await buildDensity(ctx)
-  return { series, frozen: ctx.frozen }
-}

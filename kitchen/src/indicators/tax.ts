@@ -1,21 +1,6 @@
-import {
-  Indicator,
-  type IndicatorSeries,
-  type Municipality,
-  statusCode,
-} from '../../../shared/pantry'
-import { existed } from '../municipalities'
-import { type Selection, type TableMeta } from '../scb/client'
-import { type FreezeOpts, type FrozenData, type FrozenMeta } from '../scb/freeze'
-import { toRows } from '../scb/jsonstat'
+import { Indicator, type IndicatorSeries } from '../../../shared/pantry'
 import { buildDefined, type Definition } from './define'
-import {
-  buildRows,
-  resolveContentCode,
-  values,
-  type BuildContext,
-  type IndicatorDefinition,
-} from './registry'
+import { type BuildContext, type IndicatorDefinition } from './registry'
 
 export const TAX_TABLE = 'TAB2017'
 
@@ -59,60 +44,6 @@ export const TAX: Indicator = Indicator.parse({
     'Tid, so there is nothing to select a total from and nothing to sum.',
 })
 
-/**
- * TAB2017's selection: region (filtered to the 290 four-digit municipality codes, dropping the
- * national and county rows the table also carries), the tax-rate content code resolved by
- * label, and the requested years. No Kon/Alder/Civilstand — this table has none.
- */
-export function taxSelection(meta: TableMeta, years: string[]): Selection {
-  return {
-    Region: values(meta, 'Region').filter((c) => /^\d{4}$/.test(c)),
-    ContentsCode: [resolveContentCode(meta, TAX_CONTENT_LABEL)],
-    Tid: years,
-  }
-}
-
-/** Maps each fetched region+year cell to its value. TAB2017 has exactly one row per key. */
-function valueByRegionYear(chunks: FrozenData[]): Map<string, number | null> {
-  const map = new Map<string, number | null>()
-  for (const chunk of chunks) {
-    for (const r of toRows(chunk.response)) {
-      map.set(`${r.dims.Region}|${r.dims.Tid}`, r.value)
-    }
-  }
-  return map
-}
-
-/**
- * Builds the columnar tax-rate series. Same status rule as population (ruling R16): a
- * municipality that did not yet exist gets null + 'did-not-exist' regardless of what SCB sent;
- * only once existed() is true do we look at the fetched value, and a missing cell (a year
- * outside what was fetched, or genuinely not yet published) becomes 'not-yet-published' rather
- * than silently absent. Unlike population, there is no perturbation status here — this table
- * carries no Cell Key Method note.
- */
-export function buildTaxSeries(
-  municipalities: Municipality[],
-  chunks: FrozenData[],
-  years: number[],
-): IndicatorSeries {
-  const rates = valueByRegionYear(chunks)
-  const cells = buildRows(municipalities, years, (m, y) => {
-    if (!existed(m.code, y)) {
-      return { v: null as number | null, s: statusCode('did-not-exist') }
-    }
-    const v = rates.get(`${m.code}|${y}`) ?? null
-    if (v === null) return { v: null, s: statusCode('not-yet-published') }
-    return { v, s: statusCode('present') }
-  })
-  return {
-    indicator: TAX.id,
-    years,
-    values: cells.map((r) => r.map((c) => c.v)),
-    status: cells.map((r) => r.map((c) => c.s)),
-  }
-}
-
 export async function buildTax(ctx: BuildContext): Promise<IndicatorSeries> {
   return buildDefined(taxDefined(), ctx)
 }
@@ -139,26 +70,4 @@ export function taxDefined(): Definition {
 export const taxDefinition: IndicatorDefinition = {
   indicator: TAX,
   build: (ctx) => buildDefined(taxDefined(), ctx),
-}
-
-/**
- * Standalone real-fetch entry point, mirroring population.ts's fetchPopulation — used for the
- * spike/verification run and by tax.test.ts, independent of the shared REGISTRY singleton.
- * Needs municipalities to already exist (population's own responsibility per registry.ts), so
- * this is only useful once ctx.municipalities has been seeded some other way; buildAll (which
- * runs population first) is the normal path in application code.
- */
-export async function fetchTax(
-  municipalities: Municipality[],
-  opts: FreezeOpts = {},
-): Promise<{ series: IndicatorSeries; frozen: Array<FrozenData | FrozenMeta> }> {
-  const ctx: BuildContext = {
-    municipalities,
-    years: TAX_YEARS,
-    freeze: opts,
-    frozen: [],
-    series: new Map(),
-  }
-  const series = await buildTax(ctx)
-  return { series, frozen: ctx.frozen }
 }

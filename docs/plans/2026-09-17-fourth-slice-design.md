@@ -225,6 +225,12 @@ Still open:
 
 | Plan | Covers                                                                        | Proves itself by                                      |
 | ---- | ----------------------------------------------------------------------------- | ----------------------------------------------------- |
-| 12   | The pantry split: index plus one file per indicator (§3.2)                    | Same ten indicators, `yarn e2e` green, index measured |
-| 13   | Indicators become definitions; similarity pinned to the core ten (§3.1, §3.3) | `public/pantry/` byte-identical                       |
-| 14   | The fifteen (§4), with D1–D5 recorded                                         | Headline-figure tests per indicator; determinism      |
+| 13   | The pantry split: index plus one file per indicator (§3.2)                    | Same ten indicators, `yarn e2e` green, index measured |
+| 14   | Indicators become definitions; similarity pinned to the core ten (§3.1, §3.3) | `public/pantry/` byte-identical                       |
+| 15   | The nine hand-written implementations go, and their assertions find new homes | `public/pantry/` byte-identical; the net named        |
+| 16   | The fifteen (§4), with D1–D5 recorded                                         | Headline-figure tests per indicator; determinism      |
+
+_Renumbered 2026-09-18._ As first written this table said 12/13/14, from before plan 12 was taken
+by releases. Plan 15 was added after issue #28 forced the deletion to be a change of its own —
+before the fifteen rather than after, because plan 16 adds indicators with nothing to be
+byte-identical to, so the net plan 15 leaves is the net they inherit.
