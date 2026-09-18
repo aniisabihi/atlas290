@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { lookup, observationAt, rankOf } from '../data/select'
 import { EXTREME_SHARE, MIN_FALL_PERCENT, storyFor, type Sentence } from './story'
-import { publishedPantry } from '../test/pantry'
+import { partialPantry, publishedPantry } from '../test/pantry'
 
 const data = publishedPantry
 const lk = lookup(data)
@@ -220,6 +220,43 @@ describe('coverage across the whole country', () => {
         // asserted falsely.
         if (s.id !== 'standing') expect(s.text.sv).not.toBe(s.text.en)
       }
+    }
+  })
+})
+
+describe('while the pantry is still loading', () => {
+  /**
+   * Plan 13, and the defect the browser suite caught that every unit test had missed: the arc and
+   * the turn are built from population whatever indicator is on the map, so a profile deep-linked
+   * with a different indicator — `/en/?i=house-prices&m=0184` — reached them before population had
+   * been fetched. `lk.series` threw, React unwound the whole tree, and the page went blank.
+   *
+   * The unit suite could not have caught it, because every site fixture holds a complete pantry.
+   * These three use a partial one, which is the state the site is genuinely in on every visit.
+   */
+  it('says nothing rather than throwing when population has not arrived', () => {
+    const partial = lookup(partialPantry(['house-prices']))
+    expect(() => storyFor(partial, '0184', YEAR, 'sv')).not.toThrow()
+  })
+
+  it('offers no arc and no turn until population is in hand', () => {
+    const partial = lookup(partialPantry(['house-prices']))
+    const ids = storyFor(partial, '0184', YEAR, 'sv').map((entry) => entry.id)
+    expect(ids).not.toContain('arc')
+    expect(ids).not.toContain('turn')
+  })
+
+  it('tells the whole story once population has arrived', () => {
+    const withPopulation = lookup(partialPantry(['population', 'house-prices']))
+    const ids = storyFor(withPopulation, '0184', YEAR, 'sv').map((entry) => entry.id)
+    expect(ids).toContain('arc')
+  })
+
+  it('never reads a series it does not hold, for any municipality', () => {
+    // The standing rule walks every indicator, so it is the other way this could have thrown.
+    const partial = lookup(partialPantry(['mean-age']))
+    for (const m of publishedPantry.municipalities.slice(0, 40)) {
+      expect(() => storyFor(partial, m.code, YEAR, 'en')).not.toThrow()
     }
   })
 })
