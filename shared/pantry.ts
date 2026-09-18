@@ -110,53 +110,79 @@ export const UNIT_DECIMALS: Record<Indicator['unit'], number> = {
   years: 1,
 }
 
-export const Indicator = z
-  .object({
-    id: IndicatorId,
-    name: Bilingual,
-    description: Bilingual,
-    unit: z.enum(['count', 'percent', 'years', 'sek', 'per-thousand', 'per-km2']),
-    /** 'fixed-latest-year' means values are inflation-adjusted to the latest year's kronor. */
-    priceBasis: z.enum(['none', 'fixed-latest-year']),
-    /**
-     * WHICH year's kronor, when `priceBasis` is 'fixed-latest-year'. Stored rather than derived,
-     * because it cannot be derived correctly: the base is the last year of SCB's consumer price
-     * index (2025), which is not the same as the indicator's own last year. Median income stops
-     * at 2024 but is expressed in 2025 kronor, so a site inferring the basis from `coverage.to`
-     * would tell visitors "2024 kronor" — off by a year's inflation, and a false statement about
-     * money presented as a fact.
-     */
-    priceBasisYear: z.number().int().optional(),
-    /**
-     * The smallest step the SOURCE publishes at, in this indicator's own unit — 1000 kronor for
-     * house prices, which SCB publishes as whole thousands, and 100 for median income, which it
-     * publishes as thousands to one decimal.
-     *
-     * It exists so the site can recover the figure SCB actually published from the
-     * inflation-adjusted one it stores, by undoing the adjustment and snapping back to the step
-     * the original always landed on. That recovery is exact — proven for all 20,260 money cells
-     * in src/data/nominal.test.ts — but only at the right step: snapping income to 1000 instead
-     * of 100 recovers 797 of 7,537 cells. So the step is published per indicator rather than
-     * assumed to be the same everywhere.
-     */
-    publishedStep: z.number().positive().optional(),
-    /** Neutral scale hint. There is deliberately no "higher is better" flag. */
-    scale: z.object({
-      kind: z.enum(['sequential', 'diverging']),
-      reference: z.enum(['zero', 'national-median']).optional(),
-      /** Fixed class breaks across all years, computed in the kitchen. */
-      breaks: z.array(z.number()),
-    }),
-    coverage: z.object({ from: z.number().int(), to: z.number().int() }),
-    caveat: Bilingual,
-    /** For indicators built from events (house sales): below this count the cell is 'too-few-cases'. */
-    minCount: z.number().int().positive().optional(),
-    sensitivity: z.enum(['none', 'sensitive']),
-    sources: z.array(z.object({ table: z.string(), contentCode: z.string(), note: z.string() })),
-    /** Plain-language statement of how the value was computed from the sources. */
-    derivation: z.string(),
-  })
-  .superRefine((i, ctx) => {
+/**
+ * The indicator's fields, before any refinement.
+ *
+ * Plan 13 Task 1 split this out of `Indicator` so `IndicatorMeta` can be derived from it with
+ * `.omit()` rather than restated. A restated copy is a copy that drifts: a field added to the
+ * indicator and forgotten in the index would simply be missing from the published index, and
+ * nothing would say so.
+ */
+const IndicatorFields = z.object({
+  id: IndicatorId,
+  name: Bilingual,
+  description: Bilingual,
+  unit: z.enum(['count', 'percent', 'years', 'sek', 'per-thousand', 'per-km2']),
+  /** 'fixed-latest-year' means values are inflation-adjusted to the latest year's kronor. */
+  priceBasis: z.enum(['none', 'fixed-latest-year']),
+  /**
+   * WHICH year's kronor, when `priceBasis` is 'fixed-latest-year'. Stored rather than derived,
+   * because it cannot be derived correctly: the base is the last year of SCB's consumer price
+   * index (2025), which is not the same as the indicator's own last year. Median income stops
+   * at 2024 but is expressed in 2025 kronor, so a site inferring the basis from `coverage.to`
+   * would tell visitors "2024 kronor" — off by a year's inflation, and a false statement about
+   * money presented as a fact.
+   */
+  priceBasisYear: z.number().int().optional(),
+  /**
+   * The smallest step the SOURCE publishes at, in this indicator's own unit — 1000 kronor for
+   * house prices, which SCB publishes as whole thousands, and 100 for median income, which it
+   * publishes as thousands to one decimal.
+   *
+   * It exists so the site can recover the figure SCB actually published from the
+   * inflation-adjusted one it stores, by undoing the adjustment and snapping back to the step
+   * the original always landed on. That recovery is exact — proven for all 20,260 money cells
+   * in src/data/nominal.test.ts — but only at the right step: snapping income to 1000 instead
+   * of 100 recovers 797 of 7,537 cells. So the step is published per indicator rather than
+   * assumed to be the same everywhere.
+   */
+  publishedStep: z.number().positive().optional(),
+  /** Neutral scale hint. There is deliberately no "higher is better" flag. */
+  scale: z.object({
+    kind: z.enum(['sequential', 'diverging']),
+    reference: z.enum(['zero', 'national-median']).optional(),
+    /** Fixed class breaks across all years, computed in the kitchen. */
+    breaks: z.array(z.number()),
+  }),
+  coverage: z.object({ from: z.number().int(), to: z.number().int() }),
+  caveat: Bilingual,
+  /** For indicators built from events (house sales): below this count the cell is 'too-few-cases'. */
+  minCount: z.number().int().positive().optional(),
+  sensitivity: z.enum(['none', 'sensitive']),
+  sources: z.array(z.object({ table: z.string(), contentCode: z.string(), note: z.string() })),
+  /** Plain-language statement of how the value was computed from the sources. */
+  derivation: z.string(),
+})
+export type Indicator = z.infer<typeof Indicator>
+
+/**
+ * The price-basis rules, shared by `Indicator` and `IndicatorMeta` rather than restated, so the
+ * published index can never enforce a weaker rule than the per-indicator file it summarises.
+ *
+ * `ctx` is typed structurally instead of by zod's own refinement-context type, because this file
+ * is compiled by both the kitchen and the site and the name of that type is a zod-internal
+ * detail; only `addIssue` is used.
+ */
+function checkPriceBasis(
+  i: {
+    id: string
+    priceBasis: 'none' | 'fixed-latest-year'
+    priceBasisYear?: number | undefined
+    publishedStep?: number | undefined
+  },
+  ctx: { addIssue: (issue: { code: 'custom'; message: string }) => void },
+): void {
+  {
     const adjusted = i.priceBasis === 'fixed-latest-year'
     if (adjusted && i.priceBasisYear === undefined) {
       ctx.addIssue({
@@ -176,8 +202,27 @@ export const Indicator = z
         message: `${i.id}: priceBasisYear is set but priceBasis is '${i.priceBasis}', so nothing was adjusted`,
       })
     }
-  })
-export type Indicator = z.infer<typeof Indicator>
+  }
+}
+
+export const Indicator = IndicatorFields.superRefine(checkPriceBasis)
+
+/** Which of an indicator's fields are prose: written for a reader, read only by AboutIndicator. */
+export const INDICATOR_PROSE = {
+  description: true,
+  caveat: true,
+  derivation: true,
+  sources: true,
+} as const
+
+/**
+ * An indicator without its prose — what the published index carries for EVERY indicator, so the
+ * picker, the legend, the URL parser and the formatter can work before a single series has been
+ * fetched. Measured at 6,471 gzipped bytes for the whole index at ten indicators and 6,524 at
+ * twenty-five: it barely grows, because the 290 municipalities dominate it.
+ */
+export const IndicatorMeta = IndicatorFields.omit(INDICATOR_PROSE).superRefine(checkPriceBasis)
+export type IndicatorMeta = z.infer<typeof IndicatorMeta>
 
 /**
  * Columnar series: values[m][y] where m indexes PantryData.municipalities and y indexes years.
@@ -233,6 +278,47 @@ export const PriceIndex = z.object({
 })
 export type PriceIndex = z.infer<typeof PriceIndex>
 
+/**
+ * The checks that relate a pantry's parts to each other, shared by `PantryData` (every indicator,
+ * with its prose) and `PantryView` (every indicator's metadata, and only the series fetched so
+ * far). Both shapes must obey exactly the same rules; only one of them is ever complete.
+ *
+ * Note what is NOT required: that every indicator has a series. A view legitimately holds ten
+ * indicators and one series, because the site fetches a series when the map needs it.
+ */
+function checkPantryCrossReferences(
+  p: {
+    municipalities: readonly unknown[]
+    indicators: readonly { id: string; priceBasisYear?: number | undefined }[]
+    series: readonly { indicator: string; values: readonly unknown[] }[]
+    priceIndex: { values: Record<string, number> }
+  },
+  ctx: { addIssue: (issue: { code: 'custom'; message: string }) => void },
+): void {
+  for (const s of p.series) {
+    if (s.values.length !== p.municipalities.length) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `series ${s.indicator}: rows (${s.values.length}) must equal municipalities (${p.municipalities.length})`,
+      })
+    }
+    if (!p.indicators.some((i) => i.id === s.indicator)) {
+      ctx.addIssue({ code: 'custom', message: `series ${s.indicator} has no indicator` })
+    }
+  }
+  for (const i of p.indicators) {
+    if (
+      i.priceBasisYear !== undefined &&
+      p.priceIndex.values[String(i.priceBasisYear)] === undefined
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `${i.id}: adjusted to ${i.priceBasisYear}, which the price index does not cover`,
+      })
+    }
+  }
+}
+
 export const PantryData = z
   .object({
     schemaVersion: z.literal(1),
@@ -241,31 +327,143 @@ export const PantryData = z
     series: z.array(IndicatorSeries),
     priceIndex: PriceIndex,
   })
-  .superRefine((p, ctx) => {
-    for (const s of p.series) {
-      if (s.values.length !== p.municipalities.length) {
+  .superRefine(checkPantryCrossReferences)
+export type PantryData = z.infer<typeof PantryData>
+
+/**
+ * What `data/index.json` holds: everything the site needs before it has fetched a single series.
+ *
+ * Plan 13 split the pantry because one file was 275,842 gzipped bytes fetched before first paint,
+ * for an opening view that draws one indicator. This is the part that is always fetched.
+ */
+export const PantryIndex = z
+  .object({
+    schemaVersion: z.literal(1),
+    municipalities: z.array(Municipality),
+    indicators: z.array(IndicatorMeta),
+    priceIndex: PriceIndex,
+  })
+  .superRefine((idx, ctx) => {
+    const seen = new Set<string>()
+    for (const i of idx.indicators) {
+      if (seen.has(i.id)) {
         ctx.addIssue({
           code: 'custom',
-          message: `series ${s.indicator}: rows (${s.values.length}) must equal municipalities (${p.municipalities.length})`,
+          message: `${i.id}: duplicate indicator id — the id IS the file name, so two of them would publish one file and silently lose the other`,
         })
       }
-      if (!p.indicators.some((i) => i.id === s.indicator)) {
-        ctx.addIssue({ code: 'custom', message: `series ${s.indicator} has no indicator` })
-      }
-    }
-    for (const i of p.indicators) {
-      if (
-        i.priceBasisYear !== undefined &&
-        p.priceIndex.values[String(i.priceBasisYear)] === undefined
-      ) {
-        ctx.addIssue({
-          code: 'custom',
-          message: `${i.id}: adjusted to ${i.priceBasisYear}, which the price index does not cover`,
-        })
-      }
+      seen.add(i.id)
     }
   })
-export type PantryData = z.infer<typeof PantryData>
+export type PantryIndex = z.infer<typeof PantryIndex>
+
+/**
+ * What `data/indicators/<id>.json` holds: one indicator in full, including the prose only
+ * `AboutIndicator` reads, and its series.
+ */
+export const PantryIndicator = z
+  .object({ indicator: Indicator, series: IndicatorSeries })
+  .superRefine((part, ctx) => {
+    if (part.series.indicator !== part.indicator.id) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `${part.indicator.id}: this file carries the series for ${part.series.indicator}`,
+      })
+    }
+  })
+export type PantryIndicator = z.infer<typeof PantryIndicator>
+
+/**
+ * What the SITE renders from: every indicator's metadata, and only the series fetched so far.
+ *
+ * It is not a `PantryData` and cannot be one, because an indicator whose file has not been
+ * fetched has no prose to put in it. It does not need to be: prose is read by `AboutIndicator`
+ * alone, for the indicator on screen, which is by definition the one that has been fetched.
+ *
+ * A `PantryData` IS a valid `PantryView` — its indicators simply carry extra fields — so the
+ * kitchen, the build-time tools and every test that holds a whole pantry need no second path.
+ */
+export const PantryView = z
+  .object({
+    schemaVersion: z.literal(1),
+    municipalities: z.array(Municipality),
+    indicators: z.array(IndicatorMeta),
+    series: z.array(IndicatorSeries),
+    priceIndex: PriceIndex,
+  })
+  .superRefine(checkPantryCrossReferences)
+export type PantryView = z.infer<typeof PantryView>
+
+/** Takes a whole pantry apart into the files the kitchen publishes. Inverse of `assemblePantry`. */
+export function splitPantry(data: PantryData): {
+  index: PantryIndex
+  parts: PantryIndicator[]
+} {
+  const seriesById = new Map(data.series.map((s) => [s.indicator, s]))
+  const parts = data.indicators.map((indicator) => {
+    const series = seriesById.get(indicator.id)
+    if (!series) throw new Error(`splitPantry: no series for indicator "${indicator.id}"`)
+    return PantryIndicator.parse({ indicator, series })
+  })
+  const index = PantryIndex.parse({
+    schemaVersion: data.schemaVersion,
+    municipalities: data.municipalities,
+    indicators: data.indicators,
+    priceIndex: data.priceIndex,
+  })
+  return { index, parts }
+}
+
+/**
+ * Puts the files back together into one pantry. Inverse of `splitPantry`, and the path the
+ * build-time tools and the test fixtures take, all of which legitimately want everything.
+ *
+ * The INDEX decides the order, never the order the parts arrive in: `src/state/url.ts` opens on
+ * the first indicator, so a pantry reassembled in a different order would open on a different map.
+ */
+export function assemblePantry(index: PantryIndex, parts: readonly PantryIndicator[]): PantryData {
+  const byId = new Map(parts.map((part) => [part.indicator.id, part]))
+  for (const part of parts) {
+    if (!index.indicators.some((i) => i.id === part.indicator.id)) {
+      throw new Error(`assemblePantry: "${part.indicator.id}" is not listed in the index`)
+    }
+  }
+  const ordered = index.indicators.map((meta) => {
+    const part = byId.get(meta.id)
+    if (!part) throw new Error(`assemblePantry: no file for indicator "${meta.id}"`)
+    return part
+  })
+  return PantryData.parse({
+    schemaVersion: index.schemaVersion,
+    municipalities: index.municipalities,
+    indicators: ordered.map((part) => part.indicator),
+    series: ordered.map((part) => part.series),
+    priceIndex: index.priceIndex,
+  })
+}
+
+/**
+ * Builds what the site renders from the index plus however many series have arrived. Series are
+ * ordered by the index, for the same reason `assemblePantry` orders indicators by it.
+ */
+export function viewOf(index: PantryIndex, loaded: readonly PantryIndicator[]): PantryView {
+  for (const part of loaded) {
+    if (!index.indicators.some((i) => i.id === part.indicator.id)) {
+      throw new Error(`viewOf: "${part.indicator.id}" is not listed in the index`)
+    }
+  }
+  const order = new Map(index.indicators.map((i, n) => [i.id, n]))
+  const series = [...loaded]
+    .sort((a, b) => (order.get(a.indicator.id) ?? 0) - (order.get(b.indicator.id) ?? 0))
+    .map((part) => part.series)
+  return PantryView.parse({
+    schemaVersion: index.schemaVersion,
+    municipalities: index.municipalities,
+    indicators: index.indicators,
+    series,
+    priceIndex: index.priceIndex,
+  })
+}
 
 /** Keyboard neighbours. `synthetic` lists edges added so islands are reachable. */
 export const Adjacency = z.object({
