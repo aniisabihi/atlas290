@@ -145,7 +145,8 @@ what a definition is — since the next person adding an indicator reads that, n
 | Shared builder code                        | —                                    | 492 lines (`define.ts` 274, `source.ts` 218), written once |
 | Lines under `kitchen/src/indicators/`      | less than half of the 2,602          | **not met, and deliberately** — see below                  |
 | Unit tests                                 | no loss against 1,218                | **1,236**                                                  |
-| Browser tests                              | no loss                              | unchanged                                                  |
+| Browser tests                              | no loss                              | **282 passed, 1 flaky, 0 failed** under CI's `--retries=1` |
+| Lighthouse, median of three                | within budget                        | 92 / 100 / 100 / 91, unchanged from Plan 13                |
 
 **The line-count target was not met, because task 4 was not done.** Twenty-seven per-indicator
 build functions and selection helpers now have no production caller, and roughly 190 test
