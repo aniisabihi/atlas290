@@ -1,21 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { OBSERVATION_STATUS, type Municipality } from '../../../shared/pantry'
 import type { TableMeta } from '../scb/client'
 import type { FrozenData } from '../scb/freeze'
 import { toRows } from '../scb/jsonstat'
-import {
-  buildEducationSeries,
-  EDUCATION_TABLE,
-  EDUCATION_YEARS,
-  educationDefined,
-} from './education'
+import { EDUCATION_TABLE, EDUCATION_YEARS, educationDefined } from './education'
 import { selectionFor } from './source'
-
-const municipalities: Municipality[] = [
-  { code: '0330', name: { sv: 'Knivsta', en: 'Knivsta' }, county: '03' }, // created 2002
-  { code: '0180', name: { sv: 'Stockholm', en: 'Stockholm' }, county: '01' }, // always existed
-]
 
 /** Real TAB3981 label text for every UtbildningsNiva code, confirmed against the table's own
  * live frozen metadata (kitchen/raw/TAB3981/sv/metadata.json) on 2026-09-14. */
@@ -54,56 +43,6 @@ function fakeMeta(
     id: EDUCATION_TABLE,
     label: EDUCATION_TABLE,
     variables: Object.entries(vars).map(([code, values]) => ({ code, label: code, values })),
-  }
-}
-
-/**
- * Builds a real-shaped JSON-stat2 dataset from an explicit per-dimension code list and a
- * lookup keyed `${region}|${year}|${level}|${kon}` (defaulting to `null` for any combination
- * not listed, mirroring how a real SCB response can carry an explicit null cell), in the SAME
- * id order TAB3981 itself uses (Region, Alder, UtbildningsNiva, Kon, ContentsCode, Tid), with
- * the flat `value` array encoded exactly as `toRows` decodes it (last dimension varies
- * fastest) — built generically here rather than hand-typed, because hand-typing a flat array
- * for a 6-dimensional cube is exactly the kind of arithmetic a test author gets wrong silently.
- */
-function buildChunk(
-  dimValues: Record<string, string[]>,
-  cellValues: Record<string, number | null>,
-): FrozenData {
-  const id = ['Region', 'Alder', 'UtbildningsNiva', 'Kon', 'ContentsCode', 'Tid']
-  const sizes = id.map((d) => dimValues[d]?.length ?? 0)
-  const total = sizes.reduce((a, b) => a * b, 1)
-  const value: Array<number | null> = new Array(total)
-
-  function rec(dimIdx: number, current: Record<string, string>, flatBase: number): void {
-    if (dimIdx === id.length) {
-      const key = `${current.Region}|${current.Tid}|${current.UtbildningsNiva}|${current.Kon}`
-      value[flatBase] = key in cellValues ? cellValues[key]! : null
-      return
-    }
-    const dim = id[dimIdx]!
-    const stride = sizes.slice(dimIdx + 1).reduce((a, b) => a * b, 1)
-    ;(dimValues[dim] ?? []).forEach((code, i) => {
-      rec(dimIdx + 1, { ...current, [dim]: code }, flatBase + i * stride)
-    })
-  }
-  rec(0, {}, 0)
-
-  return {
-    kind: 'data',
-    table: EDUCATION_TABLE,
-    lang: 'sv',
-    url: '',
-    selection: dimValues,
-    fetchedAt: '2026-09-14T10:00:00.000Z',
-    response: {
-      id,
-      size: sizes,
-      dimension: Object.fromEntries(
-        id.map((d) => [d, { category: { index: dimValues[d] ?? [] } }]),
-      ),
-      value,
-    },
   }
 }
 
@@ -168,101 +107,6 @@ describe("post-secondary-education's declared source, resolved", () => {
   })
 })
 
-describe('buildEducationSeries', () => {
-  const dimValues = {
-    Region: ['0180'],
-    Alder: ['tot16-74'],
-    UtbildningsNiva: ALL_LEVELS,
-    Kon: ['1', '2'],
-    ContentsCode: ['UF0506A1'],
-    Tid: ['2024'],
-  }
-
-  it(
-    "REQUIRED: computes the share as (levels 5+6+7) / (ALL EIGHT levels, including 'US') — a " +
-      'case where the unknown level is non-trivial, so a test that would pass whether or not ' +
-      "'US' is in the denominator is impossible here",
-    () => {
-      // Per sex, so summed totals are double these: level1=50,2=25,3=40,4=35,5=30,6=20,7=5,US=45
-      // -> summed over both sexes: 100,50,80,70,60,40,10,90 -> total 500
-      const perSex: Record<string, number> = {
-        '1': 50,
-        '2': 25,
-        '3': 40,
-        '4': 35,
-        '5': 30,
-        '6': 20,
-        '7': 5,
-        US: 45,
-      }
-      const cellValues: Record<string, number | null> = {}
-      for (const level of ALL_LEVELS) {
-        for (const kon of ['1', '2']) {
-          cellValues[`0180|2024|${level}|${kon}`] = perSex[level]!
-        }
-      }
-      const chunk = buildChunk(dimValues, cellValues)
-      const series = buildEducationSeries([municipalities[1]!], [chunk], [2024])
-      // numerator = (30+20+5)*2 = 110; denominator (incl. US) = 500 -> 22.0
-      // denominator EXCLUDING US would be 410 -> 26.829..., a different number entirely.
-      expect(series.values[0]![0]).toBeCloseTo(22.0, 6)
-      expect(series.values[0]![0]).not.toBeCloseTo(110 / 410 / 0.01, 3)
-      expect(OBSERVATION_STATUS[series.status[0]![0]!]).toBe('present')
-    },
-  )
-
-  it('marks a year before a municipality existed as did-not-exist, discarding whatever SCB sent', () => {
-    const cellValues: Record<string, number | null> = {}
-    for (const level of ALL_LEVELS) {
-      for (const kon of ['1', '2']) {
-        cellValues[`0330|2001|${level}|${kon}`] = 0
-        cellValues[`0330|2002|${level}|${kon}`] = 10
-      }
-    }
-    const chunk = buildChunk({ ...dimValues, Region: ['0330'], Tid: ['2001', '2002'] }, cellValues)
-    const series = buildEducationSeries([municipalities[0]!], [chunk], [2001, 2002])
-    const name = (j: number) => OBSERVATION_STATUS[series.status[0]![j]!]
-    expect(name(0)).toBe('did-not-exist')
-    expect(series.values[0]![0]).toBeNull()
-    expect(name(1)).toBe('present')
-  })
-
-  it('marks a year outside the fetched range as not-yet-published, not absent', () => {
-    const cellValues: Record<string, number | null> = {}
-    for (const level of ALL_LEVELS) {
-      for (const kon of ['1', '2']) cellValues[`0180|2024|${level}|${kon}`] = 10
-    }
-    const chunk = buildChunk({ ...dimValues, Tid: ['2024'] }, cellValues)
-    const series = buildEducationSeries([municipalities[1]!], [chunk], [1985, 2024])
-    const name = (j: number) => OBSERVATION_STATUS[series.status[0]![j]!]
-    expect(name(0)).toBe('not-yet-published')
-    expect(series.values[0]![0]).toBeNull()
-    expect(name(1)).toBe('present')
-  })
-
-  it('nulls the whole cell when one level is missing entirely, rather than computing a share from a partial sum', () => {
-    const cellValues: Record<string, number | null> = {}
-    for (const level of ALL_LEVELS) {
-      if (level === '7') continue // simulate one level never fetched
-      for (const kon of ['1', '2']) cellValues[`0180|2024|${level}|${kon}`] = 10
-    }
-    const chunk = buildChunk(dimValues, cellValues)
-    const series = buildEducationSeries([municipalities[1]!], [chunk], [2024])
-    expect(series.values[0]![0]).toBeNull()
-    expect(OBSERVATION_STATUS[series.status[0]![0]!]).toBe('not-yet-published')
-  })
-
-  it('never produces a perturbed status: TAB3981 carries no CKM/perturbation note', () => {
-    const cellValues: Record<string, number | null> = {}
-    for (const level of ALL_LEVELS) {
-      for (const kon of ['1', '2']) cellValues[`0180|2024|${level}|${kon}`] = 10
-    }
-    const chunk = buildChunk(dimValues, cellValues)
-    const series = buildEducationSeries([municipalities[1]!], [chunk], [2024])
-    expect(series.status[0]!.map((s) => OBSERVATION_STATUS[s!])).not.toContain('perturbed')
-  })
-})
-
 describe("EDUCATION_YEARS: education's own year range, distinct from population's ctx.years", () => {
   it('runs 1985 through 2025', () => {
     expect(EDUCATION_YEARS[0]).toBe(1985)
@@ -270,62 +114,23 @@ describe("EDUCATION_YEARS: education's own year range, distinct from population'
   })
 })
 
-describe('buildEducationSeries with real frozen SCB data', () => {
+describe("the national aggregate reconciles with SCB's own Riket row", () => {
   // kitchen/raw/TAB3981/sv/d6a780b4a40ecc7e.json and .../dea675f08306d256.json: the real
   // production fetch (Steps 3-6 of this task) — all 290 municipalities, every UtbildningsNiva
   // level, both sexes, Alder='tot16-74', Tid=1985..2025 (chunked automatically into these two
   // 145-municipality halves by freezeData, since the full selection is 190,240 cells, over
-  // SCB's 150,000-cell limit). Verified live against the real API on 2026-09-14: Danderyd
-  // (0162) is the highest 2024 share in the real data (65.28%), Lund (1281) is also high
-  // (64.90%), and Filipstad (1782), a rural municipality, is the real LOWEST of all 290
-  // (19.29%) — found by scanning every municipality's real 2024 figure, not assumed.
+  // SCB's 150,000-cell limit).
+  //
+  // The per-municipality figures this block also asserted moved to
+  // src/indicators.semantics.test.ts in plan 15, where they read the published pantry. This one
+  // cannot follow them: it sums the RAW chunks and reconciles the total against a row fetched
+  // separately from SCB, which is a claim about the fetch rather than about what was published.
   const chunkA = JSON.parse(
     readFileSync('kitchen/raw/TAB3981/sv/d6a780b4a40ecc7e.json', 'utf8'),
   ) as FrozenData
   const chunkB = JSON.parse(
     readFileSync('kitchen/raw/TAB3981/sv/dea675f08306d256.json', 'utf8'),
   ) as FrozenData
-
-  const danderyd: Municipality = {
-    code: '0162',
-    name: { sv: 'Danderyd', en: 'Danderyd' },
-    county: '01',
-  }
-  const lund: Municipality = { code: '1281', name: { sv: 'Lund', en: 'Lund' }, county: '12' }
-  const filipstad: Municipality = {
-    code: '1782',
-    name: { sv: 'Filipstad', en: 'Filipstad' },
-    county: '17',
-  }
-  const knivsta: Municipality = {
-    code: '0330',
-    name: { sv: 'Knivsta', en: 'Knivsta' },
-    county: '03',
-  }
-
-  it('reproduces the real 2024 post-secondary shares for Danderyd and Lund (both high) against Filipstad (rural, the real lowest of all 290)', () => {
-    const series = buildEducationSeries([danderyd, lund, filipstad], [chunkA, chunkB], [2024])
-    expect(series.values[0]![0]).toBeCloseTo(65.27777777777779, 6) // Danderyd
-    expect(series.values[1]![0]).toBeCloseTo(64.90054102428508, 6) // Lund
-    expect(series.values[2]![0]).toBeCloseTo(19.289263665110674, 6) // Filipstad
-    expect(series.values[0]![0]!).toBeGreaterThan(series.values[2]![0]!)
-    expect(series.values[1]![0]!).toBeGreaterThan(series.values[2]![0]!)
-  })
-
-  it("REQUIRED: TAB3981 sends literal 0 (not null) before a municipality existed, matching population (TAB638) rather than income/housing (TAB3554/TAB1169) — confirmed against the real Knivsta cells, and the plain existed(code, y) snapshot gate is what the real data actually needs (not migration/housing's existed(code, y - 1) flow shift)", () => {
-    const series = buildEducationSeries([knivsta], [chunkA, chunkB], [2001, 2002])
-    const name = (j: number) => OBSERVATION_STATUS[series.status[0]![j]!]
-    expect(name(0)).toBe('did-not-exist')
-    expect(series.values[0]![0]).toBeNull()
-    expect(name(1)).toBe('present')
-    expect(series.values[0]![1]).not.toBeNull()
-  })
-
-  it('never produces a perturbed status anywhere in the real series (TAB3981 carries no CKM note)', () => {
-    const series = buildEducationSeries([danderyd], [chunkA, chunkB], EDUCATION_YEARS)
-    const statuses = new Set(series.status[0]!.map((s) => OBSERVATION_STATUS[s!]))
-    expect(statuses.has('perturbed')).toBe(false)
-  })
 
   it(
     'REQUIRED: the national aggregate (summed raw counts across all 290 municipalities, 2024) ' +

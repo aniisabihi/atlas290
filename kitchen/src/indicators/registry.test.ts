@@ -48,7 +48,7 @@ const oldMetaSv = {
     Region: { category: { index: ['0180'] } },
     Civilstand: { category: { index: ['OG', 'G'] } },
     // 'tot' is population's own pick (its age TOTAL); '65' and '100+' are additionally here so
-    // derived.ts's share65OldSelection (Task 11's share-65+ half, which selects single ages 65
+    // derived.ts's share-65-plus TAB638 source (which selects single ages 65
     // and over rather than the total) has something real to select in this same fake table —
     // adding them does not change population's own fetch, which still picks 'tot' via
     // totalOrDeclaredSum regardless of what else the dimension carries.
@@ -70,7 +70,7 @@ const newMetaSv = {
     Region: { category: { index: ['0180'] } },
     Civilstand: { category: { index: ['SC', 'OG', 'G'] } },
     // 'TotSA' is population's own pick (its age TOTAL); '65' and '100+1' are additionally here
-    // for the same reason as oldMetaSv's extra Alder codes above — share65NewSelection needs
+    // for the same reason as oldMetaSv's extra Alder codes above — the TAB5557 source needs
     // real single-year-65+ codes to select, without disturbing population's own 'TotSA' pick.
     Alder: { category: { index: ['TotSA', '65', '100+1'] } },
     Kon: { category: { index: ['TotSa'] } },

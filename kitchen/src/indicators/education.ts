@@ -1,22 +1,7 @@
-import {
-  Indicator,
-  type IndicatorSeries,
-  type Municipality,
-  statusCode,
-} from '../../../shared/pantry'
-import { existed } from '../municipalities'
+import { Indicator, type IndicatorSeries } from '../../../shared/pantry'
 import { buildDefined, type Definition } from './define'
-import { type Selection, type TableMeta } from '../scb/client'
-import { type FrozenData } from '../scb/freeze'
-import { toRows } from '../scb/jsonstat'
-import {
-  buildRows,
-  resolveContentCode,
-  totalOrDeclaredSum,
-  values,
-  type BuildContext,
-  type IndicatorDefinition,
-} from './registry'
+import { type TableMeta } from '../scb/client'
+import { type BuildContext, type IndicatorDefinition } from './registry'
 
 export const EDUCATION_TABLE = 'TAB3981'
 
@@ -184,114 +169,6 @@ export const EDUCATION: Indicator = Indicator.parse({
     'single missing level nulls the whole cell rather than publishing a share built on a ' +
     'partial sum.',
 })
-
-/**
- * TAB3981's selection: only the region codes that are BOTH offered by this table AND known
- * current municipality codes (never a blind four-digit regex — the plan's trap 1). Checked
- * specifically for TAB3981 while building this indicator (its own frozen metadata,
- * 2026-09-14): of 312 Region entries, exactly 290 are four-digit, and all 290 are exactly the
- * known 290 municipality codes (diffed directly against TAB638's own Region list) — no phantom
- * four-digit codes like TAB1212/TAB6640's Stor-Stockholm/Göteborg/Malmö. The known-code join is
- * still used here rather than a bare `/^\d{4}$/` regex, both as the project's default
- * convention and as a safety margin should SCB ever add such a code to this table later.
- *
- * `validateLevels` runs first so a codelist drift on `UtbildningsNiva` fails loudly before any
- * selection is built, rather than silently fetching under a redefined level.
- */
-export function educationSelection(
-  meta: TableMeta,
-  municipalityCodes: string[],
-  years: string[],
-): Selection {
-  validateLevels(meta)
-  const known = new Set(municipalityCodes)
-  return {
-    Region: values(meta, 'Region').filter((c) => known.has(c)),
-    Alder: totalOrDeclaredSum(meta, 'Alder'),
-    UtbildningsNiva: values(meta, 'UtbildningsNiva'),
-    Kon: totalOrDeclaredSum(meta, 'Kon'),
-    ContentsCode: [resolveContentCode(meta, EDUCATION_CONTENT_LABEL)],
-    Tid: years,
-  }
-}
-
-/**
- * Sums SCB cell values per municipality+year+level, collapsing however many Kon rows a chunk
- * carries per key (two: TAB3981's `1` and `2`, since it has no sex total — the same
- * sum-and-null-propagation rule as migration.ts's own sumByRegionYear, not imported: that
- * function is private to migration.ts). A key whose constituent Kon rows are a MIX of null and
- * real values becomes null — never a partial sum presented as the whole.
- */
-function sumByRegionYearLevel(chunks: FrozenData[]): Map<string, number | null> {
-  const acc = new Map<string, { sum: number; sawNull: boolean }>()
-  for (const chunk of chunks) {
-    for (const r of toRows(chunk.response)) {
-      const key = `${r.dims.Region}|${r.dims.Tid}|${r.dims.UtbildningsNiva}`
-      const entry = acc.get(key) ?? { sum: 0, sawNull: false }
-      if (r.value === null) {
-        entry.sawNull = true
-      } else {
-        entry.sum += r.value
-      }
-      acc.set(key, entry)
-    }
-  }
-  const totals = new Map<string, number | null>()
-  for (const [key, entry] of acc) {
-    totals.set(key, entry.sawNull ? null : entry.sum)
-  }
-  return totals
-}
-
-/**
- * Builds the columnar post-secondary-education-share series. Education is a SNAPSHOT of who
- * lives in a municipality (like population, tax rate, density and median income), not a FLOW
- * measured across a calendar year (like net migration and house sales), so it uses the plain
- * `existed(m.code, y)` gate — verified against the real frozen data for all six municipality
- * splits (see education.ts's own module-level fetch report / docs/kitchen.md's education
- * section for the real per-split figures), not merely assumed by analogy with the other
- * snapshot indicators.
- *
- * Rule per cell: `existed` gates first, discarding whatever SCB sent (ruling R16); if any of
- * the eight levels' summed count is missing for that municipality+year, the whole cell is
- * 'not-yet-published' rather than a share computed from seven of eight levels; otherwise the
- * share is (levels 5+6+7) / (all eight levels, including US) * 100. A zero denominator (nobody
- * aged 16-74 recorded at all) is treated the same as a missing one, since a share genuinely
- * cannot be published without it. No 'perturbed' status is ever produced: TAB3981 carries no
- * Cell Key Method note.
- */
-export function buildEducationSeries(
-  municipalities: Municipality[],
-  chunks: FrozenData[],
-  years: number[],
-): IndicatorSeries {
-  const totals = sumByRegionYearLevel(chunks)
-  const cells = buildRows(municipalities, years, (m, y) => {
-    if (!existed(m.code, y)) {
-      return { v: null as number | null, s: statusCode('did-not-exist') }
-    }
-    const perLevel = ALL_LEVELS.map((level) => totals.get(`${m.code}|${y}|${level}`) ?? null)
-    if (perLevel.some((v) => v === null)) {
-      return { v: null, s: statusCode('not-yet-published') }
-    }
-    const numbers = perLevel as number[]
-    const denominator = numbers.reduce((a, b) => a + b, 0)
-    if (denominator === 0) {
-      return { v: null, s: statusCode('not-yet-published') }
-    }
-    const numerator = POST_SECONDARY_LEVELS.map(
-      (level) => totals.get(`${m.code}|${y}|${level}`) as number,
-    ).reduce((a, b) => a + b, 0)
-    const share = (numerator / denominator) * 100
-    return { v: share, s: statusCode('present') }
-  })
-  return {
-    indicator: EDUCATION.id,
-    years,
-    values: cells.map((r) => r.map((c) => c.v)),
-    status: cells.map((r) => r.map((c) => c.s)),
-  }
-}
 
 export async function buildEducation(ctx: BuildContext): Promise<IndicatorSeries> {
   return buildDefined(educationDefined(), ctx)

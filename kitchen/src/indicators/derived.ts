@@ -5,19 +5,8 @@ import {
   statusCode,
 } from '../../../shared/pantry'
 import { isStructuralBreak } from '../breaks'
-import { existed } from '../municipalities'
 import { buildDefined, type Definition } from './define'
-import { type Selection, type TableMeta } from '../scb/client'
-import { type FrozenData } from '../scb/freeze'
-import { toRows } from '../scb/jsonstat'
-import {
-  buildRows,
-  resolveContentCode,
-  totalOrDeclaredSum,
-  values,
-  type BuildContext,
-  type IndicatorDefinition,
-} from './registry'
+import { buildRows, type BuildContext, type IndicatorDefinition } from './registry'
 // Same deferred-read reasoning every other indicator module documents for its own population.ts
 // import (migration.ts's POPULATION import is the closest parallel: a plain, already-finished
 // `const` read only inside a function body, never at this module's own top level) applies here:
@@ -27,7 +16,7 @@ import {
 // (2025), not a value that depends on any other module's own top-level evaluation having
 // finished, so importing the binding is unconditionally safe — but per this same file's
 // SHARE_65_YEARS comment below, it is still only ever READ inside a function body here
-// (buildShare65PlusSeries), never used to compute anything at this module's own top level.
+// (share65PlusDefined), never used to compute anything at this module's own top level.
 import { CKM_FROM, NEW_TABLE, OLD_TABLE, POPULATION, YEARS } from './population'
 
 /**
@@ -278,72 +267,6 @@ export const MEAN_AGE: Indicator = Indicator.parse({
     'since SCB already publishes the mean per municipality.',
 })
 
-/**
- * TAB637's selection: the 4-digit municipality codes, the Kon total ('1+2', same total-code
- * mechanism density.ts uses — selected, never summed), the mean-age content code resolved by
- * label, and the requested years.
- */
-export function meanAgeSelection(meta: TableMeta, years: string[]): Selection {
-  return {
-    Region: values(meta, 'Region').filter((c) => /^\d{4}$/.test(c)),
-    Kon: totalOrDeclaredSum(meta, 'Kon'),
-    ContentsCode: [resolveContentCode(meta, MEAN_AGE_CONTENT_LABEL)],
-    Tid: years,
-  }
-}
-
-/** Maps each fetched region+year cell to its value. TAB637 has exactly one row per key. */
-function meanAgeByRegionYear(chunks: FrozenData[]): Map<string, number | null> {
-  const map = new Map<string, number | null>()
-  for (const chunk of chunks) {
-    for (const r of toRows(chunk.response)) {
-      map.set(`${r.dims.Region}|${r.dims.Tid}`, r.value)
-    }
-  }
-  return map
-}
-
-/**
- * Builds the columnar mean-age series. Same snapshot status rule as population, tax rate and
- * density (ruling R16): existed() gates before the value is even looked at, so the literal `0`
- * TAB637 sends for a municipality's pre-existence years (verified live against the real API
- * 2026-09-14: Region 0330/Knivsta, Tid 1998-2001 all return `0`, exactly like TAB638 and
- * TAB3981 — never `null`, unlike TAB3554/TAB1169) is discarded rather than published as a real
- * mean age of zero. `existed(code, y)`, not `existed(code, y - 1)`: mean age is a snapshot, like
- * population/tax/density, not a flow like migration/house sales — confirmed against real TAB637
- * data for both splits that fall inside this indicator's 1998-2025 coverage: Knivsta's first
- * real (non-zero) cell is 2002, matching `CREATED['0330'] = 2002`; Nykvarn's first real cell is
- * 1998 itself (`CREATED['0140'] = 1998`), TAB637's own first covered year, so there is no
- * "before" row inside this table's range to check for Nykvarn specifically, but Nykvarn's 1998
- * cell already reads as a real value rather than 0, consistent with the same snapshot gate.
- * TAB637 carries no Cell Key Method perturbation note (checked against its live metadata's own
- * `note` field, which only states the 1-January-following-year regional-division convention
- * every snapshot table in this project already documents) — unlike density.ts, which inherits
- * CKM from being derived off population, mean age is published directly by SCB and never
- * carries a `perturbed` status.
- */
-export function buildMeanAgeSeries(
-  municipalities: Municipality[],
-  chunks: FrozenData[],
-  years: number[],
-): IndicatorSeries {
-  const ages = meanAgeByRegionYear(chunks)
-  const cells = buildRows(municipalities, years, (m, y) => {
-    if (!existed(m.code, y)) {
-      return { v: null as number | null, s: statusCode('did-not-exist') }
-    }
-    const v = ages.get(`${m.code}|${y}`) ?? null
-    if (v === null) return { v: null, s: statusCode('not-yet-published') }
-    return { v, s: statusCode('present') }
-  })
-  return {
-    indicator: MEAN_AGE.id,
-    years,
-    values: cells.map((r) => r.map((c) => c.v)),
-    status: cells.map((r) => r.map((c) => c.s)),
-  }
-}
-
 export async function buildMeanAge(ctx: BuildContext): Promise<IndicatorSeries> {
   return buildDefined(meanAgeDefined(), ctx)
 }
@@ -456,157 +379,6 @@ export const SHARE_65_PLUS: Indicator = Indicator.parse({
     'read from the already-built population series in the build context, never refetched or ' +
     'independently re-summed. Share = numerator / denominator * 100.',
 })
-
-/**
- * TAB638's selection: the municipality codes, single-year ages 65 and over (65 through 100+,
- * which is the last TAB638 age bucket — verified against its live metadata to have no age
- * beyond 100+, so this is a clean boundary at 65 with no group straddling it), the full Kon x
- * Civilstand cross-tab (summed — TAB638 has no total for either, declared safe in SUM_SAFE),
- * the population content code resolved by label, and the requested years.
- */
-export function share65OldSelection(
-  meta: TableMeta,
-  municipalityCodes: string[],
-  years: string[],
-): Selection {
-  const known = new Set(municipalityCodes)
-  const ages = values(meta, 'Alder').filter(
-    (c) => c === '100+' || (/^\d+$/.test(c) && Number(c) >= 65),
-  )
-  return {
-    Region: values(meta, 'Region').filter((c) => known.has(c) && /^\d{4}$/.test(c)),
-    Alder: ages,
-    Kon: totalOrDeclaredSum(meta, 'Kon'),
-    Civilstand: totalOrDeclaredSum(meta, 'Civilstand'),
-    ContentsCode: [resolveContentCode(meta, SHARE_65_CONTENT_LABEL)],
-    Tid: years,
-  }
-}
-
-/**
- * TAB5557's selection: single-year ages 65 and over (65 through 99, plus '100+1' — the
- * single-year-resolution 100+ code, distinct from the 5-/10-year-resolution '100+5'/'100+10'
- * codes the same table also carries per docs/kitchen.md's Task 2 spike findings; picking the
- * single-year one keeps the same clean boundary at 65 that the old table's selection has,
- * with no 5-/10-year group straddling it). Excludes every group code (`65-69`, `60-69`, ...)
- * and every total code (`TotSA`, `TOT1`, `TOT5`, `TOT10`) — those are alternative resolutions
- * of the SAME cells and summing across resolutions would badly overcount, exactly the CKM
- * finding docs/kitchen.md records for population's own single-age vs. group sums. Kon and
- * Civilstand select the ready-made totals ('TotSa', 'SC') directly rather than summing, since
- * TAB5557 carries them as ordinary values.
- */
-export function share65NewSelection(meta: TableMeta, years: string[]): Selection {
-  const ages = values(meta, 'Alder').filter(
-    (c) => c === '100+1' || (/^\d+$/.test(c) && Number(c) >= 65),
-  )
-  return {
-    Region: values(meta, 'Region').filter((c) => /^\d{4}$/.test(c)),
-    Alder: ages,
-    Kon: totalOrDeclaredSum(meta, 'Kon'),
-    Civilstand: totalOrDeclaredSum(meta, 'Civilstand'),
-    ContentsCode: [resolveContentCode(meta, SHARE_65_CONTENT_LABEL)],
-    Tid: years,
-  }
-}
-
-/**
- * Sums SCB cell values per municipality+year — identical sum-and-null-propagation rule as
- * population.ts's own sumByRegionYear and migration.ts's own copy of the same helper (not
- * imported: private to each module, per this project's established convention). Collapses
- * however many rows a chunk carries per (Region, Tid) key: up to 36 ages x 2 sexes x 4 marital
- * states = 288 rows on TAB638, or up to 36 ages x 1 sex-total x 1 marital-total = 36 rows on
- * TAB5557. A key whose constituent rows are a MIX of null and real values becomes null — never
- * a partial sum presented as the whole 65-and-over count.
- */
-function sum65PlusByRegionYear(chunks: FrozenData[]): Map<string, number | null> {
-  const acc = new Map<string, { sum: number; sawNull: boolean; sawValue: boolean }>()
-  for (const chunk of chunks) {
-    for (const r of toRows(chunk.response)) {
-      const key = `${r.dims.Region}|${r.dims.Tid}`
-      const entry = acc.get(key) ?? { sum: 0, sawNull: false, sawValue: false }
-      if (r.value === null) {
-        entry.sawNull = true
-      } else {
-        entry.sum += r.value
-        entry.sawValue = true
-      }
-      acc.set(key, entry)
-    }
-  }
-  const totals = new Map<string, number | null>()
-  for (const [key, entry] of acc) {
-    totals.set(key, entry.sawNull ? null : entry.sum)
-  }
-  return totals
-}
-
-/**
- * Builds the columnar share-65+ series. `population` is the already-built population series
- * (read from `ctx.series` by `buildShare65Plus` below, per the design's explicit instruction to
- * read the denominator rather than refetch or re-sum it), and must share the exact
- * municipality order `municipalities` gives here so row `i` below is population's row `i` too —
- * guaranteed by construction, since both are built from the one `ctx.municipalities` array.
- *
- * This is a SNAPSHOT indicator, like population/tax/density/income/education/mean age, not a
- * FLOW like migration/house sales (kitchen/src/breaks.ts's SourceKind distinction) — its
- * numerator comes from the very same TAB638/TAB5557 population tables and dataset note
- * ("a year-Y figure uses the administrative division of 1 January year Y+1"), so it uses
- * `existed(code, y)` directly, exactly like population itself, never `existed(code, y - 1)`.
- *
- * Status precedence per cell:
- * 1. `did-not-exist` if the municipality did not yet exist that year — gates BEFORE the
- *    numerator is even looked at, discarding whatever TAB638 sent (a literal `0`, never null,
- *    for a municipality's pre-existence years — ruling R16, the same trap population.ts's own
- *    `buildPopulationSeries` guards against).
- * 2. `not-yet-published` if the 65+ numerator itself is null (missing or genuinely
- *    unpublished for that municipality+year).
- * 3. `not-yet-published` if the same year's population denominator is null or zero — never a
- *    division by zero or null. The denominator is read from `population`, not recomputed.
- * 4. Otherwise the real share (`numerator / denominator * 100`), with status `perturbed` from
- *    `perturbedFrom` (CKM_FROM) onward, `present` otherwise — reusing the same constant
- *    population's own status rule uses, per the task brief's explicit instruction, rather than
- *    a second one that could silently drift from it.
- */
-export function buildShare65PlusSeries(
-  municipalities: Municipality[],
-  oldChunks: FrozenData[],
-  newChunks: FrozenData[],
-  years: number[],
-  population: IndicatorSeries,
-  perturbedFrom: number = CKM_FROM,
-): IndicatorSeries {
-  const numerators = new Map([
-    ...sum65PlusByRegionYear(oldChunks),
-    ...sum65PlusByRegionYear(newChunks),
-  ])
-  const popColOf = new Map(population.years.map((y, idx) => [y, idx]))
-  const popRowOf = new Map(municipalities.map((m, i) => [m.code, i]))
-
-  const cells = buildRows(municipalities, years, (m, y) => {
-    if (!existed(m.code, y)) {
-      return { v: null as number | null, s: statusCode('did-not-exist') }
-    }
-    const numerator = numerators.get(`${m.code}|${y}`) ?? null
-    if (numerator === null) {
-      return { v: null, s: statusCode('not-yet-published') }
-    }
-    const row = popRowOf.get(m.code)
-    const col = popColOf.get(y)
-    const denom =
-      row === undefined || col === undefined ? null : (population.values[row]?.[col] ?? null)
-    if (denom === null || denom === 0) {
-      return { v: null, s: statusCode('not-yet-published') }
-    }
-    const share = (numerator / denom) * 100
-    return { v: share, s: y >= perturbedFrom ? statusCode('perturbed') : statusCode('present') }
-  })
-  return {
-    indicator: SHARE_65_PLUS.id,
-    years,
-    values: cells.map((r) => r.map((c) => c.v)),
-    status: cells.map((r) => r.map((c) => c.s)),
-  }
-}
 
 /**
  * ctx-reading wrapper REGISTRY calls: reads population's already-built series out of
