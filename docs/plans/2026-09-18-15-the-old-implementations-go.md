@@ -233,15 +233,42 @@ yarn kitchen publish && git diff --exit-code public/pantry/
 
 ## Measurements
 
-| Gate                                        | Target                     | Result |
-| ------------------------------------------- | -------------------------- | ------ |
-| `public/pantry/` after every task           | byte-identical             | —      |
-| `data/similar.json`                         | byte-identical             | —      |
-| Non-test lines under `indicators/`          | well below 3,753           | —      |
-| Test lines under `indicators/`              | down, with the loss stated | —      |
-| Unit tests                                  | stated against 1,236       | —      |
-| Definitions proven against published series | 9 of 9                     | —      |
-| Browser tests                               | no loss                    | —      |
+| Gate                                        | Target                     | Result                                        |
+| ------------------------------------------- | -------------------------- | --------------------------------------------- |
+| `public/pantry/` after every task           | byte-identical             | **byte-identical**, all five                  |
+| `data/similar.json`                         | byte-identical             | **byte-identical**                            |
+| Non-test lines under `indicators/`          | well below 3,753           | **2,651**; the nine modules themselves halved |
+| Test lines under `indicators/`              | down, with the loss stated | **2,302**, from 3,622                         |
+| Unit tests                                  | stated against 1,236       | **1,204** — see below                         |
+| Definitions proven against published series | 9 of 9                     | **9 of 9**                                    |
+| Browser tests                               | no loss                    | **283 passed, 0 failed**, no retry needed     |
+
+**The test count fell by 32 net, and that is the whole point of the change rather than a
+shortfall.** 129 assertions exercised the dead code. 28 moved to the published pantry, ~30 were
+retargeted at the declarations, and the rest were selection-shape claims `source.test.ts` now
+makes once instead of seven times. Against them, 28 new pantry tests, 8 new definition tests and 3
+new resolver guards. What was lost is duplication; what was kept is in `src/` and
+`kitchen/src/indicators/source.test.ts`, named in [ADR-0015](../decisions/0015-the-old-implementations-go.md).
+
+| Module         | Before |   After |
+| -------------- | -----: | ------: |
+| `tax.ts`       |    164 |  **73** |
+| `migration.ts` |    300 | **112** |
+| `income.ts`    |    260 | **118** |
+| `density.ts`   |    237 | **160** |
+| `housing.ts`   |    401 | **194** |
+| `education.ts` |    349 | **209** |
+| `derived.ts`   |    711 | **440** |
+
+**One task exceeded its own scope, deliberately.** Task 4 was meant to find each guard a home. It
+found instead that `validateLevels` had no home at all: plan 14 left it inside the dead
+`educationSelection`, so `post-secondary-education` had been published without its codelist check
+ever since. That is a defect in the live path rather than a test-coverage question, so it was
+fixed here — `Source.verify` — rather than filed. Recorded in
+[ADR-0015](../decisions/0015-the-old-implementations-go.md) D5.
+
+**One stop condition nearly fired and did not.** Every one of the 28 re-read figures agreed with
+the old test's expectation at published precision, so nothing had to be reported unresolved.
 
 ## Stop conditions
 
