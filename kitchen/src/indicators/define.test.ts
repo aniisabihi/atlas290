@@ -22,6 +22,8 @@ import { housingDefined } from './housing'
 import { educationDefined } from './education'
 import { migrationDefined } from './migration'
 import { meanAgeDefined, share65PlusDefined } from './derived'
+import { dependencyDefined, fertilityDefined } from './demography'
+import { employmentDefined, unemploymentDefined } from './labour'
 
 /**
  * Plan 14, widened by plan 15: an indicator built from its definition must equal the one the
@@ -76,6 +78,10 @@ const DEFINED: ReadonlyArray<readonly [id: string, definition: () => Definition]
   ['post-secondary-education', educationDefined],
   ['share-65-plus', share65PlusDefined],
   ['net-migration-rate', migrationDefined],
+  ['fertility-rate', fertilityDefined],
+  ['dependency-ratio', dependencyDefined],
+  ['employment-rate', employmentDefined],
+  ['unemployment-rate', unemploymentDefined],
 ]
 
 /**

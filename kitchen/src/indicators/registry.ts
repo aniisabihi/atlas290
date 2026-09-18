@@ -64,6 +64,10 @@ export const TOTAL_CODES: Record<string, string[]> = {
   Kon: ['TotSa', '1+2'],
   Civilstand: ['SC'],
   Inkomstklass: ['TOT'],
+  // Plan 16: TAB3200 splits its labour-market measures by region of birth, and publishes a
+  // 'tot' covering both. This site publishes the whole population of the age band; the split is
+  // a question for a later indicator, not a silent choice inside this one.
+  Fodelseregion: ['tot'],
 }
 
 /**
@@ -249,6 +253,11 @@ import { educationDefinition } from './education'
 // has no such ordering requirement: it only needs ctx.municipalities, already established by
 // population, exactly like income/housing/education.
 import { meanAgeDefinition, populationChangeDefinition, share65PlusDefinition } from './derived'
+// Plan 16. Same deferred-read reasoning as every import above. None of these four reads another
+// indicator's series: each is a direct fetch that needs only ctx.municipalities, which population
+// establishes, so their position among the non-population entries is arbitrary.
+import { dependencyDefinition, fertilityDefinition } from './demography'
+import { employmentDefinition, unemploymentDefinition } from './labour'
 
 /** Every indicator the pantry publishes, in build order. Population must stay first: it is
  * the only definition that derives `ctx.municipalities`, and every other definition depends
@@ -285,6 +294,10 @@ function ensureRegistered(): void {
     populationChangeDefinition,
     meanAgeDefinition,
     share65PlusDefinition,
+    fertilityDefinition,
+    dependencyDefinition,
+    employmentDefinition,
+    unemploymentDefinition,
   )
 }
 

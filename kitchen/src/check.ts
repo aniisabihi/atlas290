@@ -81,6 +81,17 @@ export const PLAUSIBLE_RANGES: Record<string, PlausibleRange> = {
   'population-change': { min: -100, max: 500 },
   'mean-age': { min: 0, max: 100 },
   'share-65-plus': { min: 0, max: 100 },
+  // Plan 16. Same rule as above: a mathematical bound where one exists, and generous headroom
+  // over the real observed maximum where the bound is only empirical.
+  //
+  // A fertility rate is bounded below by 0 and, in practice, far below 10 anywhere in Sweden;
+  // the observed 2024 figures sit near 1.3-1.4. The dependency ratio is a count per 100
+  // working-age people and legitimately exceeds 100 — Borgholm 2024 is 123.8 — so 100 would be
+  // the wrong ceiling, and this is the one place where a "percent" indicator is not 0-100.
+  'fertility-rate': { min: 0, max: 10 },
+  'dependency-ratio': { min: 0, max: 500 },
+  'employment-rate': { min: 0, max: 100 },
+  'unemployment-rate': { min: 0, max: 100 },
 }
 
 /**

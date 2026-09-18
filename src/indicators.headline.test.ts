@@ -51,7 +51,7 @@ describe('published pantry: headline facts', () => {
     expect(data.municipalities).toHaveLength(290)
   })
 
-  it('publishes exactly the ten registered indicators', () => {
+  it('publishes exactly the registered indicators, by name', () => {
     expect(data.indicators.map((i) => i.id).sort()).toEqual(
       [
         'population',
@@ -64,6 +64,11 @@ describe('published pantry: headline facts', () => {
         'population-change',
         'mean-age',
         'share-65-plus',
+        // Plan 16.
+        'fertility-rate',
+        'dependency-ratio',
+        'employment-rate',
+        'unemployment-rate',
       ].sort(),
     )
   })

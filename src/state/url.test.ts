@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { publishedPantry } from '../test/pantry'
+import { publishedIndex, publishedPantry } from '../test/pantry'
 import {
   DEFAULT_LANG,
   LANGS,
@@ -177,8 +177,8 @@ describe('metaFrom, with no series loaded at all', () => {
 describe('metaFrom, against the real published pantry', () => {
   const real = metaFrom(publishedPantry)
 
-  it('finds all ten indicators and all 290 municipalities', () => {
-    expect(real.indicators).toHaveLength(10)
+  it('finds every published indicator and all 290 municipalities', () => {
+    expect(real.indicators).toHaveLength(publishedIndex.indicators.length)
     expect(real.codes).toHaveLength(290)
   })
 

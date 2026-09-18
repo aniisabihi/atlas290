@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { lookup } from '../data/select'
 import { ComparePanel, CompareSearch } from './ComparePanel'
-import { publishedPantry } from '../test/pantry'
+import { publishedIndex, publishedPantry } from '../test/pantry'
 
 const lk = lookup(publishedPantry)
 const draw = (compare: string, year = 2024, lang: 'sv' | 'en' = 'en') => {
@@ -79,7 +79,7 @@ describe('ComparePanel with a partner', () => {
     const table = screen.getByRole('table')
     // Measure, each municipality, and the shared trend frame the two lines are drawn in.
     expect(within(table).getAllByRole('columnheader')).toHaveLength(4)
-    expect(within(table).getAllByRole('rowheader')).toHaveLength(10)
+    expect(within(table).getAllByRole('rowheader')).toHaveLength(publishedIndex.indicators.length)
   })
 
   it('states how many measures are higher, and out of how many were comparable', () => {

@@ -1,4 +1,4 @@
-import { mkdtempSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
@@ -263,6 +263,22 @@ function fakeFetchImpl() {
     if (u.includes('/TAB1169/metadata') && u.includes('lang=sv')) return json(housingMetaSv)
     if (u.includes('/TAB3981/metadata') && u.includes('lang=sv')) return json(educationMetaSv)
     if (u.includes('/TAB637/metadata') && u.includes('lang=sv')) return json(meanAgeMetaSv)
+    // Any other table's Swedish metadata is served from the COMMITTED frozen copy under
+    // kitchen/raw/, not fabricated.
+    //
+    // The hand-written fixtures above exist to shape a one-municipality world this test can
+    // reason about, and each was worth writing while there were ten indicators. Plan 16 takes
+    // the pantry past twenty, and hand-copying another dozen tables' dimension lists would add
+    // a dozen more chances to write down a codelist that does not match the real one — the very
+    // drift `Source.verify` exists to catch. Reading the frozen file cannot drift from the real
+    // table, because it IS what was fetched from it.
+    const table = /tables\/([A-Z0-9]+)\/metadata/.exec(u)?.[1]
+    if (table && u.includes('lang=sv')) {
+      const frozen = join('kitchen/raw', table, 'sv', 'metadata.json')
+      if (existsSync(frozen)) {
+        return json((JSON.parse(readFileSync(frozen, 'utf8')) as { response: unknown }).response)
+      }
+    }
     throw new Error(`unexpected request: ${init?.method ?? 'GET'} ${u}`)
   })
 }
@@ -288,7 +304,12 @@ describe('buildAll (real REGISTRY)', () => {
     const ids = result.indicators.map((i) => i.id)
     expect(new Set(ids).size).toBe(ids.length)
     expect(result.series.map((s) => s.indicator).sort()).toEqual([...ids].sort())
-  })
+    // Generous, and deliberately so. Serving each table's REAL frozen metadata means the
+    // selections this builds are the real ones — 290 regions, every declared year, chunked the
+    // way SCB's 150,000-cell limit forces — so the fake responses are large and there are many
+    // of them. That cost buys a test that cannot pass against a codelist the real tables do not
+    // have.
+  }, 120_000)
 })
 
 /** A fake registry lets us test the integrity guards without a network round trip. */

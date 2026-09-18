@@ -238,6 +238,84 @@ describe('published pantry: edge cells and status semantics', () => {
     })
   })
 
+  describe('fertility-rate (TAB4805, women)', () => {
+    // Read from TAB4805 on 2026-09-18 through a separate single-municipality request, before
+    // this indicator was declared: Stockholm 2024 = 1.33, Borgholm = 1.42. The published cells
+    // reproduce both, which is the check that the Kon=2 selection landed where it was meant to.
+    it('reproduces the 2024 rates for Stockholm and Borgholm', () => {
+      expect(cell('fertility-rate', 'Stockholm', 2024)).toEqual({ value: 1.33, status: 'present' })
+      expect(cell('fertility-rate', 'Borgholm', 2024)).toEqual({ value: 1.42, status: 'present' })
+    })
+
+    // The measure this indicator is NOT. TAB4805 has no sex total, and a rate summed over men
+    // and women would land near 2.7 rather than near 1.4 — far outside anything a fertility
+    // rate can be, which is what makes this assertion worth making.
+    it('is a womens rate, so no cell approaches the sum of both sexes', () => {
+      const s = seriesOf('fertility-rate')
+      const values = s.values.flat().filter((v): v is number => v !== null)
+      expect(Math.max(...values)).toBeLessThan(4)
+    })
+  })
+
+  describe('dependency-ratio (TAB4642)', () => {
+    it('reproduces the 2024 ratios for Stockholm and Borgholm', () => {
+      expect(cell('dependency-ratio', 'Stockholm', 2024)).toEqual({
+        value: 59.5,
+        status: 'present',
+      })
+      expect(cell('dependency-ratio', 'Borgholm', 2024)).toEqual({
+        value: 123.8,
+        status: 'present',
+      })
+    })
+
+    // The one indicator on this site whose unit is `percent` and whose values legitimately pass
+    // 100: it counts people per 100 of working age, not a share of anything. A plausible-range
+    // ceiling of 100 would have refused the real data.
+    it('passes 100 where the young and the old outnumber the working age', () => {
+      const values = seriesOf('dependency-ratio')
+        .values.flat()
+        .filter((v): v is number => v !== null)
+      expect(Math.max(...values)).toBeGreaterThan(100)
+    })
+  })
+
+  describe('employment-rate and unemployment-rate (TAB3200, ages 20-64)', () => {
+    it('reproduces both 2024 rates for Stockholm and Borgholm', () => {
+      expect(cell('employment-rate', 'Stockholm', 2024)).toEqual({
+        value: 80.3,
+        status: 'present',
+      })
+      expect(cell('employment-rate', 'Borgholm', 2024)).toEqual({ value: 82.6, status: 'present' })
+      expect(cell('unemployment-rate', 'Stockholm', 2024)).toEqual({
+        value: 5.3,
+        status: 'present',
+      })
+      expect(cell('unemployment-rate', 'Borgholm', 2024)).toEqual({
+        value: 3.5,
+        status: 'present',
+      })
+    })
+
+    // Both are published for 20-64 so that they describe the same people. They still do not sum
+    // to 100, because unemployment is a share of the labour force and employment a share of the
+    // population — and asserting that they do NOT is what keeps the caveat honest.
+    it('do not sum to 100, because their denominators differ', () => {
+      const e = cell('employment-rate', 'Stockholm', 2024).value!
+      const u = cell('unemployment-rate', 'Stockholm', 2024).value!
+      expect(e + u).not.toBeCloseTo(100, 1)
+    })
+
+    it('covers every municipality in every year of its short register, 2020 to 2024', () => {
+      for (const id of ['employment-rate', 'unemployment-rate']) {
+        const s = seriesOf(id)
+        expect(s.years).toEqual([2020, 2021, 2022, 2023, 2024])
+        const present = s.values.flat().filter((v) => v !== null).length
+        expect(present).toBe(290 * 5)
+      }
+    })
+  })
+
   /**
    * Which tables carry SCB's Cell Key Method note is a per-table fact, and getting it wrong in
    * either direction is a published lie: a perturbed cell presented as exact, or an exact cell

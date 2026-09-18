@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { lookup } from '../data/select'
 import { ProfilePanel } from './ProfilePanel'
-import { publishedPantry } from '../test/pantry'
+import { publishedIndex, publishedPantry } from '../test/pantry'
 
 const lk = lookup(publishedPantry)
 const draw = (code = '0180', year = 2024, lang: 'sv' | 'en' = 'en') => {
@@ -23,7 +23,7 @@ describe('ProfilePanel', () => {
 
   it('has one row per indicator, in the pantry order', () => {
     draw()
-    expect(rows()).toHaveLength(10)
+    expect(rows()).toHaveLength(publishedIndex.indicators.length)
     expect(rows()[0]!.textContent).toMatch(/^Population/)
   })
 
@@ -61,7 +61,7 @@ describe('ProfilePanel', () => {
 
   it('draws a sparkline per row', () => {
     const { container } = draw()
-    expect(container.querySelectorAll('.sparkline')).toHaveLength(10)
+    expect(container.querySelectorAll('.sparkline')).toHaveLength(publishedIndex.indicators.length)
   })
 
   it('moves focus to the heading when it opens', () => {
@@ -125,7 +125,7 @@ describe('ProfilePanel, the header and the rows', () => {
       <ProfilePanel lk={lk} code="1280" year={2024} lang="en" onClose={() => {}} />,
     )
     const measures = container.querySelectorAll('.profile-row')
-    expect(measures).toHaveLength(10)
+    expect(measures).toHaveLength(publishedIndex.indicators.length)
     for (const row of measures) {
       expect(row.querySelector('.profile-name')?.textContent).toBeTruthy()
       expect(row.querySelector('.profile-value')?.textContent).toBeTruthy()
