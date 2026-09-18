@@ -211,8 +211,10 @@ every figure here is comparable with that.
 | Blocking bytes before first paint | ≤ 40,000 gz                    | **35,301** — index + `population-change`                                           |
 | Sum of all parts, gzipped         | within 2% of the single file   | **272,879** against 272,475 — **+0.15%**                                           |
 | Transferred bytes on profile open | record it — this is D4's cliff | **244,011** — the nine series not yet fetched                                      |
-| Unit tests                        | no loss against 1,176          | **1,211**                                                                          |
-| Browser tests, 3 engines          | no loss against 280            | see below                                                                          |
+| Unit tests                        | no loss against 1,176          | **1,218**                                                                          |
+| Browser tests, 3 engines          | no loss against 280            | **282 passed, 1 flaky, 2 skipped, 0 failed** under CI's `--retries=1`              |
+| Lighthouse, median of three       | within the existing budget     | **92** / 100 / 100 / 91 — performance was **83** in Plan 11                        |
+| Script bytes                      | budget 180,000                 | 127,646                                                                            |
 | `public/pantry/` second publish   | byte-identical                 | **yes**                                                                            |
 | `public/share/` cards             | byte-identical                 | **yes** — 290 cards, 4.7 MB, drawn from the reassembled data                       |
 | `dist/` pages                     | byte-identical                 | 580 written; `dist/` is not committed, so the cards above are the byte-level proof |

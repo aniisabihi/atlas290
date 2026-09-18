@@ -74,7 +74,8 @@ municipalities dominate it, so this holds as the fourth slice adds indicators.
 
 ## Consequences
 
-- First paint drops from 272,475 to about 35,301 gzipped bytes.
+- First paint drops from 272,475 to about 35,301 gzipped bytes, and Lighthouse performance
+  rises from the **83** recorded in Plan 11 to **92**, median of three, against a budget of 72. The other three categories are unchanged at 100 / 100 / 91.
 - **The profile's cost moved rather than disappeared.** Opening a profile needs every series, so it
   now fetches what is missing on open: unchanged at ten indicators, and roughly 690 kB at
   twenty-five. The answer is a second axis — `data/places/<code>.json`, one municipality across all
