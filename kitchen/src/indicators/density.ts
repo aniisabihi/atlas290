@@ -6,13 +6,7 @@ import {
 } from '../../../shared/pantry'
 import { existed } from '../municipalities'
 import { parseMetadata, type Selection, type TableMeta } from '../scb/client'
-import {
-  freezeData,
-  freezeMetadata,
-  type FreezeOpts,
-  type FrozenData,
-  type FrozenMeta,
-} from '../scb/freeze'
+import { freezeData, freezeMetadata, type FrozenData } from '../scb/freeze'
 import { toRows } from '../scb/jsonstat'
 import {
   buildRows,
@@ -215,23 +209,3 @@ export function densityDefined(): Definition {
 }
 
 export const densityDefinition: IndicatorDefinition = { indicator: DENSITY, build: buildDensity }
-
-/**
- * Standalone real-fetch entry point, mirroring population.ts's fetchPopulation and tax.ts's
- * fetchTax — used for the spike/verification run, independent of the shared REGISTRY singleton.
- * Requires municipalities to already exist (population's own responsibility).
- */
-export async function fetchDensity(
-  municipalities: Municipality[],
-  opts: FreezeOpts = {},
-): Promise<{ series: IndicatorSeries; frozen: Array<FrozenData | FrozenMeta> }> {
-  const ctx: BuildContext = {
-    municipalities,
-    years: DENSITY_YEARS,
-    freeze: opts,
-    frozen: [],
-    series: new Map(),
-  }
-  const series = await buildDensity(ctx)
-  return { series, frozen: ctx.frozen }
-}

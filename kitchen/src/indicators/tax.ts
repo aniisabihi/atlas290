@@ -6,7 +6,7 @@ import {
 } from '../../../shared/pantry'
 import { existed } from '../municipalities'
 import { type Selection, type TableMeta } from '../scb/client'
-import { type FreezeOpts, type FrozenData, type FrozenMeta } from '../scb/freeze'
+import { type FrozenData } from '../scb/freeze'
 import { toRows } from '../scb/jsonstat'
 import { buildDefined, type Definition } from './define'
 import {
@@ -139,26 +139,4 @@ export function taxDefined(): Definition {
 export const taxDefinition: IndicatorDefinition = {
   indicator: TAX,
   build: (ctx) => buildDefined(taxDefined(), ctx),
-}
-
-/**
- * Standalone real-fetch entry point, mirroring population.ts's fetchPopulation — used for the
- * spike/verification run and by tax.test.ts, independent of the shared REGISTRY singleton.
- * Needs municipalities to already exist (population's own responsibility per registry.ts), so
- * this is only useful once ctx.municipalities has been seeded some other way; buildAll (which
- * runs population first) is the normal path in application code.
- */
-export async function fetchTax(
-  municipalities: Municipality[],
-  opts: FreezeOpts = {},
-): Promise<{ series: IndicatorSeries; frozen: Array<FrozenData | FrozenMeta> }> {
-  const ctx: BuildContext = {
-    municipalities,
-    years: TAX_YEARS,
-    freeze: opts,
-    frozen: [],
-    series: new Map(),
-  }
-  const series = await buildTax(ctx)
-  return { series, frozen: ctx.frozen }
 }

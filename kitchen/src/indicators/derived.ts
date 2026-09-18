@@ -8,7 +8,7 @@ import { isStructuralBreak } from '../breaks'
 import { existed } from '../municipalities'
 import { buildDefined, type Definition } from './define'
 import { type Selection, type TableMeta } from '../scb/client'
-import { type FreezeOpts, type FrozenData, type FrozenMeta } from '../scb/freeze'
+import { type FrozenData } from '../scb/freeze'
 import { toRows } from '../scb/jsonstat'
 import {
   buildRows,
@@ -371,26 +371,6 @@ export function meanAgeDefined(): Definition {
 export const meanAgeDefinition: IndicatorDefinition = { indicator: MEAN_AGE, build: buildMeanAge }
 
 /**
- * Standalone real-fetch entry point, mirroring population.ts's fetchPopulation and tax.ts's
- * fetchTax — used for the spike/verification run, independent of the shared REGISTRY singleton.
- * Requires municipalities to already exist (population's own responsibility).
- */
-export async function fetchMeanAge(
-  municipalities: Municipality[],
-  opts: FreezeOpts = {},
-): Promise<{ series: IndicatorSeries; frozen: Array<FrozenData | FrozenMeta> }> {
-  const ctx: BuildContext = {
-    municipalities,
-    years: MEAN_AGE_YEARS,
-    freeze: opts,
-    frozen: [],
-    series: new Map(),
-  }
-  const series = await buildMeanAge(ctx)
-  return { series, frozen: ctx.frozen }
-}
-
-/**
  * Share aged 65 and over (Task 11's other half). Covers the full approved 1968-2025 history,
  * not the cheaper 1998-onwards start mean age was forced into: the Task 2 spike
  * (docs/kitchen.md, "Can median age and share-65+ be built at all?") established this needs
@@ -685,27 +665,4 @@ export function share65PlusDefined(): Definition {
 export const share65PlusDefinition: IndicatorDefinition = {
   indicator: SHARE_65_PLUS,
   build: buildShare65Plus,
-}
-
-/**
- * Standalone real-fetch entry point, mirroring migration.ts's fetchMigration — used for the
- * spot-check/verification run, independent of the shared REGISTRY singleton. Like migration,
- * needs an already-built population series (it is the share's denominator), so the caller
- * must supply one — normally fetchPopulation's own result — rather than this function deriving
- * it.
- */
-export async function fetchShare65Plus(
-  municipalities: Municipality[],
-  population: IndicatorSeries,
-  opts: FreezeOpts = {},
-): Promise<{ series: IndicatorSeries; frozen: Array<FrozenData | FrozenMeta> }> {
-  const ctx: BuildContext = {
-    municipalities,
-    years: SHARE_65_YEARS,
-    freeze: opts,
-    frozen: [],
-    series: new Map([[POPULATION.id, population]]),
-  }
-  const series = await buildShare65Plus(ctx)
-  return { series, frozen: ctx.frozen }
 }

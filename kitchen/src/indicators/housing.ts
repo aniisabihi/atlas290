@@ -8,7 +8,7 @@ import { existed } from '../municipalities'
 import { buildDefined, type Definition } from './define'
 import type { Source } from './source'
 import type { Selection, TableMeta } from '../scb/client'
-import type { FreezeOpts, FrozenData, FrozenMeta } from '../scb/freeze'
+import type { FrozenData } from '../scb/freeze'
 import { assertCpiLatestYear, CPI_LATEST_YEAR, fetchCpi, toCurrentKronor } from './cpi'
 import { toRows } from '../scb/jsonstat'
 import {
@@ -378,24 +378,3 @@ export function housingDefined(): Definition {
 }
 
 export const housingDefinition: IndicatorDefinition = { indicator: HOUSING, build: buildHousing }
-
-/**
- * Standalone real-fetch entry point, mirroring population.ts's fetchPopulation, tax.ts's
- * fetchTax, density.ts's fetchDensity and income.ts's fetchIncome — used for the spot-check
- * run, independent of the shared REGISTRY singleton. Requires municipalities to already exist
- * (population's own responsibility).
- */
-export async function fetchHousing(
-  municipalities: Municipality[],
-  opts: FreezeOpts = {},
-): Promise<{ series: IndicatorSeries; frozen: Array<FrozenData | FrozenMeta> }> {
-  const ctx: BuildContext = {
-    municipalities,
-    years: HOUSING_YEARS,
-    freeze: opts,
-    frozen: [],
-    series: new Map(),
-  }
-  const series = await buildHousing(ctx)
-  return { series, frozen: ctx.frozen }
-}

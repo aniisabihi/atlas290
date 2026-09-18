@@ -8,7 +8,7 @@ import { existed } from '../municipalities'
 import { buildDefined, type Definition } from './define'
 import type { Source } from './source'
 import { type Selection, type TableMeta } from '../scb/client'
-import { type FreezeOpts, type FrozenData, type FrozenMeta } from '../scb/freeze'
+import { type FrozenData } from '../scb/freeze'
 import { toRows } from '../scb/jsonstat'
 import {
   buildRows,
@@ -274,27 +274,4 @@ export function migrationDefined(): Definition {
 export const migrationDefinition: IndicatorDefinition = {
   indicator: MIGRATION,
   build: buildMigration,
-}
-
-/**
- * Standalone real-fetch entry point, mirroring population.ts's fetchPopulation, tax.ts's
- * fetchTax and density.ts's fetchDensity — used for the spot-check run, independent of the
- * shared REGISTRY singleton. Unlike those, migration also needs an already-built population
- * series (it is the rate's denominator), so the caller must supply one — normally
- * `fetchPopulation`'s own result — rather than this function deriving it.
- */
-export async function fetchMigration(
-  municipalities: Municipality[],
-  population: IndicatorSeries,
-  opts: FreezeOpts = {},
-): Promise<{ series: IndicatorSeries; frozen: Array<FrozenData | FrozenMeta> }> {
-  const ctx: BuildContext = {
-    municipalities,
-    years: MIGRATION_YEARS,
-    freeze: opts,
-    frozen: [],
-    series: new Map([[POPULATION.id, population]]),
-  }
-  const series = await buildMigration(ctx)
-  return { series, frozen: ctx.frozen }
 }
