@@ -8,8 +8,9 @@ import {
   buildEducationSeries,
   EDUCATION_TABLE,
   EDUCATION_YEARS,
-  educationSelection,
+  educationDefined,
 } from './education'
+import { selectionFor } from './source'
 
 const municipalities: Municipality[] = [
   { code: '0330', name: { sv: 'Knivsta', en: 'Knivsta' }, county: '03' }, // created 2002
@@ -108,37 +109,38 @@ function buildChunk(
 
 const ALL_LEVELS = ['1', '2', '3', '4', '5', '6', '7', 'US']
 
-describe('educationSelection', () => {
+describe("post-secondary-education's declared source, resolved", () => {
+  // Plan 15: these asserted `educationSelection`, the hand-written builder, until it was
+  // deleted. They now assert the declaration the pipeline actually uses, through the shared
+  // resolver — same six claims, against the code that runs.
+  const KNOWN = ['0330', '0180']
+  const resolve = (meta: TableMeta) => selectionFor(meta, educationDefined().sources[0]!, KNOWN)
+
   it('selects only KNOWN municipality codes from Region, dropping a four-digit Stor-Stockholm-shaped code (trap 1)', () => {
-    const sel = educationSelection(fakeMeta(), ['0330', '0180'], ['2024'])
-    expect(sel.Region).toEqual(['0330', '0180'])
+    const sel = resolve(fakeMeta())
+    expect([...sel.Region!].sort()).toEqual([...KNOWN].sort())
     expect(sel.Region).not.toContain('0010')
   })
 
   it("selects the 'tot16-74' age total, not a per-single-year age", () => {
-    const sel = educationSelection(fakeMeta(), ['0330', '0180'], ['2024'])
-    expect(sel.Alder).toEqual(['tot16-74'])
+    expect(resolve(fakeMeta()).Alder).toEqual(['tot16-74'])
   })
 
   it(
     "sums both sexes ('1' and '2') since Kon has no total code on TAB3981 — verified live: " +
       "Kon carries exactly '1' and '2', no total",
     () => {
-      const sel = educationSelection(fakeMeta(), ['0330', '0180'], ['2024'])
-      expect([...sel.Kon!].sort()).toEqual(['1', '2'])
+      expect([...resolve(fakeMeta()).Kon!].sort()).toEqual(['1', '2'])
     },
   )
 
   it('selects every one of the eight UtbildningsNiva levels, never a subset', () => {
-    const sel = educationSelection(fakeMeta(), ['0330', '0180'], ['2024'])
-    expect([...sel.UtbildningsNiva!].sort()).toEqual([...ALL_LEVELS].sort())
+    expect([...resolve(fakeMeta()).UtbildningsNiva!].sort()).toEqual([...ALL_LEVELS].sort())
   })
 
   it("resolves the ContentsCode by its Swedish label 'Antal', not a hardcoded code", () => {
-    const meta = fakeMeta({
-      ContentsCode: [{ code: 'ZZZ', label: 'Antal' }],
-    })
-    expect(educationSelection(meta, ['0330', '0180'], ['2024']).ContentsCode).toEqual(['ZZZ'])
+    const meta = fakeMeta({ ContentsCode: [{ code: 'ZZZ', label: 'Antal' }] })
+    expect(resolve(meta).ContentsCode).toEqual(['ZZZ'])
   })
 
   it(
@@ -152,7 +154,7 @@ describe('educationSelection', () => {
           label: code === '5' ? 'something else entirely' : label,
         })),
       })
-      expect(() => educationSelection(meta, ['0330', '0180'], ['2024'])).toThrow(/UtbildningsNiva/)
+      expect(() => resolve(meta)).toThrow(/UtbildningsNiva/)
     },
   )
 
@@ -162,7 +164,7 @@ describe('educationSelection', () => {
         .filter(([code]) => code !== 'US')
         .map(([code, label]) => ({ code, label })),
     })
-    expect(() => educationSelection(meta, ['0330', '0180'], ['2024'])).toThrow(/UtbildningsNiva/)
+    expect(() => resolve(meta)).toThrow(/UtbildningsNiva/)
   })
 })
 

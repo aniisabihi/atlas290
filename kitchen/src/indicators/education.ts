@@ -315,6 +315,10 @@ export function educationDefined(): Definition {
         years: EDUCATION_YEARS,
         dims: { Alder: 'total', UtbildningsNiva: 'all', Kon: 'total' },
         regions: 'known',
+        // `'all'` says take every level. It cannot say what a level MEANS, and levels 5, 6 and 7
+        // are this indicator's numerator because of what they are — a human definition, not
+        // something the table states. `validateLevels` is what keeps that honest.
+        verify: validateLevels,
       },
     ],
     spec: { kind: 'share', over: 'UtbildningsNiva', numerator: POST_SECONDARY_LEVELS, times: 100 },

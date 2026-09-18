@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { parseMetadata } from '../scb/client'
 import { freezeMetadata } from '../scb/freeze'
-import { TAX_TABLE, TAX_YEARS, taxSelection } from './tax'
+import { TAX_TABLE, TAX_YEARS } from './tax'
 import { CKM_FROM, NEW_TABLE, OLD_TABLE, YEARS } from './population'
 import { resolveSources, selectionFor, type Source } from './source'
 
@@ -38,14 +38,22 @@ async function metaFor(table: string) {
 }
 
 describe('selectionFor', () => {
-  it('builds the tax selection the hand-written module builds', async () => {
+  it('builds the whole selection a simple table needs, and nothing else', async () => {
+    // Plan 15: this compared against `taxSelection`, the hand-written module's own builder, which
+    // was the right oracle while both existed. That function is gone, so the assertion is now
+    // what it was always really claiming — three keys, no fourth, because asking for a dimension
+    // a table does not have is how a fetch fails at SCB rather than here.
     const meta = await metaFor(TAX_TABLE)
     const declared: Source = {
       table: TAX_TABLE,
       content: 'Skattesats, total kommunal',
       years: TAX_YEARS,
     }
-    expect(selectionFor(meta, declared)).toEqual(taxSelection(meta, TAX_YEARS.map(String)))
+    const selection = selectionFor(meta, declared)
+    expect(Object.keys(selection).sort()).toEqual(['ContentsCode', 'Region', 'Tid'])
+    expect(selection.Region).toHaveLength(290)
+    expect(selection.ContentsCode).toEqual(['OE0101D1'])
+    expect(selection.Tid).toEqual(TAX_YEARS.map(String))
   })
 
   it('keeps Region to the 290 four-digit codes, dropping the country and the counties', async () => {
@@ -113,6 +121,49 @@ describe('selectionFor', () => {
         dims: { Kon: 'total', Civilstand: 'total', Alder: { values: ['0'] }, Nonsense: 'total' },
       }),
     ).toThrow(/Nonsense/)
+  })
+
+  it('resolves a dimension value by its Swedish label, the way content codes are resolved', async () => {
+    // housing declares Fastighetstyp this way: the code for "permanent homes" is a number that
+    // means nothing on sight, and the label is the stable thing.
+    const meta = await metaFor('TAB1169')
+    const selection = selectionFor(meta, {
+      table: 'TAB1169',
+      content: 'Köpeskilling, medelvärde i tkr',
+      years: [1990],
+      dims: { Fastighetstyp: { label: 'permanentbostad (ej tomträtt)' } },
+    })
+    expect(selection.Fastighetstyp).toEqual(['220'])
+  })
+
+  it('fails by name when no value in the dimension carries that label', async () => {
+    const meta = await metaFor('TAB1169')
+    expect(() =>
+      selectionFor(meta, {
+        table: 'TAB1169',
+        content: 'Köpeskilling, medelvärde i tkr',
+        years: [1990],
+        dims: { Fastighetstyp: { label: 'Not a real label' } },
+      }),
+    ).toThrow(/no Fastighetstyp value labelled 'Not a real label'/)
+  })
+
+  it("runs a source's own verify before building anything, so a codelist drift fails loudly", async () => {
+    // The hook post-secondary-education uses. A dimension rule says WHICH codes to take and can
+    // never say what one is expected to MEAN, so an indicator whose numerator is a human choice
+    // of levels has to assert that separately. Plan 15 found this guard had been left behind in
+    // dead code by plan 14's migration, running nowhere.
+    const meta = await metaFor(TAX_TABLE)
+    expect(() =>
+      selectionFor(meta, {
+        table: TAX_TABLE,
+        content: 'Skattesats, total kommunal',
+        years: [2024],
+        verify: () => {
+          throw new Error('the codelist moved')
+        },
+      }),
+    ).toThrow(/the codelist moved/)
   })
 
   it('passes explicit values through untouched', async () => {

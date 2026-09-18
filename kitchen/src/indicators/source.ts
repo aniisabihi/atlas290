@@ -91,6 +91,19 @@ export type Source = {
    * The difference is already real in the hand-written modules; declaring it makes it visible.
    */
   regions?: 'four-digit' | 'known'
+  /**
+   * A check this table's metadata must pass before any selection is built from it, for the
+   * assumptions a dimension rule cannot express.
+   *
+   * A rule says WHICH codes to take. It cannot say what a code is expected to MEAN, and for one
+   * dimension in this project that distinction is load-bearing: `post-secondary-education` picks
+   * `UtbildningsNiva` levels 5, 6 and 7 because of what those levels are, which is a human
+   * definition rather than something recoverable from the table. If SCB reassigned code 6, every
+   * selection would still be valid and the published share would quietly mean something else.
+   *
+   * Runs before the selection, so a codelist drift fails loudly rather than being fetched under.
+   */
+  verify?: (meta: TableMeta) => void
 }
 
 /** What a resolved source yields: one value per `region|year`, and what was read to get it. */
@@ -111,6 +124,7 @@ export function selectionFor(
   source: Source,
   knownCodes?: readonly string[],
 ): Selection {
+  source.verify?.(meta)
   const known = new Set(knownCodes ?? [])
   const wanted =
     source.regions === 'known'
