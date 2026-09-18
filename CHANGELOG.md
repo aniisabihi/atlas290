@@ -23,6 +23,25 @@ request and writes its own line to [docs/refresh-log.md](docs/refresh-log.md); a
 change to the software. See
 [decision 0012](docs/decisions/0012-releases-and-a-changelog.md).
 
+## [1.2.0](https://github.com/aniisabihi/atlas290/compare/v1.1.0...v1.2.0) (2026-09-18)
+
+
+### Added
+
+* **kitchen:** an indicator becomes a definition ([#27](https://github.com/aniisabihi/atlas290/issues/27)) ([cc35729](https://github.com/aniisabihi/atlas290/commit/cc35729161b200e4d00b46ee57d789132ca3b69c))
+* **kitchen:** seventeen more indicators, from ten to twenty-seven ([#30](https://github.com/aniisabihi/atlas290/issues/30)) ([3288d21](https://github.com/aniisabihi/atlas290/commit/3288d215d5a68c47f967ba7a8f25bc7001b7d5c0))
+* **pantry:** an index and one file per indicator ([#25](https://github.com/aniisabihi/atlas290/issues/25)) ([dc3bbd5](https://github.com/aniisabihi/atlas290/commit/dc3bbd5ebafc4d4778984b6aa1dcb92d46b65968))
+
+
+### Changed
+
+* **kitchen:** the old indicator implementations go ([#29](https://github.com/aniisabihi/atlas290/issues/29)) ([cc93619](https://github.com/aniisabihi/atlas290/commit/cc93619f694cbeadbe1676619adc14a1c54a24eb))
+
+
+### Documentation
+
+* **plans:** design the fourth slice — more of the source ([#23](https://github.com/aniisabihi/atlas290/issues/23)) ([31eb4b7](https://github.com/aniisabihi/atlas290/commit/31eb4b7fcc3e660484344257486a152cd655a42f))
+
 ## [1.1.0](https://github.com/aniisabihi/atlas290/compare/v1.0.0...v1.1.0) (2026-09-17)
 
 
