@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import rawData from '../../public/pantry/data/indicators.json'
-import { PantryData } from '../../shared/pantry'
 import { lookup, observationAt, rankOf } from '../data/select'
 import { EXTREME_SHARE, MIN_FALL_PERCENT, storyFor, type Sentence } from './story'
+import { publishedPantry } from '../test/pantry'
 
-const data = PantryData.parse(rawData)
+const data = publishedPantry
 const lk = lookup(data)
 const YEAR = 2024
 

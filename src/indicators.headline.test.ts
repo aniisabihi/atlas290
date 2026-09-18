@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { OBSERVATION_STATUS, PantryData, type IndicatorSeries } from '../shared/pantry'
-import rawData from '../public/pantry/data/indicators.json'
+import { publishedPantry } from './test/pantry'
+import { OBSERVATION_STATUS, type IndicatorSeries } from '../shared/pantry'
 
 // JSON import (not node:fs), matching RenderCheck.test.ts, so this test needs no Node types
 // and reads exactly the file the site itself fetches at /pantry/data/indicators.json.
@@ -19,7 +19,7 @@ import rawData from '../public/pantry/data/indicators.json'
 // document without re-checking) — see this task's own commit message for how each was
 // obtained.
 describe('published pantry: headline facts', () => {
-  const data = PantryData.parse(rawData)
+  const data = publishedPantry
   const codeOf = (name: string) =>
     data.municipalities.find((m) => m.name.sv === name)?.code ??
     (() => {

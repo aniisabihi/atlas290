@@ -1,11 +1,10 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import rawData from '../../public/pantry/data/indicators.json'
-import { PantryData } from '../../shared/pantry'
 import { lookup } from '../data/select'
 import { ProfileStory } from './ProfileStory'
+import { publishedPantry } from '../test/pantry'
 
-const data = PantryData.parse(rawData)
+const data = publishedPantry
 const lk = lookup(data)
 
 const show = (code: string, year = 2024, lang: 'sv' | 'en' = 'sv') =>

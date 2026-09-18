@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs'
+import { DEFAULT_PANTRY_DIR, readPantryParts } from '../kitchen/src/publish'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import rawData from '../public/pantry/data/indicators.json'
-import { PantryData } from '../shared/pantry'
 import { segmentFor } from '../shared/slug'
 import {
   cspFor,
@@ -13,7 +12,10 @@ import {
   sitemapFor,
 } from './build-pages.mjs'
 
-const data = PantryData.parse(rawData)
+/** The published pantry, reassembled from the files the kitchen writes (Plan 13). */
+const publishedPantry = readPantryParts(DEFAULT_PANTRY_DIR)
+
+const data = publishedPantry
 
 /** The real built entry page, so these test the shape that actually ships. */
 const entry = readFileSync(new URL('../en/index.html', import.meta.url), 'utf8')

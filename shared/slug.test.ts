@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import rawData from '../public/pantry/data/indicators.json'
-import { PantryData } from './pantry'
+import rawIndex from '../public/pantry/data/index.json'
+import { PantryIndex } from './pantry'
 import { CODE_PATTERN, parseSegment, pathFor, segmentFor, slugify } from './slug'
 
-const data = PantryData.parse(rawData)
+// Only the municipalities are needed here, and the index carries all 290 of them — so this reads
+// the one small file rather than reassembling the whole pantry from eleven (Plan 13).
+const data = PantryIndex.parse(rawIndex)
 
 describe('slugify', () => {
   it('spells Swedish letters the way Swedish spells them in ASCII', () => {

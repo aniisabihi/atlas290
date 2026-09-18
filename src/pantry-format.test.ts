@@ -1,8 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { PantryData } from '../shared/pantry'
-import rawData from '../public/pantry/data/indicators.json'
-import rawIndicatorsText from '../public/pantry/data/indicators.json?raw'
 import rawManifestText from '../public/pantry/manifest.json?raw'
+import { publishedPantry } from './test/pantry'
+
+/**
+ * Every published data file, as text. Plan 13 split `data/indicators.json` into an index plus one
+ * file per indicator, so the minification guard now covers all twelve rather than one — a glob
+ * rather than a list, so an indicator added later is covered without anyone remembering to add it.
+ */
+const rawDataTexts = import.meta.glob('../public/pantry/data/**/*.json', {
+  eager: true,
+  query: '?raw',
+  import: 'default',
+}) as Record<string, string>
 
 /**
  * Follow-up to Task 13 (docs/plans/2026-09-14-02-the-ten-indicators.md). Task 13's own publish
@@ -28,9 +37,13 @@ import rawManifestText from '../public/pantry/manifest.json?raw'
  * needs no Node types, matching every other src/ pantry test's own convention.
  */
 describe('published pantry: file format (regression guards, this task)', () => {
-  it('data/indicators.json is minified — no embedded newline beyond the one trailing byte', () => {
-    expect(rawIndicatorsText.slice(0, -1)).not.toContain('\n')
-    expect(rawIndicatorsText.endsWith('\n')).toBe(true)
+  it('every data file is minified — no embedded newline beyond the one trailing byte', () => {
+    const files = Object.entries(rawDataTexts)
+    expect(files.length).toBeGreaterThanOrEqual(12)
+    for (const [path, text] of files) {
+      expect(path.endsWith('.json') && text.slice(0, -1).includes('\n')).toBe(false)
+      expect(text.endsWith('\n')).toBe(true)
+    }
   })
 
   it('manifest.json is minified — no embedded newline beyond the one trailing byte', () => {
@@ -73,7 +86,7 @@ describe('published pantry: file format (regression guards, this task)', () => {
     return dot === -1 ? 0 : s.length - dot - 1
   }
 
-  const data = PantryData.parse(rawData)
+  const data = publishedPantry
 
   it("every published value and colour-scale break carries no more precision than its indicator's declared unit honestly has", () => {
     for (const indicator of data.indicators) {

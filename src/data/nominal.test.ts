@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import rawPantry from '../../public/pantry/data/indicators.json'
+import { publishedPantry } from '../test/pantry'
 import rawPrices from '../../kitchen/raw/TAB1169/sv/26dfe1200425fa20.json'
 import rawIncome from '../../kitchen/raw/TAB3554/sv/474d0f391fc1c46f.json'
-import { PantryData, type Indicator } from '../../shared/pantry'
+import { type Indicator } from '../../shared/pantry'
 import { nominalOf } from './nominal'
 
-const data = PantryData.parse(rawPantry)
+const data = publishedPantry
 const byId = (id: string): Indicator => {
   const found = data.indicators.find((i) => i.id === id)
   if (!found) throw new Error(`no indicator ${id}`)

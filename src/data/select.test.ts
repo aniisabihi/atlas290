@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import rawData from '../../public/pantry/data/indicators.json'
-import { PantryData } from '../../shared/pantry'
+import { publishedPantry } from '../test/pantry'
 import {
   classOf,
   statusesIn,
@@ -12,7 +11,7 @@ import {
   ranksFor,
 } from './select'
 
-const data = PantryData.parse(rawData)
+const data = publishedPantry
 const lk = lookup(data)
 const indicator = (id: string) => lk.indicator(id)
 

@@ -1,12 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
-import rawData from '../../public/pantry/data/indicators.json'
-import { PantryData } from '../../shared/pantry'
 import { lookup } from '../data/select'
 import { metaFrom } from '../state/url'
 import { YearSlider } from './YearSlider'
+import { publishedPantry } from '../test/pantry'
 
-const data = PantryData.parse(rawData)
+const data = publishedPantry
 const lk = lookup(data)
 const meta = metaFrom(data)
 

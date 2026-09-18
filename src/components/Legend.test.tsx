@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
-import rawData from '../../public/pantry/data/indicators.json'
-import { PantryData } from '../../shared/pantry'
 import { lookup } from '../data/select'
 import { Legend } from './Legend'
+import { publishedPantry } from '../test/pantry'
 
-const lk = lookup(PantryData.parse(rawData))
+const lk = lookup(publishedPantry)
 
 let currentLang: 'sv' | 'en' = 'en'
 const draw = (indicatorId: string, year: number, lang: 'sv' | 'en' = 'en') => {

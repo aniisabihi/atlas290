@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  INDICATOR_PROSE,
   Indicator,
   IndicatorMeta,
   IndicatorSeries,
@@ -217,43 +216,5 @@ describe('viewOf', () => {
       series: seriesOf('stowaway'),
     })
     expect(() => viewOf(index, [stray])).toThrow(/stowaway/)
-  })
-})
-
-describe('the published pantry itself', () => {
-  it('survives a round trip through the files it is about to become', async () => {
-    // The acceptance criterion for this task. Not a fixture: the real 1,045,616-byte pantry, taken
-    // apart into the index and ten indicator files and put back together, must equal the object it
-    // started as. If this passes, Task 2 changes the packaging and nothing else.
-    const raw = (await import('../public/pantry/data/indicators.json')).default
-    const pantry = PantryData.parse(raw)
-    const { index, parts } = splitPantry(pantry)
-
-    expect(index.indicators).toHaveLength(pantry.indicators.length)
-    expect(parts).toHaveLength(pantry.indicators.length)
-    expect(assemblePantry(index, parts)).toEqual(pantry)
-  })
-
-  it('carries no prose in the index and every word of it in the parts', async () => {
-    const raw = (await import('../public/pantry/data/indicators.json')).default
-    const pantry = PantryData.parse(raw)
-    const { index, parts } = splitPantry(pantry)
-
-    for (const meta of index.indicators) {
-      for (const field of Object.keys(INDICATOR_PROSE)) {
-        expect(meta).not.toHaveProperty(field)
-      }
-    }
-    // Field by field rather than "is not empty": `population-change` has NO sources, because it
-    // is derived from population rather than fetched from a table of its own, and an emptiness
-    // check would have called that a defect. What must hold is that the prose survives the move.
-    for (const [n, part] of parts.entries()) {
-      const original = pantry.indicators[n]!
-      expect(part.indicator.id).toBe(original.id)
-      expect(part.indicator.description).toEqual(original.description)
-      expect(part.indicator.caveat).toEqual(original.caveat)
-      expect(part.indicator.derivation).toEqual(original.derivation)
-      expect(part.indicator.sources).toEqual(original.sources)
-    }
   })
 })

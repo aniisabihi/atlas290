@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import rawData from '../../public/pantry/data/indicators.json'
-import { PantryData } from '../../shared/pantry'
 import { metaFrom, type AppState } from '../state/url'
 import { LanguageSwitch } from './LanguageSwitch'
+import { publishedPantry } from '../test/pantry'
 
-const meta = metaFrom(PantryData.parse(rawData))
+const meta = metaFrom(publishedPantry)
 const state: AppState = {
   lang: 'sv',
   indicator: 'house-prices',

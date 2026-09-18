@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import rawData from '../../public/pantry/data/indicators.json'
-import { PantryData } from '../../shared/pantry'
+import { publishedPantry } from '../test/pantry'
 import {
   DEFAULT_LANG,
   LANGS,
@@ -86,7 +85,7 @@ describe('parseState', () => {
     expect(toUrl(parseState('/sv/', '?compare=1280&nonsense=1', meta), meta)).toBe('/sv/')
   })
 
-  it.each(['/', '/fr/', '/sv', '', '/pantry/data/indicators.json'])(
+  it.each(['/', '/fr/', '/sv', '', '/pantry/data/index.json'])(
     'falls back to the default language for the path %j instead of throwing',
     (pathname) => {
       expect(parseState(pathname, '', meta).lang).toBe(DEFAULT_LANG)
@@ -146,7 +145,7 @@ describe('the round trip', () => {
 })
 
 describe('metaFrom, against the real published pantry', () => {
-  const real = metaFrom(PantryData.parse(rawData))
+  const real = metaFrom(publishedPantry)
 
   it('finds all ten indicators and all 290 municipalities', () => {
     expect(real.indicators).toHaveLength(10)

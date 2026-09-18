@@ -2,9 +2,8 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { PantryData, PantryIndex, PantryIndicator } from '../../shared/pantry'
-import published from '../../public/pantry/data/indicators.json'
-import { readPantryParts, writePantryParts } from './publish'
+import { PantryIndex, PantryIndicator } from '../../shared/pantry'
+import { DEFAULT_PANTRY_DIR, readPantryParts, writePantryParts } from './publish'
 
 /**
  * Plan 13 Task 2: the kitchen writes the parts.
@@ -14,7 +13,7 @@ import { readPantryParts, writePantryParts } from './publish'
  * write, and read back, it must be the pantry it always was.
  */
 
-const pantry = PantryData.parse(published)
+const pantry = readPantryParts(DEFAULT_PANTRY_DIR)
 
 function inTempPantry<T>(run: (dir: string) => T): T {
   const dir = mkdtempSync(join(tmpdir(), 'sde-parts-test-'))

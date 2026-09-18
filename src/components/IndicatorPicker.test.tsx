@@ -1,12 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import rawData from '../../public/pantry/data/indicators.json'
-import { PantryData } from '../../shared/pantry'
 import { lookup } from '../data/select'
 import { IndicatorPicker } from './IndicatorPicker'
+import { publishedPantry } from '../test/pantry'
 
-const lk = lookup(PantryData.parse(rawData))
+const lk = lookup(publishedPantry)
 
 const draw = (selected = 'population', lang: 'sv' | 'en' = 'en') => {
   const onChange = vi.fn()

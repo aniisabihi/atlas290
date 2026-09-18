@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import rawData from '../../public/pantry/data/indicators.json'
 // Vite's `?raw` gives the file as a string; oxlint resolves the path without the suffix and so
 // cannot see the default export that Vite synthesises. The import works — the test below reads
 // real source through it — so the rule is disabled here rather than the test being weakened.
@@ -7,11 +6,11 @@ import rawData from '../../public/pantry/data/indicators.json'
 import compareSource from './compare.ts?raw'
 // eslint-disable-next-line import/default
 import stringsSource from '../i18n/strings.ts?raw'
-import { PantryData } from '../../shared/pantry'
 import { lookup } from './select'
 import { compareOf, summarise } from './compare'
+import { publishedPantry } from '../test/pantry'
 
-const lk = lookup(PantryData.parse(rawData))
+const lk = lookup(publishedPantry)
 
 describe('compareOf', () => {
   it('compares all ten indicators', () => {

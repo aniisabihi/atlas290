@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { render } from '@testing-library/react'
-import rawData from '../../public/pantry/data/indicators.json'
-import { PantryData } from '../../shared/pantry'
 import { lookup } from '../data/select'
 import { Sparkline, segmentsFor } from './Sparkline'
+import { publishedPantry } from '../test/pantry'
 
-const lk = lookup(PantryData.parse(rawData))
+const lk = lookup(publishedPantry)
 const draw = (indicatorId: string, code: string, year = 2024) =>
   render(<Sparkline lk={lk} indicatorId={indicatorId} code={code} year={year} />)
 

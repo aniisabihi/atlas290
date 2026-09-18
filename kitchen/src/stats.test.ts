@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import rawData from '../../public/pantry/data/indicators.json'
-import { PantryData, type ObservationStatus } from '../../shared/pantry'
+import { DEFAULT_PANTRY_DIR, readPantryParts } from './publish'
+import { type ObservationStatus } from '../../shared/pantry'
 import {
   CKM_MAX_NOISE,
   noiseBoundFor,
@@ -13,7 +13,10 @@ import {
   type Point,
 } from './stats'
 
-const data = PantryData.parse(rawData)
+/** The published pantry, reassembled from the files the kitchen writes (Plan 13). */
+const publishedPantry = readPantryParts(DEFAULT_PANTRY_DIR)
+
+const data = publishedPantry
 const population = data.series.find((s) => s.indicator === 'population')!
 const rowOf = (code: string) => data.municipalities.findIndex((m) => m.code === code)
 const name = new Map(data.municipalities.map((m) => [m.code, m.name.sv]))

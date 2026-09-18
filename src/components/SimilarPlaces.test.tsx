@@ -1,14 +1,14 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import rawData from '../../public/pantry/data/indicators.json'
 import rawSimilar from '../../public/pantry/data/similar.json'
-import { PantryData, Similar } from '../../shared/pantry'
+import { Similar } from '../../shared/pantry'
 import { lookup } from '../data/select'
 import { defaultsFor, metaFrom, parseHref, type AppState } from '../state/url'
 import { SimilarPlaces } from './SimilarPlaces'
+import { publishedPantry } from '../test/pantry'
 
-const data = PantryData.parse(rawData)
+const data = publishedPantry
 const similar = Similar.parse(rawSimilar)
 const lk = lookup(data)
 const meta = metaFrom(data)

@@ -1,18 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import rawData from '../../public/pantry/data/indicators.json'
 import rawTopology from '../../public/pantry/geometry/municipalities.topo.json'
 import rawAdjacency from '../../public/pantry/geometry/adjacency.json'
 import rawBubbles from '../../public/pantry/layout/bubbles.json'
 import rawSimilar from '../../public/pantry/data/similar.json'
 import rawFacts from '../../public/pantry/data/facts.json'
-import { Adjacency, Bubbles, Facts, PantryData, Similar } from '../../shared/pantry'
+import { Adjacency, Bubbles, Facts, Similar } from '../../shared/pantry'
 import type { MunicipalityTopology } from '../../shared/geometry'
 import { App } from './App'
 import { SETTLE_MS } from './LiveRegion'
+import { publishedPantry } from '../test/pantry'
 
-const data = PantryData.parse(rawData)
+const data = publishedPantry
 const topology = rawTopology as unknown as MunicipalityTopology
 const adjacency = Adjacency.parse(rawAdjacency)
 const bubbles = Bubbles.parse(rawBubbles)
