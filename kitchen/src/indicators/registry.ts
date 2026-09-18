@@ -261,7 +261,12 @@ import { housingDefinition } from './housing'
 // but ensureRegistered is what actually reads educationDefinition, and only from inside
 // buildAll. Like income and housing, education has no ordering dependency on any other
 // REGISTRY entry beyond needing ctx.municipalities, which population alone establishes.
-import { educationDefinition } from './education'
+import {
+  educationDefinition,
+  educationGapDefinition,
+  educationMenDefinition,
+  educationWomenDefinition,
+} from './education'
 // Same deferred-read reasoning as every import above: the binding is always safe to import, but
 // ensureRegistered is what actually reads populationChangeDefinition/meanAgeDefinition/
 // share65PlusDefinition, and only from inside buildAll. Like migration, population change AND
@@ -278,8 +283,14 @@ import { dependencyDefinition, fertilityDefinition } from './demography'
 import { employmentDefinition, unemploymentDefinition } from './labour'
 // Taxable income fetches the price index itself inside its own build(), exactly as income and
 // housing do, so like them it has no ordering dependency beyond ctx.municipalities.
-import { disposableDefinition, taxBaseDefinition } from './finance'
-import { completedDefinition, rentDefinition, stockDefinition } from './dwellings'
+import { disposableDefinition, priceToIncomeDefinition, taxBaseDefinition } from './finance'
+import {
+  completedDefinition,
+  rentDefinition,
+  shareHousesDefinition,
+  shareRentalsDefinition,
+  stockDefinition,
+} from './dwellings'
 // These four divide by population's finished series through ctx.series, exactly as migration,
 // population-change and share-65-plus do, so like them they MUST be registered after population.
 import { naturalChangeDefinition } from './demography'
@@ -331,6 +342,14 @@ function ensureRegistered(): void {
     completedDefinition,
     stockDefinition,
     emissionsDefinition,
+    shareHousesDefinition,
+    shareRentalsDefinition,
+    // The two splits must come before the gap, and house-prices and median-income before the
+    // ratio of the two: each reads its operands from ctx.series and throws if they are not there.
+    educationWomenDefinition,
+    educationMenDefinition,
+    educationGapDefinition,
+    priceToIncomeDefinition,
   )
 }
 

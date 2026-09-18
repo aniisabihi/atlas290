@@ -131,3 +131,46 @@ export const disposableDefinition: IndicatorDefinition = {
   indicator: DISPOSABLE,
   build: (ctx) => buildDefined(disposableDefined(), ctx),
 }
+
+export const PRICE_TO_INCOME: Indicator = Indicator.parse({
+  id: 'house-price-to-income',
+  name: { sv: 'Huspris i årsinkomster', en: 'House price in years of income' },
+  description: {
+    sv: 'Medelpriset på ett småhus delat med medianinkomsten: hur många årsinkomster ett hus kostar.',
+    en: 'The mean price of a house divided by the median income: how many years of income a house costs.',
+  },
+  unit: 'years',
+  priceBasis: 'none',
+  scale: { kind: 'sequential', breaks: [] },
+  // The overlap of the two series it divides, and nothing else: house prices run 1981–2025 and
+  // median income 1999–2024, so this can only speak for 1999–2024.
+  coverage: { from: 1999, to: 2024 },
+  caveat: {
+    sv: 'En kvot mellan två mått som inte beskriver samma personer: priset är genomsnittet för de småhus som faktiskt såldes under året, inkomsten är medianen för alla invånare 16 år och äldre. Den som köper ett hus är oftast inte medianinkomsttagaren, och ett hus köps sällan för en enda persons inkomst. Talet är ett grovt mått på hur ansträngd bostadsmarknaden är, inte på vad någon verkligen betalar. Båda serierna är uttryckta i samma års kronor, så kvoten påverkas inte av inflationen. Kommuner med för få försäljningar ett år saknar värde, eftersom priset då inte publiceras.',
+    en: 'A ratio between two measures that do not describe the same people: the price is the mean for the houses actually sold that year, the income is the median for every resident aged 16 and over. Whoever buys a house is usually not the median earner, and a house is rarely bought on one person’s income. The figure is a rough measure of how stretched the housing market is, not of what anyone actually pays. Both series are expressed in the same year’s kronor, so inflation does not move the ratio. A municipality with too few sales in a year has no value, because no price is published for it.',
+  },
+  sensitivity: 'none',
+  sources: [
+    { table: 'TAB1169', contentCode: 'BO0501C2', note: 'via house-prices' },
+    { table: 'TAB3554', contentCode: 'HE0110J8', note: 'via median-income' },
+  ],
+  derivation:
+    'house-prices divided by median-income, cell by cell, from this pantry’s own two published ' +
+    'series rather than from a third fetch — so the ratio can be checked against the two ' +
+    'numbers a reader can already see. Both are adjusted to the same base year before this ' +
+    'runs, so the quotient is not distorted by inflation. The years are the ones both series ' +
+    'publish; where either side is absent, so is the ratio.',
+})
+
+export function priceToIncomeDefined(): Definition {
+  return {
+    indicator: PRICE_TO_INCOME,
+    sources: [],
+    spec: { kind: 'quotient', of: 'house-prices', by: 'median-income' },
+  }
+}
+
+export const priceToIncomeDefinition: IndicatorDefinition = {
+  indicator: PRICE_TO_INCOME,
+  build: (ctx) => buildDefined(priceToIncomeDefined(), ctx),
+}

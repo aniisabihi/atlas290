@@ -44,8 +44,12 @@ describe('the country sentence', () => {
     // municipality possesses an education. The indicator is a share of residents, and only
     // some of the ten are things a place can have more of.
     const { text } = best('country')
-    expect(text.sv).toBe('Eftergymnasial utbildning har stigit i alla 284 kommuner sedan 1985.')
-    expect(text.en).toBe('Post-secondary education has risen in all 284 municipalities since 1985.')
+    expect(text.sv).toBe(
+      'Utbildningsgap mellan kvinnor och män har stigit i alla 284 kommuner sedan 1985.',
+    )
+    expect(text.en).toBe(
+      'Education gap between women and men has risen in all 284 municipalities since 1985.',
+    )
   })
 
   it('says "all" rather than "284 of 284" when the country is unanimous', () => {

@@ -25,7 +25,14 @@ import { meanAgeDefined, share65PlusDefined } from './derived'
 import { dependencyDefined, fertilityDefined, naturalChangeDefined } from './demography'
 import { employmentDefined, unemploymentDefined } from './labour'
 import { disposableDefined, taxBaseDefined } from './finance'
-import { completedDefined, rentDefined, stockDefined } from './dwellings'
+import {
+  completedDefined,
+  rentDefined,
+  shareHousesDefined,
+  shareRentalsDefined,
+  stockDefined,
+} from './dwellings'
+import { educationMenDefined, educationWomenDefined } from './education'
 import { emissionsDefined } from './environment'
 
 /**
@@ -92,6 +99,10 @@ const DEFINED: ReadonlyArray<readonly [id: string, definition: () => Definition]
   ['dwellings-completed-rate', completedDefined],
   ['dwellings-per-1000', stockDefined],
   ['greenhouse-gas-per-resident', emissionsDefined],
+  ['share-houses', shareHousesDefined],
+  ['share-rentals', shareRentalsDefined],
+  ['post-secondary-education-women', educationWomenDefined],
+  ['post-secondary-education-men', educationMenDefined],
 ]
 
 /**

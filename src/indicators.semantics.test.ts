@@ -403,6 +403,80 @@ describe('published pantry: edge cells and status semantics', () => {
     })
   })
 
+  describe('the two computed from the pantry alone', () => {
+    // Neither fetches anything, so the whole point is that a reader can check them against the
+    // two numbers already on the page. These assertions do exactly that.
+    it('derives the education gap as women minus men, from the two published splits', () => {
+      for (const place of ['Stockholm', 'Borgholm', 'Lund']) {
+        const women = cell('post-secondary-education-women', place, 2024).value!
+        const men = cell('post-secondary-education-men', place, 2024).value!
+        const gap = cell('post-secondary-education-gap', place, 2024).value!
+        // Within half a rounding step, not exactly equal: the gap is computed from the two
+        // UNROUNDED shares and rounded once at the end, which is the same rule every other
+        // derived figure in this pantry follows. Lund publishes 5.94 where the rounded shares
+        // differ by 5.93, and that is the rounding working rather than failing.
+        expect(gap).toBeCloseTo(women - men, 1)
+      }
+    })
+
+    // A property neither split asserts on its own: the combined share has to sit between them,
+    // because it is the same measure over both sexes together.
+    it('leaves the combined share between the two splits, for every municipality and year', () => {
+      const women = seriesOf('post-secondary-education-women')
+      const men = seriesOf('post-secondary-education-men')
+      const both = seriesOf('post-secondary-education')
+      let checked = 0
+      for (let i = 0; i < both.values.length; i++) {
+        for (let j = 0; j < both.years.length; j++) {
+          const w = women.values[i]?.[j]
+          const m = men.values[i]?.[j]
+          const b = both.values[i]?.[j]
+          if (w === null || m === null || b === null) continue
+          if (w === undefined || m === undefined || b === undefined) continue
+          expect(b).toBeGreaterThanOrEqual(Math.min(w, m) - 0.01)
+          expect(b).toBeLessThanOrEqual(Math.max(w, m) + 0.01)
+          checked++
+        }
+      }
+      expect(checked).toBeGreaterThan(10_000)
+    })
+
+    it('derives house price in years of income from the two published money series', () => {
+      const price = cell('house-prices', 'Stockholm', 2024).value!
+      const income = cell('median-income', 'Stockholm', 2024).value!
+      expect(cell('house-price-to-income', 'Stockholm', 2024).value).toBeCloseTo(price / income, 1)
+      expect(cell('house-price-to-income', 'Borgholm', 2024).value).toBe(9)
+    })
+
+    // Both operands run further than the overlap — house prices from 1981, income to 2024 — and
+    // a quotient over a year only one of them covers would have one operand.
+    it('covers only the years both its operands publish', () => {
+      const years = seriesOf('house-price-to-income').years
+      expect(years[0]).toBe(1999)
+      expect(years[years.length - 1]).toBe(2024)
+      expect(seriesOf('house-prices').years[0]).toBe(1981)
+    })
+  })
+
+  describe('the two housing shares (TAB824)', () => {
+    // Each partitions the same stock a different way, so each share is a fraction of the whole
+    // and neither can exceed 100.
+    it('reproduces both shares for a city, an island and a university town', () => {
+      expect(cell('share-houses', 'Stockholm', 2024).value).toBe(8.74)
+      expect(cell('share-houses', 'Borgholm', 2024).value).toBe(71.39)
+      expect(cell('share-rentals', 'Stockholm', 2024).value).toBe(42.82)
+      expect(cell('share-rentals', 'Borgholm', 2024).value).toBe(23.22)
+    })
+
+    it.each(['share-houses', 'share-rentals'])('keeps %s inside 0 and 100', (id) => {
+      const values = seriesOf(id)
+        .values.flat()
+        .filter((v): v is number => v !== null)
+      expect(Math.min(...values)).toBeGreaterThanOrEqual(0)
+      expect(Math.max(...values)).toBeLessThanOrEqual(100)
+    })
+  })
+
   /**
    * Which tables carry SCB's Cell Key Method note is a per-table fact, and getting it wrong in
    * either direction is a published lie: a perturbed cell presented as exact, or an exact cell

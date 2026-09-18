@@ -31,17 +31,21 @@ describe('every published claim re-derives from the pantry', () => {
   }
   const claimOf = (id: string) => FACTS.find((f) => f.id === id)!.claim
 
-  it('country: post-secondary education has risen everywhere since 1985', () => {
+  it('country: the education gap has widened everywhere since 1985', () => {
+    // Plan 16: the published country fact is now the GAP rather than the level. Both are
+    // unanimous over the same 284 municipalities and the same 1985-2025 record, so the ranking
+    // ties down to the last tier. The re-derivation below is the same either way — what it
+    // proves is that the claim on the page can be rebuilt from the pantry.
     let matching = 0
     let comparable = 0
     for (const m of data.municipalities) {
-      const then = at('post-secondary-education', m.code, 1985)
-      const now = at('post-secondary-education', m.code, 2025)
+      const then = at('post-secondary-education-gap', m.code, 1985)
+      const now = at('post-secondary-education-gap', m.code, 2025)
       if (then === null || now === null) continue
       comparable += 1
       if (now > then) matching += 1
     }
-    expect(claimOf('country-post-secondary-education-higher')).toBe(
+    expect(claimOf('country-post-secondary-education-gap-higher')).toBe(
       `${matching} of ${comparable} higher in 2025 than 1985`,
     )
   })

@@ -179,3 +179,106 @@ export const stockDefinition: IndicatorDefinition = {
   indicator: STOCK,
   build: (ctx) => buildDefined(stockDefined(), ctx),
 }
+
+/**
+ * One share of TAB824's standing stock, partitioned by a dimension.
+ *
+ * `share-houses` cuts it by house type and `share-rentals` by tenure. Both read the same fetch:
+ * the dimension being partitioned is kept, and every other dimension is summed within it, so a
+ * share by tenure counts every house type and a share by house type counts every tenure.
+ */
+function stockShare(over: string) {
+  return {
+    table: STOCK_TABLE,
+    content: STOCK_CONTENT_LABEL,
+    years: STOCK_YEARS,
+    dims: {
+      Hustyp: (over === 'Hustyp' ? 'all' : 'total') as 'all' | 'total',
+      Upplatelseform: (over === 'Upplatelseform' ? 'all' : 'total') as 'all' | 'total',
+    },
+    regions: 'known' as const,
+  }
+}
+
+/** Every house type TAB824 publishes. Listed, because "all four" is a claim about the share. */
+const HOUSE_TYPES = ['SMÅHUS', 'FLERBOST', 'ÖVRHUS', 'SPEC']
+/** Every tenure TAB824 publishes, including the one that means "not recorded". */
+const TENURES = ['1', '2', '3', 'ÖVRIGT']
+
+export const SHARE_HOUSES: Indicator = Indicator.parse({
+  id: 'share-houses',
+  name: { sv: 'Andel småhus', en: 'Share of homes that are houses' },
+  description: {
+    sv: 'Andel av kommunens bostäder som är småhus, av samtliga bostäder — småhus, flerbostadshus, övriga hus och specialbostäder.',
+    en: 'Share of the municipality’s dwellings that are detached or semi-detached houses, out of all dwellings — houses, blocks of flats, other buildings and special housing.',
+  },
+  unit: 'percent',
+  priceBasis: 'none',
+  scale: { kind: 'sequential', breaks: [] },
+  coverage: { from: STOCK_YEARS[0]!, to: STOCK_YEARS[STOCK_YEARS.length - 1]! },
+  caveat: {
+    sv: 'Nämnaren är alla bostäder, inklusive specialbostäder (student- och äldreboenden) och övriga hus. Andelen räknar bostäder, inte människor: ett flerbostadshus rymmer många bostäder på samma yta, så en kommun kan vara till synes dominerad av småhus i landskapet och ändå ha en låg andel här.',
+    en: 'The denominator is every dwelling, special housing (student and elderly accommodation) and other buildings included. The share counts homes, not people: a block of flats holds many homes on the same ground, so a municipality can look like a landscape of houses and still show a low share here.',
+  },
+  sensitivity: 'none',
+  sources: [{ table: STOCK_TABLE, contentCode: 'BO0104AH', note: '1990–2025, efter hustyp' }],
+  derivation:
+    'Dwellings of house type "småhus" over dwellings of all four house types, times 100, from ' +
+    'one fetch of TAB824 partitioned by house type. Tenure is summed away within each type, so ' +
+    'every dwelling is counted once whatever it is owned as. The denominator lists all four ' +
+    'types rather than reading whatever the table happens to publish: "every type SCB offers" ' +
+    'and "every type this share is defined over" are different claims.',
+})
+
+export const SHARE_RENTALS: Indicator = Indicator.parse({
+  id: 'share-rentals',
+  name: { sv: 'Andel hyresrätter', en: 'Share of homes that are rented' },
+  description: {
+    sv: 'Andel av kommunens bostäder som är hyresrätter, av samtliga bostäder — hyresrätt, bostadsrätt, äganderätt och bostäder där upplåtelseformen saknas.',
+    en: 'Share of the municipality’s dwellings that are rented, out of all dwellings — rented, tenant-owned, owner-occupied, and those whose tenure is not recorded.',
+  },
+  unit: 'percent',
+  priceBasis: 'none',
+  scale: { kind: 'sequential', breaks: [] },
+  coverage: { from: STOCK_YEARS[0]!, to: STOCK_YEARS[STOCK_YEARS.length - 1]! },
+  caveat: {
+    sv: 'Nämnaren innehåller en fjärde kategori, "uppgift saknas", som räknas med. Att utesluta den skulle höja varje andel, och hur mycket beror på hur väl registret är ifyllt i just den kommunen — vilket inte är något läsaren kan se. Andra hand räknas som den upplåtelseform bostaden har, inte som hyresrätt.',
+    en: 'The denominator includes a fourth category, "tenure not recorded", and it is counted. Leaving it out would raise every share, by an amount that depends on how completely the register is filled in for that particular municipality — which is not something a reader can see. A sublet counts as whatever the home’s own tenure is, not as a rental.',
+  },
+  sensitivity: 'none',
+  sources: [
+    { table: STOCK_TABLE, contentCode: 'BO0104AH', note: '1990–2025, efter upplåtelseform' },
+  ],
+  derivation:
+    'Dwellings held as "hyresrätt" over dwellings of all four tenures, times 100, from one fetch ' +
+    'of TAB824 partitioned by tenure. House type is summed away within each tenure. The ' +
+    'denominator lists all four tenures explicitly, the one meaning "not recorded" included.',
+})
+
+export function shareHousesDefined(): Definition {
+  return {
+    indicator: SHARE_HOUSES,
+    sources: [stockShare('Hustyp')],
+    spec: { kind: 'share', over: 'Hustyp', numerator: ['SMÅHUS'], times: 100 },
+    shareOver: HOUSE_TYPES,
+  }
+}
+
+export function shareRentalsDefined(): Definition {
+  return {
+    indicator: SHARE_RENTALS,
+    sources: [stockShare('Upplatelseform')],
+    spec: { kind: 'share', over: 'Upplatelseform', numerator: ['1'], times: 100 },
+    shareOver: TENURES,
+  }
+}
+
+export const shareHousesDefinition: IndicatorDefinition = {
+  indicator: SHARE_HOUSES,
+  build: (ctx) => buildDefined(shareHousesDefined(), ctx),
+}
+
+export const shareRentalsDefinition: IndicatorDefinition = {
+  indicator: SHARE_RENTALS,
+  build: (ctx) => buildDefined(shareRentalsDefined(), ctx),
+}

@@ -31,13 +31,25 @@ describe('countryCandidates', () => {
     expect(first.matching).toBe(first.comparable)
   })
 
-  it('breaks a tie on the length of the record, not the spelling of an indicator', () => {
+  it('breaks a tie on the length of the record before the spelling of an indicator', () => {
     // Median income since 1999 and post-secondary education since 1985 are both unanimous.
-    // Sorting by id would pick median-income; the longer record is the stronger statement.
+    // Sorting by id alone would pick median-income; the longer record is the stronger statement,
+    // so span is compared first and 1985 wins.
+    //
+    // Plan 16 made the LAST tier decide a real case for the first time. The education gap is
+    // unanimous over exactly the same 284 municipalities and exactly the same 1985-2025 record
+    // as post-secondary education itself, so score and span both tie and the id decides — and
+    // '...-gap-higher' sorts before '...-higher'. The fact that results is a true and rather
+    // more striking one, so it is accepted rather than engineered around: inventing a rule to
+    // prefer a level over a contrast would be choosing the tie-break for its answer.
     const first = top(list)
     if (first.family !== 'country') throw new Error('not a country fact')
-    expect(first.indicator.id).toBe('post-secondary-education')
     expect(first.from).toBe(1985)
+    expect(first.indicator.id).toBe('post-secondary-education-gap')
+    const level = list.find((c) => c.id === 'country-post-secondary-education-higher')
+    if (level?.family !== 'country') throw new Error('no level candidate')
+    expect(level.score).toBe(first.score)
+    expect(level.from).toBe(first.from)
   })
 
   it('never assumes 290 as the denominator', () => {

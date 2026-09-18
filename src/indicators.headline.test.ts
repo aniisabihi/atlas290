@@ -76,6 +76,12 @@ describe('published pantry: headline facts', () => {
         'dwellings-completed-rate',
         'dwellings-per-1000',
         'greenhouse-gas-per-resident',
+        'share-houses',
+        'share-rentals',
+        'post-secondary-education-women',
+        'post-secondary-education-men',
+        'post-secondary-education-gap',
+        'house-price-to-income',
       ].sort(),
     )
   })

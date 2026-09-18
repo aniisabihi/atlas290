@@ -25,7 +25,7 @@ describe('buildFacts', () => {
 
   it('gives every fact a stable id naming what it is about', () => {
     expect(built.facts.map((f) => f.id)).toEqual([
-      'country-post-secondary-education-higher',
+      'country-post-secondary-education-gap-higher',
       'run-growth',
       'reversal-0183',
       'unusual-1261-tax-rate',

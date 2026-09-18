@@ -103,6 +103,14 @@ export const PLAUSIBLE_RANGES: Record<string, PlausibleRange> = {
   'dwellings-completed-rate': { min: 0, max: 500 },
   'dwellings-per-1000': { min: 0, max: 2000 },
   'greenhouse-gas-per-resident': { min: 0, max: 1000 },
+  'share-houses': { min: 0, max: 100 },
+  'share-rentals': { min: 0, max: 100 },
+  'post-secondary-education-women': { min: 0, max: 100 },
+  'post-secondary-education-men': { min: 0, max: 100 },
+  // A gap in percentage points between two shares: bounded by -100 and 100 mathematically, and
+  // signed, because men lead in some municipalities and women in most.
+  'post-secondary-education-gap': { min: -100, max: 100 },
+  'house-price-to-income': { min: 0, max: 200 },
 }
 
 /**
