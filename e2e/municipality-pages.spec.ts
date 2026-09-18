@@ -97,6 +97,10 @@ test.describe('the rest of the path space', () => {
 })
 
 test('a municipality page is clean under axe', async ({ page }) => {
+  // An axe analysis is CPU-bound, and the same reasoning as e2e/accessibility.spec.ts applies
+  // here: under a busy machine the SCAN runs out of the default 30 s, not the page. Marking it
+  // slow widens that budget and weakens nothing — a violation still fails the test.
+  test.slow()
   await page.goto('/en/malmo-1280/')
   await expect(page.getByRole('heading', { level: 2, name: 'Malmö' })).toBeVisible()
   const results = await new AxeBuilder({ page })
