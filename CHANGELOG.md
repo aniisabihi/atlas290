@@ -23,6 +23,25 @@ request and writes its own line to [docs/refresh-log.md](docs/refresh-log.md); a
 change to the software. See
 [decision 0012](docs/decisions/0012-releases-and-a-changelog.md).
 
+## [1.3.0](https://github.com/aniisabihi/atlas290/compare/v1.2.0...v1.3.0) (2026-09-21)
+
+
+### Added
+
+* **kitchen:** sparsity in the site, and seven more indicators ([#39](https://github.com/aniisabihi/atlas290/issues/39)) ([0ac183f](https://github.com/aniisabihi/atlas290/commit/0ac183f60a177503044852f79fc1eb354ff79d06))
+* **kitchen:** the sparse-series design, and eight more indicators ([#34](https://github.com/aniisabihi/atlas290/issues/34)) ([a766afd](https://github.com/aniisabihi/atlas290/commit/a766afd233bf51a8f3b6a07986b77b5f4e5fbfb2))
+
+
+### Fixed
+
+* **profile:** a link that names a municipality takes no focus ([#33](https://github.com/aniisabihi/atlas290/issues/33)) ([7189185](https://github.com/aniisabihi/atlas290/commit/718918577d2ac5ef41411ab21e17b3698e43f3a5)), closes [#32](https://github.com/aniisabihi/atlas290/issues/32)
+
+
+### Performance
+
+* **site:** address the review of the view-rebuild fix ([222a830](https://github.com/aniisabihi/atlas290/commit/222a830c8b1c80f06f16d9c35e57e91c6f2def8f))
+* **site:** the view is built once, not thirty-five times ([b0a19de](https://github.com/aniisabihi/atlas290/commit/b0a19de978426444b3ffdbc17d0e1eca1f56b731)), closes [#35](https://github.com/aniisabihi/atlas290/issues/35)
+
 ## [1.2.0](https://github.com/aniisabihi/atlas290/compare/v1.1.0...v1.2.0) (2026-09-18)
 
 
