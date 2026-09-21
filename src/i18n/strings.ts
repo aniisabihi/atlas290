@@ -45,8 +45,17 @@ const sv = {
   switchToLight: 'Byt till ljust utseende',
 
   mapLabel: 'Karta över Sveriges kommuner',
-  cartogramLabel: 'Bubbeldiagram över Sveriges kommuner, storlek efter folkmängd',
+  // The measure's name goes in, because the bubbles are sized by whatever measure is drawn —
+  // the label has to say which, or "sized by" would be a claim with nothing behind it.
+  cartogramLabel: (measure: string) =>
+    `Bubbeldiagram över Sveriges kommuner, storlek efter ${measure.toLocaleLowerCase('sv')}`,
   mapHint: 'Använd piltangenterna för att gå mellan grannkommuner. Enter väljer, Escape rensar.',
+  // What the bubbles' sizes mean. Said beside the picture rather than left to be inferred: the
+  // size follows the value within the year on screen, and a municipality with no value that
+  // year gets the smallest bubble rather than none at all.
+  cartogramHint:
+    'Varje bubblas yta följer måttets värde det här året, från årets lägsta till dess högsta. En kommun utan värde får den minsta bubblan.',
+  tableHint: 'Klicka på en kolumnrubrik för att sortera. Klicka på en kommun för att öppna den.',
   noNeighbour: 'Ingen grannkommun åt det hållet.',
 
   indicatorLegend: 'Mått',
@@ -144,8 +153,7 @@ export type Strings = typeof sv
 
 const en: Strings = {
   siteName: 'Atlas 290',
-  tagline:
-    'Every municipality in Sweden, measure by measure, 1968–2026. All from Statistics Sweden.',
+  tagline: 'Every municipality in Sweden, measure by measure, 1968–2026. All from SCB.',
   skipToMap: 'Skip to the map',
   skipToTable: 'Skip to the table',
 
@@ -169,9 +177,13 @@ const en: Strings = {
   switchToLight: 'Switch to the light theme',
 
   mapLabel: 'Map of Sweden by municipality',
-  cartogramLabel: 'Bubble chart of Sweden by municipality, sized by population',
+  cartogramLabel: (measure: string) =>
+    `Bubble chart of Sweden by municipality, sized by ${measure.toLocaleLowerCase('en')}`,
   mapHint:
     'Use the arrow keys to move between neighbouring municipalities. Enter selects, Escape clears.',
+  cartogramHint:
+    'The area of each bubble follows the measure’s value this year, from the year’s lowest to its highest. A municipality with no value gets the smallest bubble.',
+  tableHint: 'Click a column heading to sort. Click a municipality to open it.',
   noNeighbour: 'No neighbouring municipality that way.',
 
   indicatorLegend: 'Measure',

@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  ViewTransition,
+} from 'react'
 import { coversYear } from '../../shared/pantry'
 import { fetchIndicatorPart, withPart, type LoadedPantry } from '../data/pantry'
 import { classOf, lookup, observationAt, observationSentence } from '../data/select'
@@ -41,7 +49,7 @@ export function App({ loaded: opened }: { loaded: LoadedPantry }) {
   // and the rest as they are needed. Every arrival replaces this with a new object rather than
   // mutating it, which is what keeps the two memos below honest.
   const [loaded, setLoaded] = useState(opened)
-  const { view: pantry, parts, topology, adjacency, bubbles, similar, facts } = loaded
+  const { view: pantry, parts, topology, adjacency, similar, facts } = loaded
 
   // Memoised on the INDEX, which genuinely never changes after load — so `meta` keeps one
   // identity for the life of the page even as series arrive, and `useAppState` is not rebuilt
@@ -166,8 +174,9 @@ export function App({ loaded: opened }: { loaded: LoadedPantry }) {
   const [notice, setNotice] = useState('')
   const mapRef = useRef<MapHandle>(null)
   /**
-   * Below this width the bubbles are the default: they give equal tap targets and waste no width
-   * on a country three times taller than it is wide, and the panel becomes a sheet.
+   * Below this width the bubbles are the default: every municipality is at least a visible,
+   * tappable dot, and the layout wastes no width on a country three times taller than it is
+   * wide; the panel becomes a sheet.
    *
    * It is a default, not an override. `?v=map` on a phone shows the map — whatever is in the URL
    * always wins, because the URL is the memory and a screen size is not a decision the visitor
@@ -236,7 +245,8 @@ export function App({ loaded: opened }: { loaded: LoadedPantry }) {
               // The shapes are about to move, so whatever the pointer was on is no longer under
               // it. Cleared here, by the event that makes it untrue, rather than by an effect.
               setHighlight(null)
-              update({ view: 'map', table: false })
+              if (state.table) startTransition(() => update({ view: 'map', table: false }))
+              else update({ view: 'map', table: false })
             }}
           >
             {strings.showMap}
@@ -249,7 +259,8 @@ export function App({ loaded: opened }: { loaded: LoadedPantry }) {
               // The shapes are about to move, so whatever the pointer was on is no longer under
               // it. Cleared here, by the event that makes it untrue, rather than by an effect.
               setHighlight(null)
-              update({ view: 'cartogram', table: false })
+              if (state.table) startTransition(() => update({ view: 'cartogram', table: false }))
+              else update({ view: 'cartogram', table: false })
             }}
           >
             {strings.showCartogram}
@@ -260,7 +271,9 @@ export function App({ loaded: opened }: { loaded: LoadedPantry }) {
             onClick={() => {
               interrupt()
               setHighlight(null)
-              update({ table: !state.table })
+              // A Transition, so the `ViewTransition` around the stage animates the swap. The
+              // map↔bubbles switch deliberately is NOT one: the morph is that journey.
+              startTransition(() => update({ table: !state.table }))
             }}
           >
             {strings.tableToggle}
@@ -282,46 +295,80 @@ export function App({ loaded: opened }: { loaded: LoadedPantry }) {
            * a keyboard reaches first is the thing they came for.
            */}
           <div id="view" tabIndex={-1} className="view-column">
-            {state.table ? (
-              <DataTable
-                lk={lk}
-                indicatorId={drawn}
-                year={state.year}
-                selected={state.selected}
-                lang={state.lang}
-                onSelect={(code) => {
-                  interrupt()
-                  setNotice('')
-                  update({ selected: code })
-                }}
-              />
-            ) : (
-              <figure className="map-frame" id="map">
-                <MapCanvas
-                  ref={mapRef}
-                  lk={lk}
-                  topology={topology}
-                  adjacency={adjacency}
-                  bubbles={bubbles}
-                  view={view}
-                  indicatorId={drawn}
-                  year={state.year}
-                  selected={state.selected}
-                  lang={state.lang}
-                  animate={!reducedMotion}
-                  onNoMove={() => setNotice(strings.noNeighbour)}
-                  onMoved={() => setNotice('')}
-                  highlight={highlight}
-                  onHover={setHighlight}
-                  onSelect={(code) => {
-                    interrupt()
-                    setNotice('')
-                    update({ selected: code === state.selected ? null : code })
-                  }}
-                />
-                <figcaption id="map-hint">{strings.mapHint}</figcaption>
-              </figure>
-            )}
+            {/*
+             * One plate for every view, the same size in every view. The table used to render
+             * in a bordered box of its own beside a plate it did not match; now it sits where the
+             * map sits, with a caption line of its own, so switching views changes the picture
+             * and nothing around it. Plan 21.
+             *
+             * The `ViewTransition` animates the swap between the picture and the table — the one
+             * change of view the morph does not carry — and only when the swap is made inside a
+             * Transition, which the table button does. Under reduced motion the stylesheet turns
+             * the animation off, so the views simply replace each other.
+             */}
+            <figure className="map-frame" data-view={state.table ? 'table' : view}>
+              <ViewTransition
+                key={state.table ? 'table' : 'picture'}
+                enter="stage-enter"
+                exit="stage-exit"
+                default="none"
+              >
+                <div className="stage-body">
+                  {state.table ? (
+                    <DataTable
+                      lk={lk}
+                      indicatorId={drawn}
+                      year={state.year}
+                      selected={state.selected}
+                      lang={state.lang}
+                      onSelect={(code) => {
+                        interrupt()
+                        setNotice('')
+                        update({ selected: code })
+                      }}
+                    />
+                  ) : (
+                    <MapCanvas
+                      ref={mapRef}
+                      lk={lk}
+                      topology={topology}
+                      adjacency={adjacency}
+                      // The drawn indicator's file has arrived by definition, and since Plan 21
+                      // it carries the bubble layout sized for that indicator.
+                      layout={parts.get(drawn)!.layout}
+                      view={view}
+                      indicatorId={drawn}
+                      year={state.year}
+                      selected={state.selected}
+                      lang={state.lang}
+                      animate={!reducedMotion}
+                      onNoMove={() => setNotice(strings.noNeighbour)}
+                      onMoved={() => setNotice('')}
+                      highlight={highlight}
+                      onHover={setHighlight}
+                      onSelect={(code) => {
+                        interrupt()
+                        setNotice('')
+                        update({ selected: code === state.selected ? null : code })
+                      }}
+                    />
+                  )}
+                </div>
+              </ViewTransition>
+              {/*
+               * What the picture means, under it. The map's caption is the keyboard hint the
+               * SVG is described by; the bubbles add what their size says, because "sized by the
+               * measure" is a claim a visitor should not have to infer; the table gets its own
+               * line, which is also what keeps the plate the same height in every view.
+               */}
+              <figcaption id="map-hint" className="stage-hint">
+                {state.table
+                  ? strings.tableHint
+                  : view === 'cartogram'
+                    ? `${strings.cartogramHint} ${strings.mapHint}`
+                    : strings.mapHint}
+              </figcaption>
+            </figure>
           </div>
 
           <div className="reading-column">

@@ -8,9 +8,8 @@ An interactive atlas of Sweden's 290 municipalities — the number is the name �
 Statistics Sweden (SCB) open data. Not affiliated with SCB. Static site, no server, no runtime API, no tracking.
 
 Measure by measure, from 1968 to 2026: a choropleth you can drive with a mouse, a keyboard or a
-search box, a year you can drag or play, a bubble cartogram that fixes the visual lie a geographic
-map tells about where people live — with the 290 shapes travelling between the two rather than
-cutting — a profile with one small history per measure per municipality, an explicit
+search box, a year you can drag or play, a bubble cartogram sized by whatever measure is on the
+map — with the 290 shapes travelling between the two rather than cutting — a profile with one small history per measure per municipality, an explicit
 comparison that declines to declare a winner, and a plain sortable table twin of every view.
 Everything is in the URL, so every view is a link — and every municipality has its own page at
 `/en/malmo-1280/`, with its own title, description and preview card.

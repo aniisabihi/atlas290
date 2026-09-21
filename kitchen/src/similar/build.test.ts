@@ -294,6 +294,9 @@ describe('the core set (Plan 14)', () => {
       ...data,
       indicators: data.indicators.filter((i) => i.id !== 'density'),
       series: data.series.filter((s) => s.indicator !== 'density'),
+      // The layout goes with its indicator, or the contract's own cross-reference check
+      // refuses the pantry before the similarity builder gets to.
+      layouts: data.layouts?.filter((l) => l.indicator !== 'density'),
     })
     expect(() => buildSimilar(short)).toThrow(/density/)
   })

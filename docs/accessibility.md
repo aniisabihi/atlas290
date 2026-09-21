@@ -66,8 +66,11 @@ The scan was right both times; what changed was whether anything happened to be 
 - **Hovering never changes the URL**, so nothing a pointer does can be shared, navigated back
   through, or announced.
 - **Arrow-key navigation over the map and the cartogram.** Every one of the 290 municipalities is
-  reachable by arrow keys, on both layouts, asserted by unit tests that walk the real graph. A key
-  pointing at open sea says so in the live region rather than moving somewhere unasked.
+  reachable by arrow keys on the map and on every one of the forty-two bubble layouts — since
+  Plan 21 each indicator has its own — asserted by unit tests that walk the real graph, and
+  proven by the kitchen before a layout is published: it searches for the narrowest cone that
+  reaches all 290, publishes it with the layout, and refuses to publish a layout none reaches.
+  A key pointing at open sea says so in the live region rather than moving somewhere unasked.
 - **A link changes what is on screen, never where the visitor is.** Opening a profile moves focus
   to its name; arriving on one does not, because nobody asked for it and the name sits below the
   map. Asserted in `e2e/keyboard.spec.ts` after the network goes quiet, so no later commit can

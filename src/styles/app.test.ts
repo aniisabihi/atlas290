@@ -96,8 +96,18 @@ describe('the stage', () => {
   it('keeps the table header in view, because the sort controls live in it', () => {
     const head = rulesMatching('.view-column .data-table thead th')
     expect(head.some((b) => b.includes('position: sticky'))).toBe(true)
-    // Opaque, or the rows scroll through the labels they are supposed to be under.
-    expect(head.some((b) => b.includes('background: var(--surface)'))).toBe(true)
+    // Opaque, or the rows scroll through the labels they are supposed to be under. The plate's
+    // own white since Plan 21, because the table sits on the plate now and the plate does not
+    // follow the theme.
+    expect(head.some((b) => b.includes('background: var(--map-ground)'))).toBe(true)
+  })
+
+  it('gives the table the stage’s height outright, not only as a ceiling', () => {
+    // Plan 21: the table shares the map's plate, and a plate that changed height between views
+    // was the defect. `max-height` alone let a short table leave the plate shorter.
+    expect(
+      rulesMatching('.view-column .table-scroll').some((b) => b.includes('height: var(--stage)')),
+    ).toBe(true)
   })
 })
 

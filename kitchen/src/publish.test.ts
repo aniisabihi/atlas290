@@ -11,7 +11,6 @@ import {
   assertCodesMatch,
   buildIndicatorSources,
   buildManifest,
-  bubblePopulation,
   publish,
   roundPantryData,
   stableStringify,
@@ -278,39 +277,6 @@ describe('buildIndicatorSources (Task 13)', () => {
   })
 })
 
-describe('bubblePopulation (review finding 4)', () => {
-  const municipalities = [
-    { code: '0001', name: { sv: 'A', en: 'A' }, county: '00' },
-    { code: '0002', name: { sv: 'B', en: 'B' }, county: '00' },
-  ]
-  const series = {
-    indicator: 'population',
-    years: [2023, 2024],
-    values: [
-      [100, 110],
-      [200, null],
-    ],
-    status: [
-      [0, 0],
-      [0, 1],
-    ],
-  }
-
-  it('reads the value for the requested year per municipality', () => {
-    expect([...bubblePopulation(municipalities.slice(0, 1), series, 2023)]).toEqual([['0001', 100]])
-  })
-
-  it('throws, naming the year and the available range, when the year is not in the series', () => {
-    expect(() => bubblePopulation(municipalities, series, 2030)).toThrow(/2030/)
-    expect(() => bubblePopulation(municipalities, series, 2030)).toThrow(/2023/)
-    expect(() => bubblePopulation(municipalities, series, 2030)).toThrow(/2024/)
-  })
-
-  it('throws, naming the municipality, on a null value rather than substituting zero', () => {
-    expect(() => bubblePopulation(municipalities, series, 2024)).toThrow(/0002/)
-  })
-})
-
 // Ruling R22: the map (geometry codes) and the numbers (statistics codes) are joined by
 // four-digit municipality code. A silent mismatch means a municipality is drawn with
 // another's data, or drawn with none — so publish() must refuse to write anything unless
@@ -429,7 +395,6 @@ describe('publish() writes nothing on a code mismatch (review finding 1)', () =>
 
       expect(existsSync(join(pantryDir, 'geometry/municipalities.topo.json'))).toBe(false)
       expect(existsSync(join(pantryDir, 'geometry/adjacency.json'))).toBe(false)
-      expect(existsSync(join(pantryDir, 'layout/bubbles.json'))).toBe(false)
       expect(existsSync(join(pantryDir, 'data/index.json'))).toBe(false)
       expect(existsSync(join(pantryDir, 'data/indicators'))).toBe(false)
       expect(existsSync(join(pantryDir, 'manifest.json'))).toBe(false)

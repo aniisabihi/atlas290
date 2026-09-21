@@ -67,6 +67,13 @@
      theme — a dark theme's muted grey on white is about 2.2:1. Declared once, overridden never,
      exactly like --map-ground, and tokens.test.ts asserts it. */
   --on-plate: #545f6a;
+  /* Plan 21 put the table on the plate too, so the plate needs its own small palette: strong
+     text, a hairline, a hover wash and an edge. All fixed like --on-plate, for the same reason —
+     the plate is white in both themes, so nothing drawn on it may follow the theme. */
+  --on-plate-strong: #111a22;
+  --plate-rule: #d5dae0;
+  --plate-hover: #e3ecf6;
+  --plate-edge: rgba(17, 26, 34, 0.07);
   --plate-shadow: 0 1px 1px rgba(17, 26, 34, 0.05), 0 18px 40px -26px rgba(17, 26, 34, 0.45);
 
   /* Faces. Self-hosted and subset; see src/styles/fonts.css. */
@@ -75,7 +82,9 @@
   --font-mono: 'Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
   --space: 1rem;
-  --radius: 2px;
+  --radius: 3px;
+  /* One height for every control in the bar, so the row reads as one instrument. */
+  --control-h: 2.125rem;
   --measure: 38rem;
   --motion: 250ms;
 }

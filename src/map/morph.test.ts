@@ -7,6 +7,7 @@ import {
   sampleCircle,
   sampleOutline,
   startAngleFor,
+  unitCircle,
   SAMPLE_POINTS,
   type MorphPair,
   type Point,
@@ -165,58 +166,73 @@ describe('circlePath', () => {
   })
 })
 
+describe('unitCircle', () => {
+  it('returns unit directions, evenly spaced, starting where it is told', () => {
+    const u = unitCircle(Math.PI / 2, 4)
+    expect(u).toHaveLength(4)
+    for (const p of u) expect(Math.hypot(p[0], p[1])).toBeCloseTo(1, 10)
+    expect(u[0]![1]).toBeCloseTo(1, 10)
+    expect(u[1]![0]).toBeCloseTo(-1, 10)
+  })
+})
+
 describe('morphD', () => {
   const pair: MorphPair = {
     code: '0001',
     mapD: 'M0 0L10 0L10 10Z',
-    cartogramD: 'CIRCLE',
     from: [
       [0, 0],
       [10, 0],
       [10, 10],
     ],
-    to: [
-      [100, 100],
-      [110, 100],
-      [110, 110],
+    // Right, down, left — so on a circle of radius 10 at (100, 100) the destinations are
+    // (110, 100), (100, 110) and (90, 100).
+    unit: [
+      [1, 0],
+      [0, 1],
+      [-1, 0],
     ],
   }
+  const circle = { x: 100, y: 100, r: 10 }
 
   it('draws the real map path at rest at the map end', () => {
     // Not the resampling: at rest the visitor is looking at a coastline, and 32 points is not
     // a coastline. This is what lets the sample count be chosen for the frame budget.
-    expect(morphD(pair, 0)).toBe('M0 0L10 0L10 10Z')
-    expect(morphD(pair, -0.2)).toBe('M0 0L10 0L10 10Z')
+    expect(morphD(pair, 0, circle)).toBe('M0 0L10 0L10 10Z')
+    expect(morphD(pair, -0.2, circle)).toBe('M0 0L10 0L10 10Z')
   })
 
-  it('draws the real circle at rest at the cartogram end', () => {
-    expect(morphD(pair, 1)).toBe('CIRCLE')
-    expect(morphD(pair, 1.5)).toBe('CIRCLE')
+  it('draws the real circle at rest at the cartogram end — the circle it was GIVEN', () => {
+    // Since Plan 21 the circle is per frame: a bubble's radius follows the year and its position
+    // the indicator, so the pair cannot carry one. Whatever circle is current is what is drawn.
+    expect(morphD(pair, 1, circle)).toBe(circlePath(circle))
+    expect(morphD(pair, 1.5, circle)).toBe(circlePath(circle))
+    expect(morphD(pair, 1, { x: 5, y: 5, r: 2 })).toBe(circlePath({ x: 5, y: 5, r: 2 }))
   })
 
-  it('interpolates in between', () => {
-    expect(morphD(pair, 0.5)).toBe('M50.0 50.0L60.0 50.0L60.0 60.0Z')
+  it('interpolates in between, toward the circle of the moment', () => {
+    expect(morphD(pair, 0.5, circle)).toBe('M55.0 50.0L55.0 55.0L50.0 55.0Z')
+    // A smaller circle at the same centre: the destinations move inward, so the midpoints do.
+    expect(morphD(pair, 0.5, { ...circle, r: 0 })).toBe('M50.0 50.0L55.0 50.0L55.0 55.0Z')
   })
 
   it('moves every point toward its own partner, in order', () => {
     // Point i of the outline travels to point i of the circle. Pairing them any other way is
     // what makes a shape turn inside out on the way over.
-    const quarter = morphD(pair, 0.25)
-    expect(quarter).toBe('M25.0 25.0L35.0 25.0L35.0 35.0Z')
+    expect(morphD(pair, 0.25, circle)).toBe('M27.5 25.0L32.5 27.5L30.0 32.5Z')
   })
 
   it('closes the path', () => {
-    expect(morphD(pair, 0.5).endsWith('Z')).toBe(true)
+    expect(morphD(pair, 0.5, circle).endsWith('Z')).toBe(true)
   })
 })
 
 describe('pairFor', () => {
-  it('samples both ends to the same length and keeps the real geometry', () => {
-    const pair = pairFor(square, '0001', 'M0 0L1 0L1 1L0 1Z', { code: '0001', x: 5, y: 5, r: 2 }, 8)
+  it('samples the outline and keeps the real geometry, with one direction per sample', () => {
+    const pair = pairFor(square, '0001', 'M0 0L1 0L1 1L0 1Z', 8)
     expect(pair.from).toHaveLength(8)
-    expect(pair.to).toHaveLength(8)
+    expect(pair.unit).toHaveLength(8)
     expect(pair.mapD).toBe('M0 0L1 0L1 1L0 1Z')
-    expect(pair.cartogramD).toBe(circlePath({ x: 5, y: 5, r: 2 }))
     expect(pair.code).toBe('0001')
   })
 
@@ -226,14 +242,24 @@ describe('pairFor', () => {
     // seen from its middle that first point is up and to the left — and its partner on the
     // circle has to be up and to the left of the centre too. With a fixed start angle it would
     // be at three o'clock, and the whole shape would rotate on its way over.
-    const pair = pairFor(square, '0001', 'M0 0Z', { code: '0001', x: 100, y: 100, r: 10 }, 8)
-    const [x, y] = pair.to[0]!
-    expect(x).toBeLessThan(100)
-    expect(y).toBeLessThan(100)
+    const pair = pairFor(square, '0001', 'M0 0Z', 8)
+    const [ux, uy] = pair.unit[0]!
+    expect(ux).toBeLessThan(0)
+    expect(uy).toBeLessThan(0)
   })
 
-  it('puts every destination point on the circle', () => {
-    const pair = pairFor(square, '0001', 'M0 0Z', { code: '0001', x: 5, y: 5, r: 2 }, 8)
-    for (const p of pair.to) expect(Math.hypot(p[0] - 5, p[1] - 5)).toBeCloseTo(2, 10)
+  it('puts every destination on the circle, whatever circle is supplied', () => {
+    const pair = pairFor(square, '0001', 'M0 0Z', 8)
+    for (const circle of [
+      { x: 5, y: 5, r: 2 },
+      { x: 500, y: 40, r: 33 },
+    ]) {
+      // At t just under 1 the proxy is nearly on the circle; check the destinations themselves
+      // through the unit vectors, which is what morphD places.
+      for (const u of pair.unit) {
+        const p = [circle.x + circle.r * u[0], circle.y + circle.r * u[1]]
+        expect(Math.hypot(p[0]! - circle.x, p[1]! - circle.y)).toBeCloseTo(circle.r, 10)
+      }
+    }
   })
 })

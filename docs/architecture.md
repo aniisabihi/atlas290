@@ -31,19 +31,19 @@ kitchen monthly and opens a pull request. See [deployment.md](deployment.md).
 
 ## Core components
 
-| Component          | Where                                                            | Role                                                                                       |
-| ------------------ | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| SCB client         | `kitchen/src/scb/`                                               | PxWeb v2 requests, cell-limit splitting, rate limiting, response freezing                  |
-| Indicator registry | `kitchen/src/indicators/registry.ts`                             | Every indicator's definition and the one pipeline that drives them all                     |
-| Check stage        | `kitchen/src/check.ts`, `breaks.ts`                              | Rejects implausible values and flags parent-municipality breaks before anything is written |
-| Publisher          | `kitchen/src/publish.ts`                                         | Builds the pantry into a scratch dir, verifies, then lands it atomically                   |
-| Geometry builder   | `kitchen/src/geometry/`                                          | Topology, keyboard adjacency, Dorling bubble layout                                        |
-| Similarity builder | `kitchen/src/similar/`                                           | Standardise → distance → five nearest, per municipality                                    |
-| Facts engine       | `kitchen/src/facts/`                                             | Five families of candidate fact, ranked and phrased in both languages                      |
-| Pantry contract    | `shared/pantry.ts` (zod), `shared/geometry.ts`, `shared/slug.ts` | The only code both programs import                                                         |
-| Site data layer    | `src/data/`                                                      | Loads and validates the pantry; the one place that knows its columnar layout               |
-| URL state          | `src/state/url.ts`, `useAppState.ts`                             | Parses and writes the whole application state                                              |
-| Render layer       | `src/components/`, `src/map/`                                    | Map, cartogram and the morph between them; panels, table, legend                           |
+| Component          | Where                                                                                                       | Role                                                                                                                         |
+| ------------------ | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| SCB client         | `kitchen/src/scb/`                                                                                          | PxWeb v2 requests, cell-limit splitting, rate limiting, response freezing                                                    |
+| Indicator registry | `kitchen/src/indicators/registry.ts`                                                                        | Every indicator's definition and the one pipeline that drives them all                                                       |
+| Check stage        | `kitchen/src/check.ts`, `breaks.ts`                                                                         | Rejects implausible values and flags parent-municipality breaks before anything is written                                   |
+| Publisher          | `kitchen/src/publish.ts`                                                                                    | Builds the pantry into a scratch dir, verifies, then lands it atomically                                                     |
+| Geometry builder   | `kitchen/src/geometry/`                                                                                     | Topology, keyboard adjacency, one Dorling bubble layout per indicator, each proven reachable                                 |
+| Similarity builder | `kitchen/src/similar/`                                                                                      | Standardise → distance → five nearest, per municipality                                                                      |
+| Facts engine       | `kitchen/src/facts/`                                                                                        | Five families of candidate fact, ranked and phrased in both languages                                                        |
+| Pantry contract    | `shared/pantry.ts` (zod), `shared/geometry.ts`, `shared/slug.ts`, `shared/bubbles.ts`, `shared/navigate.ts` | The only code both programs import: the schemas, the projection, the URL slug, the bubble sizing rule and arrow-key movement |
+| Site data layer    | `src/data/`                                                                                                 | Loads and validates the pantry; the one place that knows its columnar layout                                                 |
+| URL state          | `src/state/url.ts`, `useAppState.ts`                                                                        | Parses and writes the whole application state                                                                                |
+| Render layer       | `src/components/`, `src/map/`                                                                               | Map, cartogram and the morph between them; panels, table, legend                                                             |
 
 ## Extension model
 

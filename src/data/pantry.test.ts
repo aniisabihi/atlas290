@@ -35,14 +35,11 @@ const validIndex = {
 const partFor = (id: string) => ({
   indicator: id === 'tax-rate' ? second : indicator,
   series: { indicator: id, years: [2024, 2025], values: [], status: [] },
+  // No municipalities, so no circles: a layout is one circle per row, and there are no rows.
+  layout: { minR: 8, maxR: 40, cone: 45, circles: [] },
 })
 
 const validAdjacency = { schemaVersion: 1, neighbours: {}, synthetic: [] }
-const validBubbles = {
-  schemaVersion: 1,
-  basedOn: { indicator: 'population', year: 2024 },
-  circles: [],
-}
 const validFacts = {
   schemaVersion: 1,
   facts: [
@@ -89,7 +86,6 @@ function stubFetch(
     part?: (id: string) => Response
     topology?: Response
     adjacency?: Response
-    bubbles?: Response
     similar?: Response
     facts?: Response
   } = {},
@@ -107,8 +103,6 @@ function stubFetch(
       }
       if (url.includes('adjacency'))
         return Promise.resolve(overrides.adjacency ?? okResponse(validAdjacency))
-      if (url.includes('bubbles'))
-        return Promise.resolve(overrides.bubbles ?? okResponse(validBubbles))
       if (url.includes('similar'))
         return Promise.resolve(overrides.similar ?? okResponse(validSimilar))
       if (url.includes('facts')) return Promise.resolve(overrides.facts ?? okResponse(validFacts))
@@ -128,7 +122,6 @@ describe('loadPantry', () => {
     ['the index', { index: notOkResponse() }],
     ['the topology', { topology: notOkResponse() }],
     ['the adjacency graph', { adjacency: notOkResponse() }],
-    ['the bubble layout', { bubbles: notOkResponse() }],
     ['the similar file', { similar: notOkResponse() }],
     ['the facts file', { facts: notOkResponse() }],
   ])('throws the pantry-files-missing message when %s is not ok', async (_what, overrides) => {

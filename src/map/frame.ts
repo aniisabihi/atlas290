@@ -1,14 +1,14 @@
-import type { Bubbles } from '../../shared/pantry'
+import type { BubbleLayout } from '../../shared/pantry'
 import { FRAME } from '../../shared/geometry'
 
 /**
- * Putting the bubble layout inside the map's frame, so the two views share one coordinate
- * system and a shape can travel between them.
+ * Putting a bubble layout inside the map's frame, so the two views share one coordinate system
+ * and a shape can travel between them.
  *
- * The map is projected into a 1000x2000 frame (`shared/geometry.ts`). The bubble layout is
- * published in a unit square, and not even a square one in practice: the committed layout runs
- * x from 0.060 to 0.891 and y from 0.063 to 1.049, because a circle's radius may spill past the
- * edge its centre sits near.
+ * The map is projected into a 1000x2000 frame (`shared/geometry.ts`). A layout is published in
+ * the units `shared/bubbles.ts` describes — a box 1000 wide in which Sweden stands at half its
+ * true height — and not even that box exactly, because a circle's radius may spill past the edge
+ * its centre sits near, and a Dorling pushes bubbles outward wherever they crowd.
  *
  * **The scale has to be uniform or a circle stops being a circle.** Multiplying x by the frame's
  * width and y by its height is the obvious thing and it is wrong twice over: the layout comes
@@ -17,7 +17,8 @@ import { FRAME } from '../../shared/geometry'
  * bubbles running off the bottom of the frame.
  *
  * So: one scale for both axes, chosen so the whole layout fits, and one offset that centres what
- * is left over.
+ * is left over. Since Plan 21 there is one layout per indicator and the placement is computed
+ * for whichever is drawn; the rule is the same for all of them.
  */
 
 export type Placement = {
@@ -31,7 +32,7 @@ export type Placement = {
 export type PlacedCircle = { code: string; x: number; y: number; r: number }
 
 /** The layout's own extent, radii included, because a circle near the edge sticks out. */
-export function boundsOf(circles: Bubbles['circles']): {
+export function boundsOf(circles: BubbleLayout['circles']): {
   minX: number
   minY: number
   maxX: number
@@ -56,11 +57,11 @@ export function boundsOf(circles: Bubbles['circles']): {
  *
  * The scale is the smaller of the two axes' ratios — "fit", not "fill" — so nothing is ever
  * clipped. Which axis wins depends on the layout and the frame, so it is computed rather than
- * assumed: the committed layout is wider than it is tall relative to the 1:2 frame, so today the
- * width decides, and a future layout may not.
+ * assumed: every committed layout is wider than it is tall relative to the 1:2 frame, so today
+ * the width decides, and a future layout may not.
  */
 export function placementFor(
-  circles: Bubbles['circles'],
+  circles: BubbleLayout['circles'],
   frame: readonly [number, number] = FRAME,
   padding = 20,
 ): Placement {
@@ -92,7 +93,7 @@ export function place(circle: PlacedCircle, at: Placement): PlacedCircle {
 }
 
 export function placeAll(
-  circles: Bubbles['circles'],
+  circles: BubbleLayout['circles'],
   frame: readonly [number, number] = FRAME,
   padding = 20,
 ): PlacedCircle[] {

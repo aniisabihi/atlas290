@@ -161,6 +161,15 @@ of income a house costs, and where women and men differ most in education.
 Same rule as the slices before it: **each plan is written in full only just before it is
 executed.** The table is intent, not specification.
 
+## What looking found — Plan 21
+
+Six pieces of feedback from looking at the site on 2026-09-21, one of which changed a DESIGN
+decision. Each of the five slices before it was about the data; this one is about the page.
+
+| #   | Plan                                                                                                               | Ends with                                                                                                                                                                                                                                                                                                                                                                                      | Status   |
+| --- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 21  | [Bubbles sized by the measure, a table that arrives, and an editorial polish](2026-09-21-21-bubbles-by-measure.md) | Bubbles sized by the measure on screen, from one kitchen-published layout per indicator that the kitchen proves reachable; the table on the map's plate, arriving by a view transition; the theme and language switches as one pair; "All from SCB."; and a pass over the controls, the slider, the legend and the tables. [Decision 0024](../decisions/0024-bubbles-sized-by-the-measure.md). | **done** |
+
 ## Later, and possibly never
 
 **~~More indicators.~~** Superseded by the fourth slice above. The paragraph that stood here said a
