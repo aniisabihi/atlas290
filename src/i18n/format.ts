@@ -44,6 +44,7 @@ const UNITS: Record<IndicatorMeta['unit'], Record<Lang, string>> = {
   'tonnes-per-resident': { sv: 'ton per invånare', en: 'tonnes per resident' },
   'persons-per-household': { sv: 'personer per hushåll', en: 'persons per household' },
   metres: { sv: 'm', en: 'm' },
+  hectares: { sv: 'hektar', en: 'hectares' },
 }
 
 export function unitSuffix(indicator: IndicatorMeta, lang: Lang): string {

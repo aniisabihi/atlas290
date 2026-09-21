@@ -112,6 +112,7 @@ export const UNIT_DECIMALS: Record<Indicator['unit'], number> = {
   'tonnes-per-resident': 2,
   'persons-per-household': 2,
   metres: 0,
+  hectares: 0,
 }
 
 /**
@@ -146,6 +147,9 @@ const IndicatorFields = z.object({
     'persons-per-household',
     // Plan 17: mean distance to protected nature, which SCB rounds to even hundreds of metres.
     'metres',
+    // Plan 19. Farmland is an area, and neither `count` ('residents') nor any per-something
+    // unit describes it. Whole hectares: a decimal on 32,000 hectares would be noise.
+    'hectares',
   ]),
   /** 'fixed-latest-year' means values are inflation-adjusted to the latest year's kronor. */
   priceBasis: z.enum(['none', 'fixed-latest-year']),

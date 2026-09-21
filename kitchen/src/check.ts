@@ -127,6 +127,20 @@ export const PLAUSIBLE_RANGES: Record<string, PlausibleRange> = {
   'life-expectancy-women': { min: 0, max: 120 },
   'life-expectancy-men': { min: 0, max: 120 },
   'life-expectancy-gap': { min: -50, max: 50 },
+  // Plan 19, the sparse seven. Turnout is a share and cannot leave 0-100; its gap is signed and
+  // bounded by the same two numbers. Farmland is an area in hectares and Sweden's largest
+  // municipality is about 2 million of them. The built share is tiny nearly everywhere and is
+  // still a share. Holiday homes per 1,000 residents is NOT bounded by 1,000: a small
+  // municipality full of summer houses can have several times its own population in them.
+  // (holiday-homes-per-1000 is deferred — see plan 19; 106 municipalities have no holiday-home
+  // area at all and no OBSERVATION_STATUS says so honestly.)
+  'turnout-general-election': { min: 0, max: 100 },
+  'turnout-municipal-election': { min: 0, max: 100 },
+  'turnout-gap-general-municipal': { min: -100, max: 100 },
+  'farmland-hectares': { min: 0, max: 3_000_000 },
+  'share-land-built': { min: 0, max: 100 },
+  'green-space-within-200m': { min: 0, max: 100 },
+  'councillors-women-share': { min: 0, max: 100 },
 }
 
 /**

@@ -794,6 +794,27 @@ do not. Plan 17 lost a fetch to this: `TAB4422` advertises the share of resident
 protected nature, and all five of its share-within-a-distance codes are null for all 290
 municipalities in all thirteen years. The indicator became the mean distance, which is complete.
 
+**This has now happened twice, so treat it as the rule rather than the anecdote.** Plan 19 lost a
+whole indicator the same way: `TAB708` advertises `000000BO`, "Skillnad mot röstberättigad
+befolkning", and at the background TOTAL it is null for all 1,450 cells — the gap is defined per
+background group and against the whole population it is zero by construction. The design had
+named `councillor-gap` on the strength of the metadata alone. It became the share of councillors
+who are women, which is complete. Probe the exact cells an indicator will read, for a handful of
+municipalities and the first and last period, before a design names the measure.
+
+**A "total" is not always a total.** `TAB708.BakgrVar` holds seven separate cross-tabulations in
+one dimension, each with its own `samtliga` code, and one of them disagrees: Stockholm's
+2023–2026 council is 287 representatives under six of the seven and 262 under `samutb`, which can
+only total the representatives whose education is known. `TOTAL_CODES` knows none of these codes.
+Compare the candidates against each other before picking one — the majority is not automatically
+right, but a lone dissenter is a signal — and say in the derivation why the winner won.
+
+**Grouping keys by code, except for `ContentsCode`.** `resolveSources` keys a grouped dimension by
+its LABEL only for `ContentsCode`, where the label is the one identity stable across a stitch of
+tables (decision 0018 D4). Every other dimension keys by code — which is also the safer half:
+`TAB5118` publishes land-use class 3 as `'bebyggd och anlagd mark '`, with a trailing space that a
+label-keyed share would have to carry verbatim for ever.
+
 **Before adding an indicator, read the table's own metadata.** Plan 16 verified thirteen tables
 against live SCB metadata before writing a line, and six of the fifteen the design named came out
 different: two tables had no total code where one was assumed, one was already in fixed prices,

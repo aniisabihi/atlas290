@@ -301,6 +301,12 @@ import { carsDefinition } from './transport'
 import { inCommutingDefinition, outCommutingDefinition } from './commuting'
 // The life-expectancy gap reads its two operands from ctx.series, so it comes after both.
 import { lifeGapDefinition, lifeMenDefinition, lifeWomenDefinition } from './longevity'
+// Plan 19, the sparse seven. The turnout gap reads its two operands from ctx.series, so it comes
+// after both. The rest need only ctx.municipalities.
+import { turnoutDefinition, turnoutGapDefinition, turnoutMunicipalDefinition } from './elections'
+import { farmlandDefinition, shareBuiltDefinition } from './land'
+import { greenSpaceDefinition } from './environment'
+import { councillorsWomenDefinition } from './civic'
 
 /** Every indicator the pantry publishes, in build order. Population must stay first: it is
  * the only definition that derives `ctx.municipalities`, and every other definition depends
@@ -364,6 +370,15 @@ function ensureRegistered(): void {
     lifeWomenDefinition,
     lifeMenDefinition,
     lifeGapDefinition,
+    // Plan 19. Both turnout splits before the gap, for the same reason as education's: the gap
+    // reads its operands from ctx.series and throws if they are not there.
+    turnoutDefinition,
+    turnoutMunicipalDefinition,
+    turnoutGapDefinition,
+    farmlandDefinition,
+    shareBuiltDefinition,
+    greenSpaceDefinition,
+    councillorsWomenDefinition,
   )
 }
 

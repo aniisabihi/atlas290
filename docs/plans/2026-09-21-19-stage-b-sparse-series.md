@@ -58,15 +58,15 @@ D6 describes: no index into this is persisted anywhere, unlike `OBSERVATION_STAT
 
 **Acceptance**
 
-- [ ] `coverage.years`, when present, is non-empty, strictly ascending, and has `from` first and
+- [x] `coverage.years`, when present, is non-empty, strictly ascending, and has `from` first and
       `to` last — asserted by the schema, not by convention.
-- [ ] A dense indicator omits it; the schema accepts both shapes.
-- [ ] One exported predicate — `coversYear(indicator, year)` — replaces the three hand-rolled
+- [x] A dense indicator omits it; the schema accepts both shapes.
+- [x] One exported predicate — `coversYear(indicator, year)` — replaces the three hand-rolled
       range checks, and `nearestCoveredYear` returns a year the indicator HAS rather than a
       clamp into its range.
-- [ ] `nearestCoveredYear` ties break toward the earlier year, stated and tested, because a tie
+- [x] `nearestCoveredYear` ties break toward the earlier year, stated and tested, because a tie
       has to break somewhere and silence would make it arbitrary.
-- [ ] `public/pantry/` byte-identical — nothing declares `years` yet.
+- [x] `public/pantry/` byte-identical at that commit — nothing declared `years` yet.
 
 ### Task 2 — The kitchen writes it, and `check.ts` refuses a lie
 
@@ -77,12 +77,12 @@ failure, not a warning.
 
 **Acceptance**
 
-- [ ] `check.ts` fails when `coverage.years` differs from the series' own years in either
+- [x] `check.ts` fails when `coverage.years` differs from the series' own years in either
       direction, naming the indicator and the difference.
-- [ ] It also fails when `years` is ABSENT and the series is not dense — otherwise a sparse
+- [x] It also fails when `years` is ABSENT and the series is not dense — otherwise a sparse
       indicator could ship silently as a dense one, which is the exact defect this plan exists to
       fix.
-- [ ] A test proves both failures fire, against a fabricated series.
+- [x] Five tests prove every direction fires, against a fabricated series.
 
 ### Task 3 — The empty year, the ticks and the playback
 
@@ -90,16 +90,16 @@ Site only, no contract change. D3, D4, D5.
 
 **Acceptance**
 
-- [ ] The map shows `EmptyYear` for a year the indicator does not have, not merely for one outside
+- [x] The map shows `EmptyYear` for a year the indicator does not have, not merely for one outside
       its range.
-- [ ] Its sentence is true for a sparse series: "published for 1973–2022" is misleading when there
+- [x] Its sentence is true for a sparse series: "published for 1973–2022" is misleading when there
       are fifteen values in it, so a sparse indicator gets its own string in both languages.
-- [ ] The slider's ticks mark the years that have data.
-- [ ] `aria-valuetext` says the same thing the sentence does — the ticks are `aria-hidden`, so for
+- [x] The slider's ticks mark the years that have data — and are DRAWN, which they never were.
+- [x] `aria-valuetext` says the same thing the sentence does — the ticks are `aria-hidden`, so for
       a screen reader the value text is the only carrier.
-- [ ] Playback steps to the next year that has data, and stops at the last one rather than
+- [x] Playback steps to the next year that has data, and stops at the last one rather than
       running out the axis.
-- [ ] Proven against a **fabricated two-value indicator** before any real one exists, per the
+- [x] Proven against a **fabricated two-value indicator** before any real one exists, per the
       design's §6.
 
 ### Task 4 — Look at it
@@ -152,18 +152,18 @@ Needs `yarn kitchen fetch` — the only command allowed to reach SCB. Only metad
 
 **Acceptance**
 
-- [ ] 290 municipalities per indicator, asserted by `check.ts`.
-- [ ] Every figure reconciled against a second read of the source, per the slice's §6.
-- [ ] Each one's `coverage.years` matches its series.
-- [ ] The facts engine's noise bound re-derived per indicator rather than inherited — the design's
+- [x] 290 municipalities per indicator, asserted by `check.ts`.
+- [x] Every figure reconciled against a second read of the source, per the slice's §6.
+- [x] Each one's `coverage.years` matches its series — enforced by rule 7, not merely checked once.
+- [x] The facts engine's noise bound re-derived per indicator rather than inherited — the design's
       risk 3. A sparse series' "change since the start" spans decades.
-- [ ] `data/similar.json` byte-identical: the metric reads the core ten and must not notice these.
+- [x] `data/similar.json` byte-identical: the metric reads the core ten and must not notice these.
 
 ### Task 6 — The record
 
-- [ ] ADR, indexed. D1, D2 and the turnout-gap naming are decisions the design did not make.
-- [ ] `docs/kitchen.md` gains the six tables.
-- [ ] The performance budget re-run — forty-two indicators against the thirty-five plan 18
+- [x] ADR-0020, indexed. D1, D2 and the turnout-gap naming are decisions the design did not make.
+- [x] `docs/kitchen.md` gains three rules the six tables taught, which is the part that transfers.
+- [x] The performance budget re-run — forty-two indicators against the thirty-five plan 18
       measured at 92. If it has fallen back toward the floor, that is recorded, not absorbed.
 
 ## Decisions this plan takes
@@ -185,4 +185,32 @@ interesting quantity is the distance between the national and the local, which i
 
 ## Measurements
 
-_To be filled._
+Same machine and preview server as [plan 18](2026-09-21-18-the-view-is-built-once.md), built with
+`SITE_ORIGIN` the way CI builds it, median of 3.
+
+|                       | 35 indicators |       42 indicators |
+| --------------------- | ------------: | ------------------: |
+| `/en/stockholm-0180/` |            92 | **95** (96, 92, 95) |
+| `/en/` root           |            91 | **91** (90, 91, 91) |
+| Index, gzipped        |         7,975 |           **8,473** |
+| Script bytes          |       127,936 |             128,359 |
+| Unit tests            |         1,282 |           **1,319** |
+| `data/similar.json`   |             — |  **byte-identical** |
+
+**The number worth reading twice is 95.** Seven more indicators cost nothing, because
+[0019](../decisions/0019-the-view-is-built-once.md) landed first and removed the quadratic that
+would have made each of them worse. The trend on this URL across five slices: 86, 82, 65, 92,
+**95**.
+
+### What shipped, and what did not
+
+| Id                              | Values | Builder    |                                                             |
+| ------------------------------- | -----: | ---------- | ----------------------------------------------------------- |
+| `turnout-general-election`      |     15 | direct     |                                                             |
+| `turnout-municipal-election`    |     15 | direct     | added — a gap needs its operands published (0016 D6)        |
+| `turnout-gap-general-municipal` |     15 | difference |                                                             |
+| `farmland-hectares`             |      8 | direct     | 1981 start, D8                                              |
+| `share-land-built`              |      3 | share      | keyed by code, not label                                    |
+| `green-space-within-200m`       |      2 | direct     |                                                             |
+| `councillors-women-share`       |      5 | direct     | replaces the design's `councillor-gap`, which has no values |
+| ~~`holiday-homes-per-1000`~~    |      2 | ratio      | **deferred** — see ADR-0020                                 |

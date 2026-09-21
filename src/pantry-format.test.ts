@@ -72,6 +72,10 @@ describe('published pantry: file format (regression guards, this task)', () => {
     'tonnes-per-resident': 2,
     'persons-per-household': 2,
     metres: 0,
+    // Plan 19. Farmland is a whole number of hectares: a decimal on 32,000 hectares of field,
+    // measured every five years by a survey whose method changed during the period, would be
+    // precision the source does not have.
+    hectares: 0,
   }
 
   /** Counts the decimal digits a number's own JS string representation actually carries —
