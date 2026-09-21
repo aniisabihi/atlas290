@@ -71,7 +71,7 @@ D6 describes: no index into this is persisted anywhere, unlike `OBSERVATION_STAT
 ### Task 2 — The kitchen writes it, and `check.ts` refuses a lie
 
 Declared per indicator and **verified against the built series**, the way
-[0018](../decisions/0018-stage-a-and-what-the-tables-said.md) asserts 290 regions rather than
+[0021](../decisions/0021-stage-a-and-what-the-tables-said.md) asserts 290 regions rather than
 trusting the catalogue. A declared `years` that does not match the series exactly is a build
 failure, not a warning.
 

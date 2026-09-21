@@ -8,7 +8,7 @@
  *  1. `000000BO` — "Skillnad mot röstberättigad befolkning" — is null for ALL 1,450 cells at the
  *     background total. The gap is defined per background group; against the whole population it
  *     is zero by construction, so SCB publishes nothing. The indicator became the share of
- *     councillors who are women (`0000009U`), which is complete. This is ADR-0018's content-code
+ *     councillors who are women (`0000009U`), which is complete. This is ADR-0021's content-code
  *     trap for the second time in one slice, which is why docs/kitchen.md now states it as a
  *     rule rather than an anecdote.
  *  2. `BakgrVar`'s seven "samtliga" codes do NOT agree — each totals only the representatives

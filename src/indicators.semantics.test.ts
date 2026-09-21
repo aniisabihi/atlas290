@@ -623,7 +623,7 @@ describe('published pantry: edge cells and status semantics', () => {
  * Plan 19's seven, and the three claims their caveats make that a reader could check.
  *
  * Each of these was written the wrong way round first and corrected by the published figures —
- * which is the reason they are tests rather than prose alone. ADR-0018 recorded the same shape
+ * which is the reason they are tests rather than prose alone. ADR-0021 recorded the same shape
  * of correction for "women outlive men everywhere", which is false in three windows.
  */
 describe('published pantry: the sparse seven', () => {

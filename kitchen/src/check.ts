@@ -284,7 +284,7 @@ function checkCoverage(
  * `coverage.years` is written by hand in an indicator module; the series is built from SCB. The
  * two can drift, and when they do the site lies in both directions: the slider lights a year
  * with nothing in it, or dims one that has a value. The same reasoning as
- * [0018](../../docs/decisions/0018-stage-a-and-what-the-tables-said.md)'s 290-region assertion —
+ * [0021](../../docs/decisions/0021-stage-a-and-what-the-tables-said.md)'s 290-region assertion —
  * the declaration is a claim, so the build checks it rather than trusting it.
  *
  * The second half matters more than the first. Without it, an indicator whose series has holes

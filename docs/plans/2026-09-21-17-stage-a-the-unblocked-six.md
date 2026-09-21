@@ -99,7 +99,7 @@ it is published under. That rule is this task's real content.
 
 ### Task 5 — The record
 
-ADR-0018 for the slice's D1–D9 as far as stage A exercises them; `docs/kitchen.md` for the
+ADR-0021 for the slice's D1–D9 as far as stage A exercises them; `docs/kitchen.md` for the
 multi-content source; the design's stage-A table reconciled with what shipped.
 
 ## Measurements

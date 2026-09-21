@@ -6,7 +6,7 @@
   `kitchen/src/indicators/**`
 - **Related:** [Fifth slice design](../plans/2026-09-21-fifth-slice-design.md),
   [Plan 19](../plans/2026-09-21-19-stage-b-sparse-series.md),
-  [0018](0018-stage-a-and-what-the-tables-said.md)
+  [0021](0021-stage-a-and-what-the-tables-said.md)
 
 ## Context
 
@@ -71,7 +71,7 @@ run-to-run spread. The trend across five slices on the same URL and machine is 8
 
 ## Alternatives considered
 
-- **Widen `IndicatorSeries.years` to hold periods.** Rejected in [0018](0018-stage-a-and-what-the-tables-said.md) D2 and not revisited: pinning a mandate to the year the council is seated costs one caveat.
+- **Widen `IndicatorSeries.years` to hold periods.** Rejected in [0021](0021-stage-a-and-what-the-tables-said.md) D2 and not revisited: pinning a mandate to the year the council is seated costs one caveat.
 - **Drop the slider for a two-value measure.** Answered by looking rather than arguing — see Consequences.
 - **Publish the councillor gap from a sub-category.** `000000BO` has values for each background group, so a gap could be built for, say, 18–29-year-olds. That is a different and much narrower question than the one the design asked.
 
@@ -81,7 +81,7 @@ run-to-run spread. The trend across five slices on the same URL and machine is 8
   `TAB708` advertises `000000BO`, "Skillnad mot röstberättigad befolkning", and at the background
   TOTAL it is null for **all 1,450 cells** — 290 municipalities × 5 mandate periods. The gap is
   defined per background group; against the whole population it is zero by construction, so SCB
-  publishes nothing. [0018](0018-stage-a-and-what-the-tables-said.md) recorded the identical trap
+  publishes nothing. [0021](0021-stage-a-and-what-the-tables-said.md) recorded the identical trap
   for `TAB4422`'s five share codes. A content code existing in the metadata is not the same as
   that code having values, and this project has now been caught by that twice in eight weeks —
   the check belongs in the question list, before a design names a measure.
@@ -96,7 +96,7 @@ run-to-run spread. The trend across five slices on the same URL and machine is 8
 - **The turnout gap is not always positive, and the four exceptions are named in a test.** Öckerö,
   Timrå and Vilhelmina in 1973, and Bjurholm in 2002 — four of 4,288 points, all within a tenth
   of a percentage point of zero. Same shape as
-  [0018](0018-stage-a-and-what-the-tables-said.md)'s three windows where women did not outlive
+  [0021](0021-stage-a-and-what-the-tables-said.md)'s three windows where women did not outlive
   men: the assertion was written the confident way first.
 
 - **Holiday homes are deferred over a status that would lie.** `TAB4198` publishes nothing for 106

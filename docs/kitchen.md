@@ -811,7 +811,7 @@ right, but a lone dissenter is a signal — and say in the derivation why the wi
 
 **Grouping keys by code, except for `ContentsCode`.** `resolveSources` keys a grouped dimension by
 its LABEL only for `ContentsCode`, where the label is the one identity stable across a stitch of
-tables (decision 0018 D4). Every other dimension keys by code — which is also the safer half:
+tables (decision 0021 D4). Every other dimension keys by code — which is also the safer half:
 `TAB5118` publishes land-use class 3 as `'bebyggd och anlagd mark '`, with a trailing space that a
 label-keyed share would have to carry verbatim for ever.
 

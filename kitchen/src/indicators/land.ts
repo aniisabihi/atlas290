@@ -25,7 +25,7 @@ const TOTAL_FARMLAND = 'total jordbruksmark'
  * The share is keyed by CODE, not by label, and deliberately.
  *
  * `resolveSources` keys a group by its label only for `ContentsCode`, where the label is the
- * one identity stable across a stitch of tables (decision 0018 D4). Every other dimension keys
+ * one identity stable across a stitch of tables (decision 0021 D4). Every other dimension keys
  * by code — and here that is the safer half anyway: `TAB5118` publishes class 3 as
  * `'bebyggd och anlagd mark '`, with a trailing space, which a label-keyed share would have to
  * carry verbatim in this file for ever.
