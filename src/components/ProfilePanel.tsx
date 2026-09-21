@@ -6,6 +6,9 @@ import { t } from '../i18n/strings'
 import type { Lang } from '../state/url'
 import { Sparkline } from './Sparkline'
 
+/** A panel asked for in isolation was opened by somebody; only `App` knows otherwise. */
+const ALWAYS = () => true
+
 /**
  * Everything the pantry knows about one municipality, in one place.
  *
@@ -13,8 +16,9 @@ import { Sparkline } from './Sparkline'
  * DESIGN section 5 asks for a non-modal panel, and trapping focus in a panel that sits beside the
  * thing it describes would stop a visitor comparing the two.
  *
- * Focus moves to the heading when it opens, so a screen reader lands on "Stockholm" rather than
- * being left wherever it was on a page that has just changed underneath it.
+ * Focus moves to the heading when a visitor OPENS a profile, so a screen reader lands on
+ * "Stockholm" rather than being left wherever it was on a page that has just changed underneath
+ * it. It does not move when a link merely arrives already showing one — see `openedByVisitor`.
  */
 export function ProfilePanel({
   lk,
@@ -26,6 +30,7 @@ export function ProfilePanel({
   story,
   similar,
   compare,
+  openedByVisitor = ALWAYS,
 }: {
   lk: Lookup
   code: string
@@ -51,17 +56,29 @@ export function ProfilePanel({
    * and was styled like nothing else on the site.
    */
   compare?: ReactNode
+  /**
+   * Asked once, at the moment the panel appears or changes municipality: is this a profile the
+   * visitor opened, or one the page simply arrived with?
+   *
+   * A question rather than a value because the answer changes exactly once, between the page's
+   * first commit and everything after it, and a prop that flipped would give the effect below a
+   * second chance to fire — moving focus long after the visitor started reading, which is the
+   * whole defect. Only `App` knows how the page arrived; a panel on its own was opened by
+   * somebody, so that is the default.
+   */
+  openedByVisitor?: () => boolean
 }) {
   const strings = t(lang)
   const heading = useRef<HTMLHeadingElement>(null)
   const municipality = lk.municipality(code)
 
   // Re-runs when the municipality changes, which is the point: opening a different profile has
-  // to move focus again, not leave it on a heading that now says something else.
+  // to move focus again, not leave it on a heading that now says something else. It does not run
+  // for the profile a deep link arrives with — see `openedByVisitor`.
   useEffect(() => {
     const el = heading.current
-    if (el && code) el.focus()
-  }, [code])
+    if (el && code && openedByVisitor()) el.focus()
+  }, [code, openedByVisitor])
 
   if (!municipality) return null
 

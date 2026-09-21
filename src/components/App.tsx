@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fetchIndicatorPart, withPart, type LoadedPantry } from '../data/pantry'
 import { classOf, lookup, observationAt, observationSentence } from '../data/select'
 import { t } from '../i18n/strings'
@@ -126,6 +126,35 @@ export function App({ loaded: opened }: { loaded: LoadedPantry }) {
 
   /** Any deliberate interaction stops the playback rather than fighting it. */
   const interrupt = () => setPlaying(false)
+
+  /**
+   * Whether a profile appearing right now is one the visitor opened.
+   *
+   * A profile that is on screen because the LINK named a municipality was opened by nobody, so
+   * `ProfilePanel` does not move focus into it. That used to be the other way round — DESIGN
+   * section 5 asked for a declared focus target on a deep link too — and it was wrong twice over.
+   *
+   * It is wrong for a visitor: this application mounts asynchronously, because the pantry has to
+   * arrive before there is anything to draw, so the focus landed at an unpredictable moment after
+   * the page was already readable and yanked anyone who had started tabbing. And the heading it
+   * landed on sits BELOW the map in the document, so a keyboard visitor arriving on
+   * `/en/malmo-1280/` could not reach the search, the year or the map at all without tabbing
+   * backwards past everything. Nothing is lost by staying put: the page title says where the link
+   * went, the skip link is still the first stop, and the panel is still in the tab order.
+   *
+   * It was also wrong for the browser suite, which is where it was found — see
+   * docs/decisions/0018-the-focus-a-link-never-asked-for.md.
+   *
+   * A ref cleared in a mount effect rather than a value computed while rendering: React flushes a
+   * child's effects before its parent's, so the panel below asks this question and gets `false`
+   * while the page is still arriving, and `true` from the next commit onwards — including when
+   * the visitor comes back to the very municipality the link named.
+   */
+  const arriving = useRef(true)
+  useEffect(() => {
+    arriving.current = false
+  }, [])
+  const openedByVisitor = useCallback(() => !arriving.current, [])
 
   /**
    * A one-off message that takes precedence over the usual sentence — currently only "no
@@ -351,6 +380,7 @@ export function App({ loaded: opened }: { loaded: LoadedPantry }) {
           {state.selected && (
             <ProfilePanel
               asSheet={narrow}
+              openedByVisitor={openedByVisitor}
               lk={lk}
               code={state.selected}
               year={state.year}

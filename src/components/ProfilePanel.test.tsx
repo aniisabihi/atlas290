@@ -75,6 +75,22 @@ describe('ProfilePanel', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Malmö' })).toBe(document.activeElement)
   })
 
+  it('leaves focus alone when nobody opened it', () => {
+    // The page arrived already showing this municipality, which is `App`'s question to answer
+    // and not the panel's. docs/decisions/0018-the-focus-a-link-never-asked-for.md.
+    render(
+      <ProfilePanel
+        lk={lk}
+        code="0180"
+        year={2024}
+        lang="en"
+        onClose={() => {}}
+        openedByVisitor={() => false}
+      />,
+    )
+    expect(document.activeElement).toBe(document.body)
+  })
+
   it('closes with a real button that has a name', async () => {
     const { onClose } = draw()
     await userEvent.click(screen.getByRole('button', { name: 'Close the municipality panel' }))
