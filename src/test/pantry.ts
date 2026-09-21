@@ -1,10 +1,10 @@
 import {
   PantryIndex,
   PantryIndicator,
+  PantryView,
   assemblePantry,
   viewOf,
   type PantryData,
-  type PantryView,
 } from '../../shared/pantry'
 
 /**
@@ -69,4 +69,46 @@ export function partialPantry(ids: readonly string[]): PantryView {
       return part
     }),
   )
+}
+
+/**
+ * A fabricated sparse indicator, added to the published pantry.
+ *
+ * The fifth slice design's §6 asks for exactly this: stage B's behaviour proven against a
+ * two-value indicator BEFORE a real one exists, so the site work can be finished and looked at
+ * without waiting on a fetch from SCB. Two values in a fifty-nine-year axis is the hardest case
+ * the design names, and the one risk 2 asks a question about.
+ *
+ * Fabricated rather than taken from the pantry on purpose: no published indicator is sparse yet,
+ * and a test that silently started passing because a real one arrived would stop testing the
+ * shape it was written for.
+ */
+export function pantryWithSparse(
+  years: readonly number[] = [2015, 2020],
+  id = 'fabricated-sparse',
+): PantryView {
+  const municipalities = publishedIndex.municipalities
+  const indicator = {
+    id,
+    name: { sv: 'Påhittat glest mått', en: 'Fabricated sparse measure' },
+    unit: 'percent' as const,
+    priceBasis: 'none' as const,
+    scale: { kind: 'sequential' as const, breaks: [1, 2, 3, 4, 5, 6] },
+    coverage: { from: years[0]!, to: years[years.length - 1]!, years: [...years] },
+    sensitivity: 'none' as const,
+  }
+  const series = {
+    indicator: id,
+    years: [...years],
+    // A plain ramp: these tests are about which years exist, never about the figures.
+    values: municipalities.map((_m, row) => years.map((_y, col) => row + col)),
+    status: municipalities.map(() => years.map(() => 0)),
+  }
+  return PantryView.parse({
+    schemaVersion: publishedIndex.schemaVersion,
+    municipalities,
+    indicators: [...publishedIndex.indicators, indicator],
+    series: [...publishedPantry.series, series],
+    priceIndex: publishedIndex.priceIndex,
+  })
 }

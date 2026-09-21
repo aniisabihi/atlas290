@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { lookup } from '../data/select'
 import { EmptyYear } from './EmptyYear'
-import { publishedPantry } from '../test/pantry'
+import { pantryWithSparse, publishedPantry } from '../test/pantry'
 
 const lk = lookup(publishedPantry)
 
@@ -32,5 +32,57 @@ describe('EmptyYear', () => {
   it('speaks Swedish too', () => {
     render(<EmptyYear lk={lk} indicatorId="mean-age" year={1970} lang="sv" onYear={() => {}} />)
     expect(screen.getByText(/Medelålder publiceras för 1998–2025/)).toBeTruthy()
+  })
+})
+
+/**
+ * Plan 19. For a sparse indicator the empty year is usually INSIDE the range, and the sentence
+ * that names a range would be true and useless — "published for 1973–2022" tells a visitor
+ * looking at an empty 1974 nothing about why.
+ */
+describe('EmptyYear, a sparse indicator', () => {
+  const sparseLk = lookup(pantryWithSparse([2015, 2020]))
+
+  it('names the years it has rather than the span they sit in', () => {
+    render(
+      <EmptyYear
+        lk={sparseLk}
+        indicatorId="fabricated-sparse"
+        year={2017}
+        lang="en"
+        onYear={vi.fn()}
+      />,
+    )
+    expect(
+      screen.getByText(/Fabricated sparse measure is published for 2015 and 2020/),
+    ).toBeTruthy()
+  })
+
+  it('jumps into the gap toward the nearer value, not to the edge of the range', async () => {
+    const onYear = vi.fn()
+    render(
+      <EmptyYear
+        lk={sparseLk}
+        indicatorId="fabricated-sparse"
+        year={2019}
+        lang="en"
+        onYear={onYear}
+      />,
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Go to 2020' }))
+    expect(onYear).toHaveBeenCalledWith(2020)
+  })
+
+  it('speaks Swedish too', () => {
+    render(
+      <EmptyYear
+        lk={sparseLk}
+        indicatorId="fabricated-sparse"
+        year={2017}
+        lang="sv"
+        onYear={vi.fn()}
+      />,
+    )
+    expect(screen.getByText(/Påhittat glest mått publiceras för 2015 och 2020/)).toBeTruthy()
   })
 })

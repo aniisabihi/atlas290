@@ -1,5 +1,5 @@
 import type { Indicator } from '../../shared/pantry'
-import { priceBasisYear } from '../i18n/format'
+import { coveragePhrase, priceBasisYear } from '../i18n/format'
 import { t } from '../i18n/strings'
 import type { Lang } from '../state/url'
 
@@ -37,7 +37,7 @@ export function AboutIndicator({ indicator, lang }: { indicator: Indicator; lang
 
       <h3>{strings.coverageHeading}</h3>
       <p>
-        {strings.coverage(indicator.coverage.from, indicator.coverage.to)}
+        {coveragePhrase(indicator, lang)}
         {basis !== null && (lang === 'sv' ? `, ${basis} års penningvärde` : `, in ${basis} kronor`)}
       </p>
 

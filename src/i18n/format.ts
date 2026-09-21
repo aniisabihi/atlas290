@@ -1,5 +1,6 @@
 import { UNIT_DECIMALS, type IndicatorMeta, type ObservationStatus } from '../../shared/pantry'
 import type { Lang } from '../state/url'
+import { t } from './strings'
 
 /**
  * Every number and unit the site shows, in both languages.
@@ -101,4 +102,32 @@ const STATUS: Record<CellStatus, Record<Lang, string>> = {
 
 export function statusPhrase(status: CellStatus, lang: Lang): string {
   return STATUS[status][lang]
+}
+
+/**
+ * What this indicator publishes for, as one phrase — "1968–2025", or for a sparse one
+ * "2015 and 2020" or "15 separate years between 1973 and 2022".
+ *
+ * Plan 19. One function rather than three, because `AboutIndicator`, `EmptyYear` and the
+ * slider's `aria-valuetext` all make this claim and a reader who hears two of them should not
+ * hear two different things.
+ */
+export function coveragePhrase(indicator: IndicatorMeta, lang: Lang): string {
+  const strings = t(lang)
+  const { from, to, years } = indicator.coverage
+  if (!years) return strings.coverage(from, to)
+  // Four is where a list stops reading as a list. Below it the years themselves are the most
+  // useful thing to say; above it a count and a span are, and the slider shows the rest.
+  return years.length <= 4
+    ? `${years.slice(0, -1).join(', ')} ${strings.and} ${years[years.length - 1]}`
+    : strings.coverageYearsMany(years.length, from, to)
+}
+
+/** The sentence `EmptyYear` and the slider both say when the chosen year has nothing in it. */
+export function notPublishedSentence(indicator: IndicatorMeta, lang: Lang): string {
+  const strings = t(lang)
+  const { from, to, years } = indicator.coverage
+  return years
+    ? strings.notPublishedForYears(indicator.name[lang], coveragePhrase(indicator, lang))
+    : strings.notPublishedFor(indicator.name[lang], from, to)
 }
