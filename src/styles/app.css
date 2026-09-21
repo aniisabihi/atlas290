@@ -468,12 +468,38 @@ main {
   accent-color: var(--accent);
 }
 
+/* Where the data is, under the track.
+ *
+ * Plan 19: this strip has existed since plan 3 and has never been VISIBLE — it was styled for
+ * text labels it does not contain, so 59 empty spans collapsed to nothing and every tick was
+ * 0x0. The markup and the `data-covered` attribute were right and only the unit tests ever saw
+ * them. Stage B needs the strip for real, because a measure with two values in a fifty-nine-year
+ * axis has to LOOK like that before anybody drags it.
+ *
+ * A covered year is both taller and brighter, never brighter alone: the accessibility floor
+ * refuses status by colour. The strip is `aria-hidden` and the slider's `aria-valuetext` carries
+ * the same fact in words, so this is the eye's copy of something already said.
+ */
 .year-ticks {
   display: flex;
   justify-content: space-between;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: var(--text-muted);
+  align-items: flex-end;
+  /* The native range thumb is inset by roughly half its width at each end, so the strip is
+   * inset to match rather than running edge to edge under a track that does not. */
+  padding-inline: 0.45rem;
+  height: 0.5rem;
+  margin-top: 0.15rem;
+}
+
+[data-year-tick] {
+  width: 1px;
+  height: 0.18rem;
+  background: var(--border);
+}
+
+[data-year-tick][data-covered='true'] {
+  height: 0.5rem;
+  background: var(--accent);
 }
 
 /* ──────────────────────────────────────────────────────────── the legend ──

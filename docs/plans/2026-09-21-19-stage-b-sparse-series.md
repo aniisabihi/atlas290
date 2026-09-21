@@ -109,9 +109,32 @@ judged from a test."
 
 **Acceptance**
 
-- [ ] A two-value indicator opened in a browser and looked at, at phone width and desktop.
-- [ ] The design's risk 2 answered from what is on screen rather than argued: does a two-value
-      measure deserve the slider at all?
+- [x] A two-value indicator opened in a browser and looked at, at phone width and desktop, in
+      both themes. Done by injecting a look-only fixture into a local build and removing it
+      afterwards; `yarn kitchen publish` leaves `public/pantry/` byte-identical.
+- [x] The design's risk 2 answered from what is on screen rather than argued.
+
+**What looking found, which no test would have**
+
+- **The tick strip has never been visible.** `.year-ticks` was styled for text labels it does not
+  contain — a font family, a size and a colour, with no dimensions — so fifty-nine empty spans
+  collapsed and every tick measured 0×0. The markup and `data-covered` have been right since plan
+  3 and only the unit tests ever saw them. D4 depends on the strip, so it is now drawn: a covered
+  year is both **taller and brighter**, never brighter alone, because the accessibility floor
+  refuses status by colour.
+
+- **The kicker was claiming the axis as the measure's own span.** It paired the indicator's name
+  with `meta.years.min`–`meta.years.max`, so a two-value measure announced itself as
+  "Green space within 200 m · 1968–2026". Already wrong for every ragged indicator — mean age
+  starts in 1998 and said 1968 — and absurd for a sparse one. It now says the measure's own
+  coverage, which for this one reads "· 2015 and 2020".
+
+**Risk 2, answered: the slider stays.** Three reasons from the screen rather than from argument.
+The axis is shared, so dropping the slider for some measures would move the page's furniture
+whenever the measure changed. The year is URL state and every view has to remain linkable, which
+needs a control. And with the strip drawn the two values are visible _before_ anything is
+dragged, which is what made the emptiness feel like a fact about Sweden rather than a broken
+page. Landing on an empty year is one click from right, and the card says which click.
 
 ### Task 5 — The seven
 
