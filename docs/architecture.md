@@ -105,6 +105,14 @@ There are no database migrations. The published data has two contracts, both in 
   `PantryIndex`, `IndicatorMeta`, `PantryIndicator` and `PantryView` — plus `splitPantry` and
   `assemblePantry`, which are inverse and tested as such. A container can be revised; a status
   byte cannot.
+
+  **Validation happens once, at the boundary.** Every pantry file is parsed when it is fetched,
+  against untrusted bytes; nothing downstream re-parses it. `viewOf` assembles an index and the
+  parts fetched so far without running `PantryView.parse` over them, and runs only the
+  cross-reference check that relates the parts to each other — see
+  [ADR-0019](decisions/0019-the-view-is-built-once.md), where re-parsing cost 1,023 ms per
+  profile open.
+
 - `shared/geometry.ts` — the projection and render frame, which must be byte-identical in the
   kitchen and the browser.
 

@@ -15,6 +15,7 @@ coverage/
 
 # Lighthouse
 /lighthouse-report.json
+/lighthouse-report-*.json
 
 # HAUS:BEGIN haus-managed v=1
 # haus machine-local artifacts — must never be committed (see ADR-0025, ADR-0058, ADR-0009)

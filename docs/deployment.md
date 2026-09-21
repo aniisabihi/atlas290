@@ -32,7 +32,10 @@ to `main`:
    `yarn build`, then republishes the pantry and fails if `public/pantry/` changed.
 2. **browsers** — `yarn e2e` in Chromium, Firefox and WebKit, including the axe scan. The
    Playwright report is uploaded as an artifact for 7 days.
-3. **budget** — builds, serves `dist/`, and runs Lighthouse against `/en/`.
+3. **budget** — builds, serves `dist/`, and runs Lighthouse against **two** pages: `/en/` and
+   `/en/stockholm-0180/`. A municipality page is measured because it is the link people share
+   and the only one that opens a profile; until ADR-0019 only the root was measured, and a
+   seventeen-point fall on the place page went unnoticed for two slices.
 
 ## Deploy steps
 

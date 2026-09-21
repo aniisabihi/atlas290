@@ -69,7 +69,7 @@ The full table is in [codebase.md](codebase.md#where-to-change-what). The three 
 | `yarn test`      | Vitest, two projects — `kitchen` in Node, `site` in jsdom                  |
 | `yarn build`     | Typecheck + Vite build + the 580 municipality pages                        |
 | `yarn e2e`       | Playwright against `dist/` in Chromium, Firefox and WebKit                 |
-| `yarn budget`    | Lighthouse against the served build, with measured thresholds              |
+| `yarn budget`    | Lighthouse against the served build — the root and a municipality page     |
 
 **No pre-commit hook is installed** — no lefthook, no husky. The gate is CI, and the checklist in
 [CLAUDE.md](../CLAUDE.md#before-opening-a-pr) before you open a pull request.

@@ -212,6 +212,25 @@ describe('fetchIndicatorPart', () => {
     })
     await expect(fetchIndicatorPart('population')).rejects.toThrow()
   })
+
+  it('refuses a cell-level fault here, which is the only place that still looks', async () => {
+    // Plan 18: viewOf stopped re-parsing the series it is handed, so THIS parse is the only
+    // thing between a corrupt published cell and the site rendering it. A null value at status
+    // 0 means 'present, and the number is null', which is not a thing.
+    stubFetch({
+      part: () =>
+        okResponse({
+          indicator,
+          series: {
+            indicator: 'population',
+            years: [2024, 2025],
+            values: [[null, 2]],
+            status: [[0, 0]],
+          },
+        }),
+    })
+    await expect(fetchIndicatorPart('population')).rejects.toThrow(/cannot be 'present'/)
+  })
 })
 
 describe('withPart', () => {

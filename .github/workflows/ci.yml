@@ -149,11 +149,14 @@ jobs:
       - run: yarn build
         env:
           SITE_ORIGIN: https://${{ env.PAGES_PROJECT }}.pages.dev
+      # No URL argument: the budget's own default list is the root AND a municipality page, and
+      # it is the default precisely so nobody has to remember. Until 2026-09-21 this line passed
+      # the root explicitly and the 580 shareable pages were never measured — issue #35.
       - name: Serve the built site and measure it
         run: |
           yarn preview --port 4173 --strictPort &
           npx wait-on http://localhost:4173/en/ --timeout 60000
-          yarn budget http://localhost:4173/en/
+          yarn budget
 
   deploy:
     name: Deploy to Cloudflare Pages
