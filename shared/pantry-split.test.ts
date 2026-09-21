@@ -314,7 +314,7 @@ describe('viewOf keeps every check that only PantryView.parse was performing', (
     const { index, parts } = splitPantry(pantryOf(['population', 'tax-rate', 'density']))
     for (let n = 0; n <= parts.length; n++) {
       const view = viewOf(index, parts.slice(0, n))
-      expect(PantryView.parse(view)).toEqual(view)
+      expect(PantryView.parse(view)).toStrictEqual(view)
     }
   })
 

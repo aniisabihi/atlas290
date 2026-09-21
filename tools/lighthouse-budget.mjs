@@ -36,6 +36,13 @@ const BUDGET = {
   // These three do not drift. They have returned the same number on every run ever recorded, so
   // they are held exactly where they are: a single point of movement in any of them is a real
   // change and should stop the build.
+  //
+  // "Every run ever recorded" meant the ROOT until 2026-09-21, because nothing else was ever
+  // measured. Before gating the municipality page on them they were measured there too, built
+  // with SITE_ORIGIN set the way CI builds it: 100 / 100 / 100, three runs each. Without
+  // SITE_ORIGIN the same page scores 83 on SEO, for the absolute canonical and the hreflang
+  // alternates the deploy writes and a bare local build does not — decision 0008 records the
+  // same trap on the root.
   accessibility: 100,
   'best-practices': 100,
   seo: 90,
@@ -58,6 +65,13 @@ const SCRIPT_BUDGET_BYTES = 180_000
  * three is the compromise between that advice and a job nobody wants to wait for.
  */
 const RUNS = Number(process.env['BUDGET_RUNS'] ?? 3)
+if (!Number.isInteger(RUNS) || RUNS < 1) {
+  // Zero runs used to reach `writeFileSync(path, null)` and a median of nothing, which failed
+  // with a type error three steps from the cause.
+  throw new Error(
+    `BUDGET_RUNS must be a whole number of at least 1, got ${process.env['BUDGET_RUNS']}`,
+  )
+}
 
 /**
  * Two pages by default, not one, and that is the whole point of this list.
@@ -87,64 +101,74 @@ const browser = await chromium.launch({ args: ['--remote-debugging-port=9222', '
 const failures = []
 try {
   for (const [n, url] of urls.entries()) {
-    const runs = []
-    let lastReport = null
-    for (let i = 0; i < RUNS; i++) {
-      const result = await lighthouse(
-        url,
-        { port: 9222, output: 'json', logLevel: 'error' },
-        { extends: 'lighthouse:default', settings: { onlyCategories: Object.keys(BUDGET) } },
-      )
-      if (!result) throw new Error('lighthouse returned nothing')
-      lastReport = result.report
-      runs.push({
-        scores: Object.fromEntries(
-          Object.keys(BUDGET).map((name) => [
-            name,
-            Math.round((result.lhr.categories[name]?.score ?? 0) * 100),
-          ]),
-        ),
-        scriptBytes: (result.lhr.audits['network-requests']?.details?.items ?? [])
-          .filter((item) => String(item.mimeType ?? '').includes('javascript'))
-          .reduce((total, item) => total + (item.transferSize ?? 0), 0),
-      })
-    }
-    // The last run's full report, for anyone opening the artefact. The medians below are what the
-    // build is judged on; this is for reading afterwards. One file per URL, so measuring two pages
-    // does not leave only the second one's evidence behind.
-    writeFileSync(
-      n === 0 ? 'lighthouse-report.json' : `lighthouse-report-${n + 1}.json`,
-      lastReport,
-    )
-
-    console.log(
-      `${n === 0 ? '' : '\n'}Lighthouse, ${url} — median of ${RUNS} run${RUNS === 1 ? '' : 's'}`,
-    )
-    for (const [name, floor] of Object.entries(BUDGET)) {
-      const all = runs.map((r) => r.scores[name])
-      const score = median(all)
-      const ok = score >= floor
-      // Every run is printed, not just the median. A median that passes while the spread underneath
-      // it is widening is exactly the thing a single number hides, and it is what went wrong here.
-      const spread = RUNS > 1 ? `   runs ${all.join(', ')}` : ''
-      console.log(
-        `  ${name.padEnd(16)} ${String(score).padStart(3)}   budget ${floor}   ${ok ? 'ok' : 'BELOW BUDGET'}${spread}`,
-      )
-      if (!ok)
-        failures.push(
-          `${url}: ${name} scored ${score}, budget is ${floor} (runs: ${all.join(', ')})`,
+    // Each URL is measured inside its own try, so a page that THROWS — a dead server, a
+    // navigation error — is reported as a failure of that page and the rest are still measured.
+    // Hoisting `failures` out of the loop achieves nothing on its own: the block that prints it
+    // only runs if control reaches the end.
+    try {
+      const runs = []
+      let lastReport = null
+      for (let i = 0; i < RUNS; i++) {
+        const result = await lighthouse(
+          url,
+          { port: 9222, output: 'json', logLevel: 'error' },
+          { extends: 'lighthouse:default', settings: { onlyCategories: Object.keys(BUDGET) } },
         )
-    }
-
-    const scriptBytes = median(runs.map((r) => r.scriptBytes))
-    const scriptOk = scriptBytes <= SCRIPT_BUDGET_BYTES
-    console.log(
-      `  ${'script bytes'.padEnd(16)} ${String(scriptBytes).padStart(6)}   budget ${SCRIPT_BUDGET_BYTES}   ${scriptOk ? 'ok' : 'OVER BUDGET'}`,
-    )
-    if (!scriptOk)
-      failures.push(
-        `${url}: script transferred ${scriptBytes} bytes, budget is ${SCRIPT_BUDGET_BYTES}`,
+        if (!result) throw new Error('lighthouse returned nothing')
+        lastReport = result.report
+        runs.push({
+          scores: Object.fromEntries(
+            Object.keys(BUDGET).map((name) => [
+              name,
+              Math.round((result.lhr.categories[name]?.score ?? 0) * 100),
+            ]),
+          ),
+          scriptBytes: (result.lhr.audits['network-requests']?.details?.items ?? [])
+            .filter((item) => String(item.mimeType ?? '').includes('javascript'))
+            .reduce((total, item) => total + (item.transferSize ?? 0), 0),
+        })
+      }
+      // The last run's full report, for anyone opening the artefact. The medians below are what the
+      // build is judged on; this is for reading afterwards. One file per URL, so measuring two pages
+      // does not leave only the second one's evidence behind.
+      writeFileSync(
+        n === 0 ? 'lighthouse-report.json' : `lighthouse-report-${n + 1}.json`,
+        lastReport,
       )
+
+      console.log(
+        `${n === 0 ? '' : '\n'}Lighthouse, ${url} — median of ${RUNS} run${RUNS === 1 ? '' : 's'}`,
+      )
+      for (const [name, floor] of Object.entries(BUDGET)) {
+        const all = runs.map((r) => r.scores[name])
+        const score = median(all)
+        const ok = score >= floor
+        // Every run is printed, not just the median. A median that passes while the spread underneath
+        // it is widening is exactly the thing a single number hides, and it is what went wrong here.
+        const spread = RUNS > 1 ? `   runs ${all.join(', ')}` : ''
+        console.log(
+          `  ${name.padEnd(16)} ${String(score).padStart(3)}   budget ${floor}   ${ok ? 'ok' : 'BELOW BUDGET'}${spread}`,
+        )
+        if (!ok)
+          failures.push(
+            `${url}: ${name} scored ${score}, budget is ${floor} (runs: ${all.join(', ')})`,
+          )
+      }
+
+      const scriptBytes = median(runs.map((r) => r.scriptBytes))
+      const scriptOk = scriptBytes <= SCRIPT_BUDGET_BYTES
+      console.log(
+        `  ${'script bytes'.padEnd(16)} ${String(scriptBytes).padStart(6)}   budget ${SCRIPT_BUDGET_BYTES}   ${scriptOk ? 'ok' : 'OVER BUDGET'}`,
+      )
+      if (!scriptOk)
+        failures.push(
+          `${url}: script transferred ${scriptBytes} bytes, budget is ${SCRIPT_BUDGET_BYTES}`,
+        )
+    } catch (error) {
+      console.error(`\nLighthouse, ${url} — could not be measured`)
+      console.error(`  ${error instanceof Error ? error.message : String(error)}`)
+      failures.push(`${url}: could not be measured`)
+    }
   }
 
   // Every URL is measured before anything exits, so one bad page does not hide a second one.

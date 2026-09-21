@@ -549,6 +549,12 @@ export function assemblePantry(index: PantryIndex, parts: readonly PantryIndicat
  * rather than copying them, where `parse` returned fresh arrays. Nothing in this project mutates
  * published data, and a per-arrival deep copy of 290 municipalities was part of what this
  * function was costing.
+ *
+ * One behaviour genuinely does go: `parse` also STRIPPED unknown keys, so handing this a whole
+ * `PantryData` used to drop each indicator's prose and now does not. Nothing reads prose off a
+ * view — `AboutIndicator` reads it from `LoadedPantry.parts` — and every caller today passes
+ * parser output, so this is a note rather than a hazard. It is written down because the type
+ * system permits the call: `PantryData` is structurally a `PantryIndex`.
  */
 export function viewOf(index: PantryIndex, loaded: readonly PantryIndicator[]): PantryView {
   for (const part of loaded) {
@@ -567,23 +573,13 @@ export function viewOf(index: PantryIndex, loaded: readonly PantryIndicator[]): 
     series,
     priceIndex: index.priceIndex,
   }
-  assertCrossReferences('viewOf', view)
-  return view
-}
-
-/**
- * `checkPantryCrossReferences` outside a zod parse: collect its issues and throw them together.
- *
- * All of them, not the first — zod reported every issue in one error and a caller reading the
- * message should not lose that by the check moving house.
- */
-function assertCrossReferences(
-  who: string,
-  p: Parameters<typeof checkPantryCrossReferences>[0],
-): void {
+  // `checkPantryCrossReferences` outside a zod parse: collect its issues and throw them
+  // together. ALL of them, not the first — zod reported every issue in one error, and a caller
+  // reading the message should not lose that because the check moved house.
   const messages: string[] = []
-  checkPantryCrossReferences(p, { addIssue: (issue) => messages.push(issue.message) })
-  if (messages.length > 0) throw new Error(`${who}: ${messages.join('; ')}`)
+  checkPantryCrossReferences(view, { addIssue: (issue) => messages.push(issue.message) })
+  if (messages.length > 0) throw new Error(`viewOf: ${messages.join('; ')}`)
+  return view
 }
 
 /** Keyboard neighbours. `synthetic` lists edges added so islands are reachable. */
