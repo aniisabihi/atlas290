@@ -104,16 +104,51 @@ multi-content source; the design's stage-A table reconciled with what shipped.
 
 ## Measurements
 
-| Gate                         | Target                    | Result |
-| ---------------------------- | ------------------------- | ------ |
-| Indicators published         | 35                        | —      |
-| Municipalities per indicator | 290, asserted             | —      |
-| Second publish               | byte-identical            | —      |
-| `data/similar.json`          | byte-identical            | —      |
-| Frozen bytes added           | measured                  | —      |
-| Index gzipped                | measured against 7,545    | —      |
-| Lighthouse                   | median of three, ≥ budget | —      |
-| Browser tests                | no loss                   | —      |
+| Gate                         | Target                    | Result                         |
+| ---------------------------- | ------------------------- | ------------------------------ |
+| Indicators published         | 35                        | **35**                         |
+| Municipalities per indicator | 290, asserted             | **290**, every one             |
+| Second publish               | byte-identical            | **byte-identical**             |
+| `data/similar.json`          | byte-identical            | **byte-identical**             |
+| Frozen bytes added           | measured                  | **2.1 MB** over seven tables   |
+| Index gzipped                | measured against 7,545    | **7,975**                      |
+| Unit tests                   | —                         | **1,274**, from 1,253          |
+| Browser tests                | no loss                   | **283 passed, 0 failed**       |
+| Lighthouse, the root         | median of three, ≥ budget | **91**/100/100/91 — ok         |
+| Lighthouse, a place page     | median of three, ≥ budget | **65 — BELOW the floor of 72** |
+
+**Every figure reconciled against a second read.** Solna's out-commuter share recomputed by hand
+from 33,987 out-commuters and 12,379 who stay is 73.30%, and the pantry publishes 73.3. Life
+expectancy's `1998-2002` window for Stockholm is 76.54 for men, and 2002 publishes 76.5.
+
+### The one gate that failed, and why it is not this plan's to fix
+
+A municipality page scores **65** against a floor of 72. The root page is fine at 91.
+
+The cause is measured, not guessed:
+
+|                     |   Root | A place page |
+| ------------------- | -----: | -----------: |
+| Total blocking time | 180 ms | **3,940 ms** |
+| Main-thread work    |  1.3 s |    **5.0 s** |
+| Requests            |     15 |       **49** |
+
+`kitchen/spikes/bench-view.ts`, plan 13's own benchmark, re-run at thirty-five indicators:
+**1,016 ms** of `viewOf` re-parsing for one profile open, against 131 ms at ten. That is the
+quadratic [0013](../decisions/0013-the-pantry-splits.md) measured, recorded, and deliberately
+left — "at twenty-five it is roughly six times the work, so plan 15 should either validate each
+part once on arrival instead of re-parsing the view, or adopt the per-municipality file". Plan 15
+did neither, and thirty-five indicators is where it stops being affordable.
+
+**It is not fixed here, for two reasons.** It accounts for about a quarter of the blocking time,
+so fixing it alone would not clear the floor — the rest has not been attributed and guessing
+would be worse than measuring. And the shape of the real fix is to stop rebuilding the whole view
+on every series arrival, which is a change to how the site loads rather than to what it loads.
+
+**This page has never been gated.** `yarn budget` defaults to the root and CI measures only that,
+so the floor of 72 was set for a page that still scores 91. The place page was 86 at ten
+indicators and 82 at twenty-seven — above the floor by luck rather than by a gate. Discovering
+that is part of the finding.
 
 ## Stop conditions
 
