@@ -305,6 +305,10 @@ import { lifeGapDefinition, lifeMenDefinition, lifeWomenDefinition } from './lon
 // after both. The rest need only ctx.municipalities.
 import { turnoutDefinition, turnoutGapDefinition, turnoutMunicipalDefinition } from './elections'
 import { farmlandDefinition, shareBuiltDefinition } from './land'
+// Holiday homes divide by population, so they come after it.
+import { holidayHomesDefinition } from './dwellings'
+// Reads BOTH share-65-plus and population from ctx.series, so it comes after both.
+import { share65VsCountryDefinition } from './country'
 import { greenSpaceDefinition } from './environment'
 import { councillorsWomenDefinition } from './civic'
 
@@ -379,6 +383,9 @@ function ensureRegistered(): void {
     shareBuiltDefinition,
     greenSpaceDefinition,
     councillorsWomenDefinition,
+    // Plan 21, once `nothing-to-count` existed to describe its absences honestly.
+    holidayHomesDefinition,
+    share65VsCountryDefinition,
   )
 }
 

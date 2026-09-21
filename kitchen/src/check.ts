@@ -132,8 +132,13 @@ export const PLAUSIBLE_RANGES: Record<string, PlausibleRange> = {
   // municipality is about 2 million of them. The built share is tiny nearly everywhere and is
   // still a share. Holiday homes per 1,000 residents is NOT bounded by 1,000: a small
   // municipality full of summer houses can have several times its own population in them.
-  // (holiday-homes-per-1000 is deferred — see plan 19; 106 municipalities have no holiday-home
-  // area at all and no OBSERVATION_STATUS says so honestly.)
+  // Plan 21 brought holiday homes in, once `nothing-to-count` existed to describe the 106
+  // municipalities with no holiday-home area. NOT bounded by 1,000: a small municipality full
+  // of summer houses can have several times its own population in them.
+  'holiday-homes-per-1000': { min: 0, max: 20_000 },
+  // A difference between two shares, so bounded by -100 and 100 mathematically, and signed
+  // because roughly half the municipalities sit either side of the national figure.
+  'share-65-plus-vs-country': { min: -100, max: 100 },
   'turnout-general-election': { min: 0, max: 100 },
   'turnout-municipal-election': { min: 0, max: 100 },
   'turnout-gap-general-municipal': { min: -100, max: 100 },

@@ -99,6 +99,12 @@ const STATUS: Record<CellStatus, Record<Lang, string>> = {
     sv: 'förändringen beror på en ändrad kommungräns, inte på att någon flyttat',
     en: 'the change comes from a redrawn boundary, not from anyone moving',
   },
+  // Deliberately about the THING rather than about the publishing. "Not published" would say
+  // a figure exists somewhere; this says there is nothing here to count.
+  'nothing-to-count': {
+    sv: 'det som mäts finns inte i den här kommunen',
+    en: 'what this measures does not exist in this municipality',
+  },
 }
 
 export function statusPhrase(status: CellStatus, lang: Lang): string {

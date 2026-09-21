@@ -282,3 +282,60 @@ export const shareRentalsDefinition: IndicatorDefinition = {
   indicator: SHARE_RENTALS,
   build: (ctx) => buildDefined(shareRentalsDefined(), ctx),
 }
+
+export const HOLIDAY_TABLE = 'TAB4198'
+
+/** `TAB4198` publishes two points, five years apart. Plan 19's sparse machinery carries them. */
+export const HOLIDAY_YEARS = [2015, 2020] as const
+
+const HOLIDAY_CONTENT_LABEL = 'Antal fritidshus'
+
+export const HOLIDAY_HOMES: Indicator = Indicator.parse({
+  id: 'holiday-homes-per-1000',
+  name: { sv: 'Fritidshus per 1 000 invånare', en: 'Holiday homes per 1,000 residents' },
+  description: {
+    sv: 'Antal fritidshus i fritidshusområden per 1 000 invånare.',
+    en: 'Holiday homes inside holiday-home areas, per 1,000 residents.',
+  },
+  unit: 'per-thousand',
+  priceBasis: 'none',
+  scale: { kind: 'sequential', breaks: [] },
+  coverage: {
+    from: HOLIDAY_YEARS[0],
+    to: HOLIDAY_YEARS[HOLIDAY_YEARS.length - 1]!,
+    years: [...HOLIDAY_YEARS],
+  },
+  caveat: {
+    sv: 'SCB räknar bara fritidshus som ligger i ett fritidshusOMRÅDE — minst femtio hus tillsammans — så enstaka stugor saknas helt. Ungefär en tredjedel av kommunerna har inget sådant område alls och saknar därför värde: kartan visar dem som "det som mäts finns inte här", inte som noll och inte som opublicerat. Nämnaren är kommunens egna invånare, inte dess hushåll eller dess yta, så talet blir mycket stort i en liten kommun med mycket sommarstugor — det mäter hur präglad kommunen är av fritidsboende, inte hur många av invånarna som äger ett fritidshus. Två mätpunkter, 2015 och 2020.',
+    en: 'SCB counts only holiday homes inside a holiday-home AREA — at least fifty houses together — so isolated cabins are missing entirely. About a third of municipalities have no such area at all and therefore have no figure: the map shows them as "what this measures does not exist here", not as zero and not as unpublished. The denominator is the municipality’s own residents, not its households or its area, so the figure becomes very large in a small municipality full of summer houses — it measures how much the place is shaped by holiday living, not how many residents own one. Two survey points, 2015 and 2020.',
+  },
+  sensitivity: 'none',
+  sources: [{ table: HOLIDAY_TABLE, contentCode: '0000000E', note: '2015, 2020' }],
+  derivation:
+    'Holiday homes over the population of the same year, times 1,000. The denominator is this ' +
+    'pantry’s own published population. Where SCB publishes nothing — a municipality with no ' +
+    'holiday-home area — the cell is `nothing-to-count` rather than `not-yet-published`: there ' +
+    'is no figure coming, because there is nothing of this kind there to count.',
+})
+
+export function holidayHomesDefined(): Definition {
+  return {
+    indicator: HOLIDAY_HOMES,
+    sources: [
+      {
+        table: HOLIDAY_TABLE,
+        content: HOLIDAY_CONTENT_LABEL,
+        years: [...HOLIDAY_YEARS],
+        regions: 'known',
+      },
+    ],
+    spec: { kind: 'ratio', of: POPULATION.id, times: 1000 },
+    // The whole reason this indicator waited for plan 21. See the caveat.
+    absentMeans: 'nothing-to-count',
+  }
+}
+
+export const holidayHomesDefinition: IndicatorDefinition = {
+  indicator: HOLIDAY_HOMES,
+  build: (ctx) => buildDefined(holidayHomesDefined(), ctx),
+}

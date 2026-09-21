@@ -133,10 +133,22 @@ describe('the focus ring', () => {
 })
 
 describe('what absence looks like', () => {
-  it('gives each of the four no-value statuses its own pattern', () => {
+  it('gives every distinct kind of absence its own pattern, and shares one on purpose', () => {
+    // Five patterns for six entries. `outside-coverage` deliberately reuses
+    // `not-yet-published`'s hatch: both mean "this indicator has no figure for you here", and
+    // inventing a sixth visual difference for a distinction the reader cannot act on would make
+    // the legend harder to read, not more honest. Every other status is told apart.
     const ids = Object.values(NO_VALUE_FILLS).map((f) => f.patternId)
-    expect(new Set(ids).size).toBe(4)
+    expect(new Set(ids).size).toBe(5)
     expect(ids.every((id) => id.length > 0)).toBe(true)
+    expect(NO_VALUE_FILLS['outside-coverage'].patternId).toBe(
+      NO_VALUE_FILLS['not-yet-published'].patternId,
+    )
+    // The pair this project most needs told apart: a figure that is coming, against one that
+    // never will because there is nothing here to count.
+    expect(NO_VALUE_FILLS['nothing-to-count'].patternId).not.toBe(
+      NO_VALUE_FILLS['not-yet-published'].patternId,
+    )
   })
 
   it('never gives a no-value status a flat colour from any ramp', () => {

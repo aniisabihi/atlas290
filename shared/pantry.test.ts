@@ -30,6 +30,7 @@ describe('pantry schemas', () => {
       'perturbed',
       'too-few-cases',
       'structural-break',
+      'nothing-to-count',
     ])
     expect(statusCode('perturbed')).toBe(3)
   })
@@ -364,5 +365,32 @@ describe('scale', () => {
     const scale = scaleOf({ kind: 'diverging', reference: 'national-median', breaks: [1, 2] })
     expect(scale).not.toHaveProperty('reference')
     expect(scale).toEqual({ kind: 'diverging', breaks: [1, 2] })
+  })
+})
+
+/**
+ * Plan 21. A seventh status, for the case none of the six could say: the thing this indicator
+ * measures does not exist in this municipality at all.
+ *
+ * Holiday homes are the measure that forced it. SCB counts only homes inside a holiday-home
+ * AREA — a cluster of at least fifty — so Solna publishes nothing, and `not-yet-published`
+ * would have told 106 of 290 municipalities that a figure exists and is being withheld.
+ */
+describe('nothing-to-count', () => {
+  it('is appended, so every byte already written still means what it meant', () => {
+    // The whole point of append-only, checked the same way plan 2 checked it. If this fails,
+    // something inserted instead of appending and every published status byte at or after the
+    // insertion now means something different than when it was written.
+    expect(statusCode('present')).toBe(0)
+    expect(statusCode('not-yet-published')).toBe(1)
+    expect(statusCode('did-not-exist')).toBe(2)
+    expect(statusCode('perturbed')).toBe(3)
+    expect(statusCode('too-few-cases')).toBe(4)
+    expect(statusCode('structural-break')).toBe(5)
+    expect(statusCode('nothing-to-count')).toBe(6)
+  })
+
+  it('is last, so the next addition appends after it rather than over it', () => {
+    expect(OBSERVATION_STATUS[OBSERVATION_STATUS.length - 1]).toBe('nothing-to-count')
   })
 })
