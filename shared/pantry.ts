@@ -387,15 +387,57 @@ export type PriceIndex = z.infer<typeof PriceIndex>
  * Note what is NOT required: that every indicator has a series. A view legitimately holds ten
  * indicators and one series, because the site fetches a series when the map needs it.
  */
+/**
+ * The bubble layout's codes against the municipality list, in both directions.
+ *
+ * This is the map-to-data join for the bubbles, the same join `assertCodesMatch` makes for the
+ * shapes in the kitchen: a circle with no municipality is drawn with nobody's data, and a
+ * municipality with no circle has nowhere to travel when the map morphs. Either is a build
+ * failure in the kitchen and a load failure in the site, never a bubble quietly missing.
+ */
+function layoutCodeIssues(
+  indicator: string,
+  circles: readonly { code: string }[],
+  municipalities: readonly { code: string }[],
+): string[] {
+  const inLayout = new Set(circles.map((c) => c.code))
+  const known = new Set(municipalities.map((m) => m.code))
+  const missing = municipalities.filter((m) => !inLayout.has(m.code)).map((m) => m.code)
+  const stray = circles.filter((c) => !known.has(c.code)).map((c) => c.code)
+  const list = (codes: string[]) => codes.slice(0, 5).join(', ') + (codes.length > 5 ? ', …' : '')
+  const issues: string[] = []
+  if (missing.length > 0) {
+    issues.push(
+      `${indicator}: the bubble layout has no circle for ${missing.length} municipalities (${list(missing)})`,
+    )
+  }
+  if (stray.length > 0) {
+    issues.push(`${indicator}: the bubble layout has circles for unknown codes (${list(stray)})`)
+  }
+  return issues
+}
+
 function checkPantryCrossReferences(
   p: {
-    municipalities: readonly unknown[]
+    municipalities: readonly { code: string }[]
     indicators: readonly { id: string; priceBasisYear?: number | undefined }[]
     series: readonly { indicator: string; values: readonly unknown[] }[]
     priceIndex: { values: Record<string, number> }
+    layouts?: readonly { indicator: string; circles: readonly { code: string }[] }[] | undefined
   },
   ctx: { addIssue: (issue: { code: 'custom'; message: string }) => void },
 ): void {
+  for (const layout of p.layouts ?? []) {
+    if (!p.indicators.some((i) => i.id === layout.indicator)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `bubble layout for ${layout.indicator} has no indicator`,
+      })
+    }
+    for (const message of layoutCodeIssues(layout.indicator, layout.circles, p.municipalities)) {
+      ctx.addIssue({ code: 'custom', message })
+    }
+  }
   for (const s of p.series) {
     if (s.values.length !== p.municipalities.length) {
       ctx.addIssue({
@@ -420,6 +462,69 @@ function checkPantryCrossReferences(
   }
 }
 
+/**
+ * One indicator's bubble layout, in the units `shared/bubbles.ts` describes.
+ *
+ * Published INSIDE that indicator's file since Plan 21 — one Dorling per indicator — because a
+ * bubble sized by the measure needs positions solved for that measure's radii, and the population
+ * layout that served every measure until then put them over each other wherever municipalities
+ * are dense. `r` is the slot: the largest radius this municipality takes in any year, so the year
+ * slider changes sizes and never positions. `minR` and `maxR` are the two numbers the site sizes
+ * with, published rather than assumed, so a change to the shared constants cannot leave a layout
+ * on disk that a bubble outgrows. `cone` is the arrow-key cone the kitchen proved reaches every
+ * municipality on this layout; the right angle is a property of the arrangement, so it travels
+ * with it. See docs/decisions/0023-bubbles-sized-by-the-measure.md.
+ */
+const BubbleLayoutFields = z.object({
+  minR: z.number().positive(),
+  maxR: z.number().positive(),
+  cone: z.number().int().min(1).max(90),
+  /** One per municipality; `PantryIndicator` and the cross-reference check hold it to that. */
+  circles: z.array(
+    z.object({ code: MunicipalityCode, x: z.number(), y: z.number(), r: z.number().positive() }),
+  ),
+})
+
+/**
+ * Slots are rounded up to two decimals and `maxR` down to four, so a slot may sit up to a
+ * hundredth above `maxR`. Anything further is a layout the sizing rule did not produce.
+ */
+const SLOT_TOLERANCE = 0.0101
+
+function checkBubbleLayout(
+  layout: z.infer<typeof BubbleLayoutFields>,
+  ctx: { addIssue: (issue: { code: 'custom'; message: string }) => void },
+): void {
+  if (layout.maxR < layout.minR) {
+    ctx.addIssue({
+      code: 'custom',
+      message: `bubble layout: maxR ${layout.maxR} is below minR ${layout.minR}`,
+    })
+  }
+  const seen = new Set<string>()
+  for (const c of layout.circles) {
+    if (seen.has(c.code)) {
+      ctx.addIssue({ code: 'custom', message: `bubble layout: ${c.code} has two circles` })
+    }
+    seen.add(c.code)
+    if (c.r < layout.minR - 1e-9 || c.r > layout.maxR + SLOT_TOLERANCE) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `bubble layout: ${c.code} has slot ${c.r}, outside ${layout.minR}–${layout.maxR}`,
+      })
+    }
+  }
+}
+
+export const BubbleLayout = BubbleLayoutFields.superRefine(checkBubbleLayout)
+export type BubbleLayout = z.infer<typeof BubbleLayout>
+
+/** A layout with the indicator it belongs to, which is how `PantryData.layouts` carries them. */
+export const IndicatorLayout = BubbleLayoutFields.extend({ indicator: IndicatorId }).superRefine(
+  checkBubbleLayout,
+)
+export type IndicatorLayout = z.infer<typeof IndicatorLayout>
+
 export const PantryData = z
   .object({
     schemaVersion: z.literal(1),
@@ -427,6 +532,13 @@ export const PantryData = z
     indicators: z.array(Indicator),
     series: z.array(IndicatorSeries),
     priceIndex: PriceIndex,
+    /**
+     * One bubble layout per indicator. Optional on this in-memory container, because the kitchen
+     * builds and checks a pantry's NUMBERS before it lays anything out and the tools that read a
+     * pantry back have no use for positions — but `splitPantry` refuses to publish without them,
+     * and every published `PantryIndicator` carries its own.
+     */
+    layouts: z.array(IndicatorLayout).optional(),
   })
   .superRefine(checkPantryCrossReferences)
 export type PantryData = z.infer<typeof PantryData>
@@ -460,15 +572,23 @@ export type PantryIndex = z.infer<typeof PantryIndex>
 
 /**
  * What `data/indicators/<id>.json` holds: one indicator in full, including the prose only
- * `AboutIndicator` reads, and its series.
+ * `AboutIndicator` reads, its series, and — since Plan 21 — its bubble layout.
  */
 export const PantryIndicator = z
-  .object({ indicator: Indicator, series: IndicatorSeries })
+  .object({ indicator: Indicator, series: IndicatorSeries, layout: BubbleLayout })
   .superRefine((part, ctx) => {
     if (part.series.indicator !== part.indicator.id) {
       ctx.addIssue({
         code: 'custom',
         message: `${part.indicator.id}: this file carries the series for ${part.series.indicator}`,
+      })
+    }
+    // The file does not know the municipality list, so this is the half of the join it CAN
+    // check on its own; `viewOf` and `PantryData` check the codes themselves.
+    if (part.layout.circles.length !== part.series.values.length) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `${part.indicator.id}: the bubble layout has ${part.layout.circles.length} circles for ${part.series.values.length} municipalities`,
       })
     }
   })
@@ -501,10 +621,18 @@ export function splitPantry(data: PantryData): {
   parts: PantryIndicator[]
 } {
   const seriesById = new Map(data.series.map((s) => [s.indicator, s]))
+  const layoutById = new Map((data.layouts ?? []).map((l) => [l.indicator, l]))
   const parts = data.indicators.map((indicator) => {
     const series = seriesById.get(indicator.id)
     if (!series) throw new Error(`splitPantry: no series for indicator "${indicator.id}"`)
-    return PantryIndicator.parse({ indicator, series })
+    const l = layoutById.get(indicator.id)
+    if (!l) {
+      throw new Error(
+        `splitPantry: no bubble layout for indicator "${indicator.id}" — a published file carries one`,
+      )
+    }
+    const layout = { minR: l.minR, maxR: l.maxR, cone: l.cone, circles: l.circles }
+    return PantryIndicator.parse({ indicator, series, layout })
   })
   const index = PantryIndex.parse({
     schemaVersion: data.schemaVersion,
@@ -540,6 +668,7 @@ export function assemblePantry(index: PantryIndex, parts: readonly PantryIndicat
     indicators: ordered.map((part) => part.indicator),
     series: ordered.map((part) => part.series),
     priceIndex: index.priceIndex,
+    layouts: ordered.map((part) => ({ indicator: part.indicator.id, ...part.layout })),
   })
 }
 
@@ -571,10 +700,14 @@ export function assemblePantry(index: PantryIndex, parts: readonly PantryIndicat
  * system permits the call: `PantryData` is structurally a `PantryIndex`.
  */
 export function viewOf(index: PantryIndex, loaded: readonly PantryIndicator[]): PantryView {
+  const messages: string[] = []
   for (const part of loaded) {
     if (!index.indicators.some((i) => i.id === part.indicator.id)) {
       throw new Error(`viewOf: "${part.indicator.id}" is not listed in the index`)
     }
+    // The view carries no layouts, so the join the cross-reference check makes for a whole
+    // pantry is made here, part by part, against the index's own municipality list.
+    messages.push(...layoutCodeIssues(part.indicator.id, part.layout.circles, index.municipalities))
   }
   const order = new Map(index.indicators.map((i, n) => [i.id, n]))
   const series = [...loaded]
@@ -590,7 +723,6 @@ export function viewOf(index: PantryIndex, loaded: readonly PantryIndicator[]): 
   // `checkPantryCrossReferences` outside a zod parse: collect its issues and throw them
   // together. ALL of them, not the first — zod reported every issue in one error, and a caller
   // reading the message should not lose that because the check moved house.
-  const messages: string[] = []
   checkPantryCrossReferences(view, { addIssue: (issue) => messages.push(issue.message) })
   if (messages.length > 0) throw new Error(`viewOf: ${messages.join('; ')}`)
   return view
@@ -603,16 +735,6 @@ export const Adjacency = z.object({
   synthetic: z.array(z.tuple([MunicipalityCode, MunicipalityCode])),
 })
 export type Adjacency = z.infer<typeof Adjacency>
-
-/** Dorling layout in the unit square; r is in the same units. */
-export const Bubbles = z.object({
-  schemaVersion: z.literal(1),
-  basedOn: z.object({ indicator: IndicatorId, year: z.number().int() }),
-  circles: z.array(
-    z.object({ code: MunicipalityCode, x: z.number(), y: z.number(), r: z.number() }),
-  ),
-})
-export type Bubbles = z.infer<typeof Bubbles>
 
 /**
  * Each municipality's nearest neighbours in the space of the ten indicators — "places like

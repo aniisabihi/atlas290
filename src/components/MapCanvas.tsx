@@ -1,23 +1,19 @@
 import { useCallback, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { radiusFor, sizeNorms } from '../../shared/bubbles'
 import type { MunicipalityTopology } from '../../shared/geometry'
-import type { Adjacency, Bubbles } from '../../shared/pantry'
+import type { Adjacency, BubbleLayout } from '../../shared/pantry'
 import { observationAt, rankOf, type Lookup } from '../data/select'
 import { MapTooltip } from './MapTooltip'
 import { formatWithUnit, statusPhrase } from '../i18n/format'
 import { t as strings } from '../i18n/strings'
 import type { Lang, View } from '../state/url'
 import { useMorph } from '../state/useMorph'
+import { useTween } from '../state/useTween'
 import { FOCUS_RING, fillFor } from '../map/colour'
 import { FRAME, shapesFor } from '../map/geometry'
-import { placeAll, type PlacedCircle } from '../map/frame'
+import { place, placementFor, type PlacedCircle } from '../map/frame'
 import { circlePath, morphD, pairFor, type MorphPair } from '../map/morph'
-import {
-  CARTOGRAM_CONE_COS,
-  MAP_CONE_COS,
-  step,
-  type Direction,
-  type NavContext,
-} from '../map/navigate'
+import { MAP_CONE_COS, step, type Direction, type NavContext } from '../map/navigate'
 
 const ARROWS: Record<string, Direction> = {
   ArrowUp: 'up',
@@ -37,6 +33,13 @@ const ARROWS: Record<string, Direction> = {
  * Everything the two components did separately is here once: the roving tabindex over 290
  * shapes, the two-tone selection ring and the dashed focus ring, the arrow-key cones, the fills
  * and status patterns, the accessible names. None of it is new, and none of it may change.
+ *
+ * **Since Plan 21 the bubbles are the measure's, not the population's.** Each indicator brings
+ * its own layout — positions solved for the slots that measure needs — and a bubble's radius
+ * follows the drawn year's value inside its slot. Two more movements follow from that, both
+ * driven by `useTween` and written to the DOM the way the morph is: a change of year resizes
+ * every bubble in place, and a change of indicator carries every bubble to its new position.
+ * See docs/decisions/0023-bubbles-sized-by-the-measure.md.
  */
 
 /**
@@ -51,7 +54,10 @@ const CARTOGRAM_PADDING = 24
 
 type Box = { x: number; y: number; width: number; height: number }
 
-function boxAround(circles: readonly PlacedCircle[], padding: number): Box {
+/** Where the circles are at some moment: what is drawn, what was drawn, or where they belong. */
+type Circles = { byCode: ReadonlyMap<string, PlacedCircle>; box: Box }
+
+function boxAround(circles: Iterable<PlacedCircle>, padding: number): Box {
   let minX = Infinity
   let minY = Infinity
   let maxX = -Infinity
@@ -72,11 +78,40 @@ function boxAround(circles: readonly PlacedCircle[], padding: number): Box {
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 
+const lerpBox = (a: Box, b: Box, t: number): Box => ({
+  x: lerp(a.x, b.x, t),
+  y: lerp(a.y, b.y, t),
+  width: lerp(a.width, b.width, t),
+  height: lerp(a.height, b.height, t),
+})
+
+/** The circles part-way from one arrangement to another, code by code. */
+function lerpCircles(from: Circles, to: Circles, t: number): Circles {
+  if (t >= 1) return to
+  if (t <= 0) return from
+  const byCode = new Map<string, PlacedCircle>()
+  for (const [code, target] of to.byCode) {
+    const start = from.byCode.get(code) ?? target
+    byCode.set(code, {
+      code,
+      x: lerp(start.x, target.x, t),
+      y: lerp(start.y, target.y, t),
+      r: lerp(start.r, target.r, t),
+    })
+  }
+  return { byCode, box: lerpBox(from.box, to.box, t) }
+}
+
+const viewBoxOf = (b: Box) =>
+  `${b.x.toFixed(1)} ${b.y.toFixed(1)} ${b.width.toFixed(1)} ${b.height.toFixed(1)}`
+
+const MAP_BOX: Box = { x: 0, y: 0, width: FRAME[0], height: FRAME[1] }
+
 export function MapCanvas({
   lk,
   topology,
   adjacency,
-  bubbles,
+  layout,
   view,
   indicatorId,
   year,
@@ -93,7 +128,8 @@ export function MapCanvas({
   lk: Lookup
   topology: MunicipalityTopology
   adjacency: Adjacency
-  bubbles: Bubbles
+  /** The drawn indicator's own bubble layout, from its pantry file. */
+  layout: BubbleLayout
   view: View
   indicatorId: string
   year: number
@@ -110,7 +146,7 @@ export function MapCanvas({
   onHover?: (code: string | null) => void
   onNoMove?: (direction: Direction) => void
   onMoved?: (code: string) => void
-  /** False when the visitor has asked for less movement: colours snap, and so does the morph. */
+  /** False when the visitor has asked for less movement: colours snap, and so do the bubbles. */
   animate?: boolean
   ref?: React.Ref<MapHandle>
 }) {
@@ -149,12 +185,56 @@ export function MapCanvas({
    */
   const lastPointerType = useRef('')
 
-  /** The bubbles, in the map's own coordinates, so a shape can travel between the two. */
-  const circles = useMemo(() => placeAll(bubbles.circles), [bubbles])
-  const circleByCode = useMemo(() => new Map(circles.map((c) => [c.code, c])), [circles])
+  /**
+   * The layout, placed in the map's frame. The slots — each municipality's largest bubble in any
+   * year — decide the placement and the box the cartogram rests in, so neither moves with the
+   * year; only the radii inside them do.
+   */
+  const placement = useMemo(() => placementFor(layout.circles), [layout])
+  const slots = useMemo(() => layout.circles.map((c) => place(c, placement)), [layout, placement])
 
   /**
-   * The 32-point proxies, built once on first use.
+   * Each municipality's position between the year's lowest and highest value, or null where it
+   * has none. Computed from the same published cells the kitchen sized the slots from, with the
+   * same shared rule, which is what guarantees no year's bubble outgrows its slot.
+   *
+   * Keyed on the SERIES object and the municipality list, not on `lk`. The lookup is rebuilt
+   * every time another indicator's file arrives — a profile opening fetches forty-one of them —
+   * while the drawn indicator's series object is the same one throughout. Keyed on `lk`, this
+   * recomputed identical norms forty-one times, each a new `targets` object, each a fresh tween
+   * that repainted all 290 paths for 450 ms: nothing visible, and enough main-thread work that
+   * WebKit began missing clicks on the profile's links while the files were landing.
+   */
+  const series = lk.series(indicatorId)
+  const municipalities = lk.data.municipalities
+  const kind = indicator.scale.kind
+  const norms = useMemo(() => {
+    const col = series.years.indexOf(year)
+    // Rows are in municipality order, which `checkPantryCrossReferences` holds the series to.
+    const column = municipalities.map((_, row) =>
+      col === -1 ? null : (series.values[row]?.[col] ?? null),
+    )
+    const norm = sizeNorms(column, kind)
+    return new Map(municipalities.map((m, i) => [m.code, norm[i] ?? null]))
+  }, [series, municipalities, year, kind])
+
+  /** Where every bubble belongs right now: its slot's position, the year's radius. */
+  const targets = useMemo((): Circles => {
+    const sizing = { minR: layout.minR, maxR: layout.maxR }
+    const byCode = new Map<string, PlacedCircle>()
+    for (const slot of slots) {
+      byCode.set(slot.code, {
+        ...slot,
+        r: radiusFor(norms.get(slot.code) ?? null, sizing) * placement.scale,
+      })
+    }
+    return { byCode, box: boxAround(slots, CARTOGRAM_PADDING) }
+  }, [slots, norms, layout, placement])
+
+  /**
+   * The 32-point proxies, built once on first use — and only for the outlines, since Plan 21:
+   * the circle a shape travels to changes with the year and the indicator, so it is supplied per
+   * frame rather than sampled in advance.
    *
    * **Absent is a supported state, not a failure.** Sampling needs `getTotalLength`, which jsdom
    * does not implement and an old browser may not either. Without it the views still switch —
@@ -167,81 +247,70 @@ export function MapCanvas({
     if (typeof probe.getTotalLength !== 'function') return null
     try {
       const built = new Map<string, MorphPair>()
-      for (const shape of shapes) {
-        const circle = circleByCode.get(shape.code)
-        if (!circle) continue
-        built.set(shape.code, pairFor(probe, shape.code, shape.d, circle))
-      }
-      return built.size === shapes.length ? built : null
+      for (const shape of shapes) built.set(shape.code, pairFor(probe, shape.code, shape.d))
+      return built
     } catch {
       return null
     }
-  }, [shapes, circleByCode])
+  }, [shapes])
 
-  /** What to draw for one municipality at `t`. */
+  /** What to draw for one municipality at `t`, travelling to `circle`. */
   const pathFor = useCallback(
-    (code: string, mapD: string, t: number): string => {
+    (code: string, mapD: string, t: number, circle: PlacedCircle | undefined): string => {
+      if (!circle) return mapD
       const pair = pairs?.get(code)
-      if (!pair) {
-        // No proxies: cut at the halfway point rather than drawing nothing.
-        const circle = circleByCode.get(code)
-        return t < 0.5 || !circle ? mapD : circlePath(circle)
-      }
-      return morphD(pair, t)
+      // No proxies: cut at the halfway point rather than drawing nothing.
+      if (!pair) return t < 0.5 ? mapD : circlePath(circle)
+      return morphD(pair, t, circle)
     },
-    [pairs, circleByCode],
+    [pairs],
   )
 
   const svgRef = useRef<SVGSVGElement>(null)
   const rings = useRef<SVGPathElement[]>([])
-  const cartogramBox = useMemo(() => boxAround(circles, CARTOGRAM_PADDING), [circles])
+
+  /**
+   * The two clocks' current readings, and what the circles look like at this instant.
+   *
+   * Refs, not state, for the same reason as `morphing`: both clocks write these sixty times a
+   * second and only the frame painter reads them.
+   */
+  const morphT = useRef(view === 'cartogram' ? 1 : 0)
+  const drawn = useRef<Circles>(targets)
+  const departed = useRef<Circles>(targets)
 
   /**
    * One frame, written straight to the DOM.
    *
-   * This is the whole reason `useMorph` pushes frames rather than holding `t` in state. Only
-   * `d` and the viewBox change while the shapes are moving; every fill, every accessible name
-   * and every observation lookup stays exactly as it was, and asking React to prove that sixty
-   * times a second dropped 13 to 16 frames of every 67 at 4x and 6x throttling.
+   * This is the whole reason `useMorph` and `useTween` push frames rather than holding progress
+   * in state. Only `d` and the viewBox change while the shapes are moving; every fill, every
+   * accessible name and every observation lookup stays exactly as it was, and asking React to
+   * prove that sixty times a second dropped 13 to 16 frames of every 67 at 4x and 6x throttling.
    */
-  const applyFrame = useCallback(
-    (t: number) => {
-      /*
-       * "Not where it is going", rather than "strictly between the two ends".
-       *
-       * Firefox hands a `requestAnimationFrame` callback the timestamp the frame began, which can
-       * precede the moment the animation was started — so the first frame arrives with a slightly
-       * negative `t`, which is not greater than zero, and a flag written as `t > 0 && t < 1` read
-       * as "at rest" for exactly one frame at the start of every morph. Long enough for a pointer
-       * to find it under load.
-       */
-      morphing.current = t !== (view === 'cartogram' ? 1 : 0)
-      for (const shape of shapes) {
-        paths.current.get(shape.code)?.setAttribute('d', pathFor(shape.code, shape.d, t))
-      }
-      for (const ring of rings.current) {
-        const code = ring.dataset['ringFor']
-        if (!code) continue
-        ring.setAttribute('d', pathFor(code, shapeD(shapes, code), t))
-      }
-      svgRef.current?.setAttribute(
-        'viewBox',
-        `${lerp(0, cartogramBox.x, t).toFixed(1)} ${lerp(0, cartogramBox.y, t).toFixed(1)} ` +
-          `${lerp(FRAME[0], cartogramBox.width, t).toFixed(1)} ` +
-          `${lerp(FRAME[1], cartogramBox.height, t).toFixed(1)}`,
-      )
-    },
-    [shapes, pathFor, cartogramBox, view],
-  )
+  const paint = useCallback(() => {
+    const t = morphT.current
+    const now = drawn.current
+    for (const shape of shapes) {
+      paths.current
+        .get(shape.code)
+        ?.setAttribute('d', pathFor(shape.code, shape.d, t, now.byCode.get(shape.code)))
+    }
+    for (const ring of rings.current) {
+      const code = ring.dataset['ringFor']
+      if (!code) continue
+      ring.setAttribute('d', pathFor(code, shapeD(shapes, code), t, now.byCode.get(code)))
+    }
+    svgRef.current?.setAttribute('viewBox', viewBoxOf(lerpBox(MAP_BOX, now.box, t)))
+  }, [shapes, pathFor])
 
   /*
    * In flight from the moment the view changes, not from the first frame.
    *
    * `useMorph` starts the animation in an effect and its first frame is a `requestAnimationFrame`
-   * after that, so between the button being pressed and `applyFrame` first running there is a
-   * window where the view has already flipped and nothing has said the shapes are moving. A
-   * pointer moved in that window took a fresh hover and drew a reading beside a shape about to
-   * leave. Rare enough to pass locally every time; WebKit on slower CI hardware found it.
+   * after that, so between the button being pressed and the first frame there is a window where
+   * the view has already flipped and nothing has said the shapes are moving. A pointer moved in
+   * that window took a fresh hover and drew a reading beside a shape about to leave. Rare enough
+   * to pass locally every time; WebKit on slower CI hardware found it.
    *
    * A layout effect rather than a line in the render body, because a ref written while rendering
    * is a value React is free to discard — the same reason `useMorph` gives for its own. This runs
@@ -256,21 +325,50 @@ export function MapCanvas({
     restingIn.current = view
   }, [view])
 
-  useMorph(view === 'cartogram' ? 1 : 0, !animate, applyFrame)
+  useMorph(view === 'cartogram' ? 1 : 0, !animate, (t) => {
+    /*
+     * "Not where it is going", rather than "strictly between the two ends".
+     *
+     * Firefox hands a `requestAnimationFrame` callback the timestamp the frame began, which can
+     * precede the moment the animation was started — so the first frame arrives with a slightly
+     * negative `t`, which is not greater than zero, and a flag written as `t > 0 && t < 1` read
+     * as "at rest" for exactly one frame at the start of every morph. Long enough for a pointer
+     * to find it under load.
+     */
+    morphing.current = t !== (view === 'cartogram' ? 1 : 0)
+    morphT.current = t
+    paint()
+  })
+
+  /**
+   * The bubbles' own movement: from wherever they are drawn to where they now belong, whenever
+   * that changes — a new year resizes them in place, a new indicator carries them to its layout.
+   *
+   * The first frame of a run snapshots what is on screen as the departure point, so a change
+   * that lands mid-flight turns the bubbles round from where they are rather than from where
+   * they were going. At the map end nothing is visible, so the frame is not painted — but the
+   * snapshot is still kept, so a morph that starts later leaves from the right circles.
+   */
+  useTween(targets, !animate, (progress) => {
+    if (progress <= 0) departed.current = drawn.current
+    drawn.current = lerpCircles(departed.current, targets, progress)
+    if (morphT.current > 0 || morphing.current) paint()
+  })
 
   /**
    * The view the arrow keys answer to.
    *
-   * The cones were each measured against their own layout — 45° on the map, 50° on the
-   * cartogram, both swept until every municipality was reachable — so mid-flight the keys use
-   * the cone of the end being travelled to. A press at t = 0.4 on the way to the bubbles lands
-   * where the bubbles would send it, which is where the visitor is about to be looking.
+   * The cones were each measured against their own layout — 45° on the map, and whatever the
+   * kitchen proved for this indicator's layout on the bubbles — so mid-flight the keys use the
+   * cone of the end being travelled to. A press at t = 0.4 on the way to the bubbles lands where
+   * the bubbles would send it, which is where the visitor is about to be looking.
    */
   const atCartogram = view === 'cartogram'
   /**
-   * What React renders: the RESTING state of whichever view is current. Every frame in between
-   * is written by `applyFrame` over the top, and the last one lands exactly here — so the
-   * markup a screen reader or a test sees is always one of the two real ends, never a proxy.
+   * What React renders: the RESTING state of whichever view is current, with every bubble where
+   * it belongs. Every frame in between is written by `paint` over the top, and the last one lands
+   * exactly here — so the markup a screen reader or a test sees is always one of the two real
+   * ends, never a proxy.
    */
   const resting = atCartogram ? 1 : 0
 
@@ -279,15 +377,15 @@ export function MapCanvas({
       atCartogram
         ? {
             neighbours: adjacency.neighbours,
-            centroids: new Map(circles.map((c) => [c.code, [c.x, c.y] as const])),
-            coneCos: CARTOGRAM_CONE_COS,
+            centroids: new Map(slots.map((c) => [c.code, [c.x, c.y] as const])),
+            coneCos: Math.cos((layout.cone * Math.PI) / 180),
           }
         : {
             neighbours: adjacency.neighbours,
             centroids: new Map(shapes.map((s) => [s.code, s.centroid])),
             coneCos: MAP_CONE_COS,
           },
-    [atCartogram, adjacency, circles, shapes],
+    [atCartogram, adjacency, slots, layout, shapes],
   )
 
   const focusCode = focused ?? selected ?? shapes[0]?.code
@@ -337,12 +435,7 @@ export function MapCanvas({
   )
 
   /** The viewBox travels too, so the bubbles fill the panel at rest exactly as they did. */
-  const box: Box = {
-    x: lerp(0, cartogramBox.x, resting),
-    y: lerp(0, cartogramBox.y, resting),
-    width: lerp(FRAME[0], cartogramBox.width, resting),
-    height: lerp(FRAME[1], cartogramBox.height, resting),
-  }
+  const box = lerpBox(MAP_BOX, targets.box, resting)
 
   /**
    * One municipality's name and reading, in one place.
@@ -399,15 +492,6 @@ export function MapCanvas({
   }
 
   /**
-   * The morph moves every shape out from under the pointer, so whatever was hovered is no longer
-   * where the tooltip points.
-   *
-   * Derived, not cleared in an effect: the hover remembers the view it was taken in, and a hover
-   * from the other view is simply not a hover. An effect would set state during the render the
-   * view change already caused — a second render for a box that had stopped being true before
-   * the first one started.
-   */
-  /**
    * The 290 shapes, rebuilt only when something about them changes.
    *
    * A pointer moving across the map sets a new position on every native `pointermove`, and
@@ -415,8 +499,8 @@ export function MapCanvas({
    * `Intl.NumberFormat` instances, to move a small box a few pixels. The elements are the same
    * objects between hovers, so React skips them entirely.
    *
-   * This is the same argument `applyFrame` makes for writing morph frames straight to the DOM,
-   * applied to the other thing that happens at pointer rate.
+   * This is the same argument `paint` makes for writing frames straight to the DOM, applied to
+   * the other thing that happens at pointer rate.
    */
   const shapeNodes = useMemo(
     () =>
@@ -432,7 +516,7 @@ export function MapCanvas({
               if (el) paths.current.set(shape.code, el)
               else paths.current.delete(shape.code)
             }}
-            d={pathFor(shape.code, shape.d, resting)}
+            d={pathFor(shape.code, shape.d, resting, targets.byCode.get(shape.code))}
             role="button"
             aria-label={`${name}, ${reading}`}
             aria-current={shape.code === selected ? 'true' : undefined}
@@ -457,6 +541,7 @@ export function MapCanvas({
       indicator,
       pathFor,
       resting,
+      targets,
       selected,
       focusCode,
       highlight,
@@ -470,20 +555,20 @@ export function MapCanvas({
   const hoveredRank =
     live && hovered?.value !== null ? rankOf(lk, indicatorId, year, live.code) : null
 
-  const selectedD = selected ? pathFor(selected, shapeD(shapes, selected), resting) : undefined
-  const highlightD =
-    highlight && highlight !== selected
-      ? pathFor(highlight, shapeD(shapes, highlight), resting)
-      : undefined
-  const focusedD =
-    focused && focused !== selected ? pathFor(focused, shapeD(shapes, focused), resting) : undefined
+  const ringD = (code: string) =>
+    pathFor(code, shapeD(shapes, code), resting, targets.byCode.get(code))
+  const selectedD = selected ? ringD(selected) : undefined
+  const highlightD = highlight && highlight !== selected ? ringD(highlight) : undefined
+  const focusedD = focused && focused !== selected ? ringD(focused) : undefined
 
   return (
     <>
       <svg
-        viewBox={`${box.x.toFixed(1)} ${box.y.toFixed(1)} ${box.width.toFixed(1)} ${box.height.toFixed(1)}`}
+        viewBox={viewBoxOf(box)}
         role="group"
-        aria-label={atCartogram ? strings(lang).cartogramLabel : strings(lang).mapLabel}
+        aria-label={
+          atCartogram ? strings(lang).cartogramLabel(indicator.name[lang]) : strings(lang).mapLabel
+        }
         aria-describedby="map-hint"
         className="map"
         data-animate={animate ? 'true' : 'false'}
@@ -583,8 +668,8 @@ export function MapCanvas({
 }
 
 /**
- * Gathers the two paths of a ring group so `applyFrame` can move them with their shape. Each
- * carries the code it follows, because the selection and the keyboard can be on two different
+ * Gathers the two paths of a ring group so `paint` can move them with their shape. Each carries
+ * the code it follows, because the selection and the keyboard can be on two different
  * municipalities at once.
  */
 function collectRings(store: React.RefObject<SVGPathElement[]>) {

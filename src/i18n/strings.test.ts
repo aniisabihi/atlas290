@@ -12,7 +12,13 @@ describe('the string tables', () => {
   it.each(LANGS)('has nothing blank in %s', (lang) => {
     for (const key of keys) {
       const value = t(lang)[key]
-      const rendered = typeof value === 'function' ? (value as (...a: never[]) => string)() : value
+      // Called with a name, a year and a count, which is what the function strings take in some
+      // order; a string function that does more than interpolate — `cartogramLabel` lower-cases
+      // the measure's name — needs a real argument rather than `undefined` to render at all.
+      const rendered =
+        typeof value === 'function'
+          ? (value as (...a: never[]) => string)(...(['Folkmängd', 2024, 3] as never[]))
+          : value
       expect(rendered.length, `${lang}.${String(key)}`).toBeGreaterThan(0)
     }
   })

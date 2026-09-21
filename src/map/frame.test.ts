@@ -1,29 +1,31 @@
 import { describe, expect, it } from 'vitest'
-import rawBubbles from '../../public/pantry/layout/bubbles.json'
-import { Bubbles } from '../../shared/pantry'
 import { FRAME } from '../../shared/geometry'
+import { LAYOUT_SCALE } from '../../shared/bubbles'
 import { boundsOf, place, placeAll, placementFor } from './frame'
+import { publishedParts } from '../test/pantry'
 
-const bubbles = Bubbles.parse(rawBubbles)
-const circles = bubbles.circles
+/** The population layout, as its published file carries it since Plan 21. */
+const circles = publishedParts.get('population')!.layout.circles
 
 describe('boundsOf', () => {
   it('includes the radii, because a circle near an edge sticks out past its centre', () => {
-    const b = boundsOf([{ code: '0001', x: 0.5, y: 0.5, r: 0.2 }])
-    expect(b).toEqual({ minX: 0.3, minY: 0.3, maxX: 0.7, maxY: 0.7 })
+    const b = boundsOf([{ code: '0001', x: 500, y: 500, r: 200 }])
+    expect(b).toEqual({ minX: 300, minY: 300, maxX: 700, maxY: 700 })
   })
 
-  it('spans the whole committed layout, which is not a unit square', () => {
+  it('spans the committed layout, which is about as wide as it is tall and not the frame', () => {
+    // The layout is published in a box 1000 wide with Sweden at half its height, and a Dorling
+    // spills past that box wherever a circle's radius or the crowding pushes it. What matters
+    // for the placement is the aspect: roughly square against a frame that is 1:2, so the width
+    // limits and scaling x and y separately would stretch the layout to twice its height.
     const b = boundsOf(circles)
-    expect(b.minX).toBeCloseTo(0.0535, 4)
-    expect(b.minY).toBeCloseTo(0.0544, 4)
-    expect(b.maxX).toBeCloseTo(0.8964, 4)
-    // Past 1: a circle whose centre sits near the bottom edge spills over it.
-    expect(b.maxY).toBeCloseTo(1.0609, 4)
-    // 0.837 wide for every 1 tall, against a frame that is 0.5 — so the width limits, and
-    // scaling x and y separately would stretch the layout to twice its height.
+    expect(b.minX).toBeGreaterThan(-LAYOUT_SCALE / 4)
+    expect(b.maxX).toBeLessThan(LAYOUT_SCALE * 1.25)
+    expect(b.maxY).toBeLessThan(LAYOUT_SCALE * 1.5)
     const aspect = (b.maxX - b.minX) / (b.maxY - b.minY)
-    expect(aspect).toBeCloseTo(0.837, 3)
+    expect(aspect).toBeGreaterThan(0.6)
+    expect(aspect).toBeLessThan(1.2)
+    expect(aspect).toBeGreaterThan(FRAME[0] / FRAME[1])
   })
 
   it('throws rather than returning an infinite box for no circles', () => {
@@ -37,9 +39,9 @@ describe('placementFor', () => {
     // to twice its height and leaves a radius with two different values depending on which way
     // it is measured. The morph prototype did exactly that.
     const at = placementFor(circles)
-    const placed = place({ code: 'x', x: 0.5, y: 0.5, r: 0.1 }, at)
-    const widthAcross = place({ code: 'x', x: 0.6, y: 0.5, r: 0 }, at).x - placed.x
-    const heightDown = place({ code: 'x', x: 0.5, y: 0.6, r: 0 }, at).y - placed.y
+    const placed = place({ code: 'x', x: 500, y: 500, r: 10 }, at)
+    const widthAcross = place({ code: 'x', x: 600, y: 500, r: 0 }, at).x - placed.x
+    const heightDown = place({ code: 'x', x: 500, y: 600, r: 0 }, at).y - placed.y
     expect(widthAcross).toBeCloseTo(heightDown, 10)
   })
 
@@ -82,15 +84,15 @@ describe('placementFor', () => {
     // Which axis wins is computed, not assumed, so a future bubble layout cannot silently
     // overflow. A tall thin layout must be limited by height.
     const tall = [
-      { code: '0001', x: 0.5, y: 0, r: 0.01 },
-      { code: '0002', x: 0.5, y: 1, r: 0.01 },
+      { code: '0001', x: 500, y: 0, r: 10 },
+      { code: '0002', x: 500, y: 1000, r: 10 },
     ]
     const at = placementFor(tall, [1000, 2000], 20)
-    expect(at.scale).toBeCloseTo((2000 - 40) / (1 + 0.02), 6)
+    expect(at.scale).toBeCloseTo((2000 - 40) / (1000 + 20), 6)
   })
 
   it('throws on a layout with no extent rather than dividing by zero', () => {
-    expect(() => placementFor([{ code: '0001', x: 0.5, y: 0.5, r: 0 }])).toThrow(/no extent/)
+    expect(() => placementFor([{ code: '0001', x: 500, y: 500, r: 0 }])).toThrow(/no extent/)
   })
 })
 

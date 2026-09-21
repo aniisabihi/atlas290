@@ -13,7 +13,6 @@ import { dirname, join } from 'node:path'
 import type { ZodType } from 'zod'
 import {
   Adjacency,
-  Bubbles,
   Facts,
   Manifest,
   PantryData,
@@ -23,17 +22,16 @@ import {
   assemblePantry,
   splitPantry,
 } from '../../shared/pantry'
-import type { Indicator, IndicatorSeries, Municipality } from '../../shared/pantry'
+import type { Indicator, IndicatorSeries } from '../../shared/pantry'
 import { check } from './check'
 import { cmp } from './cmp'
 import { roundIndicatorBreaks, roundSeriesValues } from './round'
 import { buildAdjacency, curatedEdgePairs, type CuratedEdge } from './geometry/adjacency'
-import { buildBubbles } from './geometry/bubbles'
+import { buildBubbleLayout } from './geometry/bubbles'
 import { buildSimilar } from './similar/build'
 import { buildFacts } from './facts/build'
 import { buildTopology, centroids, GEOMETRY_SOURCE } from './geometry/build'
 import { municipalityProps } from './geometry/props'
-import { CKM_FROM, POPULATION } from './indicators/population'
 import { buildAll } from './indicators/registry'
 import { fetchCpi, toPriceIndex } from './indicators/cpi'
 import { selectionKey as computeSelectionKey } from './scb/freeze'
@@ -346,40 +344,6 @@ export function assertCodesMatch(
   )
 }
 
-/**
- * Population for every municipality in `year`, for the bubble layout (review finding 4).
- * `series.values[i]?.[yi] ?? 0` used to substitute zero both when the year was not found
- * (yi === -1, never checked) and when a municipality's value was genuinely null — violating
- * the project's rule that absence is never zero. If the reference year ever fell outside the
- * series, every bubble would silently get radius zero and publish as 290 invisible points. Now
- * both cases throw, naming the year, the available range, or the offending municipality.
- */
-export function bubblePopulation(
-  municipalities: Municipality[],
-  series: IndicatorSeries,
-  year: number,
-): Map<string, number> {
-  const yi = series.years.indexOf(year)
-  if (yi === -1) {
-    throw new Error(
-      `bubble layout: reference year ${year} not found in population series; available ` +
-        `years are ${series.years[0]}–${series.years[series.years.length - 1]}`,
-    )
-  }
-  return new Map(
-    municipalities.map((m, i) => {
-      const v = series.values[i]?.[yi]
-      if (v == null) {
-        throw new Error(
-          `bubble layout: population for ${m.code} in ${year} is null; cannot size a bubble ` +
-            'without a real value',
-        )
-      }
-      return [m.code, v]
-    }),
-  )
-}
-
 /** Proves publish() never touches the network: any attempted fetch throws, naming the fix. */
 const offline: typeof fetch = async (input) => {
   throw new Error(
@@ -449,33 +413,8 @@ export async function publish(
     const curated = curatedEdgePairs(
       loadCuratedEdges(join(import.meta.dirname, 'geometry/curated-edges.json')),
     )
-    writePantryFile(
-      join(pantryDir, 'geometry/adjacency.json'),
-      Adjacency,
-      buildAdjacency(topology, c, curated),
-    )
-
-    // Last year before SCB's Cell Key Method perturbation begins: a stable, unperturbed
-    // reference year for the bubble layout, rather than always the newest one. Deliberately
-    // named apart from population.ts's LATEST_YEAR (review finding 2): this is "the last
-    // unperturbed year", tied to CKM_FROM, not "the newest published year".
-    const bubbleReferenceYear = CKM_FROM - 1
-    // The bubble layout is still sized off population specifically, not "whichever indicator
-    // happens to be first" — `series` is now every registered indicator's output, so find
-    // population's own series by id rather than assuming array position.
-    const populationSeries = series.find((s) => s.indicator === POPULATION.id)
-    if (!populationSeries) {
-      throw new Error(
-        `publish: buildAll() returned no '${POPULATION.id}' series — cannot size the bubble ` +
-          'layout without it',
-      )
-    }
-    const population = bubblePopulation(municipalities, populationSeries, bubbleReferenceYear)
-    writePantryFile(
-      join(pantryDir, 'layout/bubbles.json'),
-      Bubbles,
-      buildBubbles(c, population, bubbleReferenceYear),
-    )
+    const adjacency = buildAdjacency(topology, c, curated)
+    writePantryFile(join(pantryDir, 'geometry/adjacency.json'), Adjacency, adjacency)
 
     // Read back through the freeze layer, so this is the same already-frozen TAB4352 the two
     // money indicators used during their own build — no second request, and offline like
@@ -486,12 +425,44 @@ export async function publish(
     })
 
     const rounded = roundPantryData(indicators, series)
+
+    /**
+     * Plan 21: one bubble layout per indicator, sized from the PUBLISHED values.
+     *
+     * From the rounded series rather than the full-precision build output, for the reason the
+     * similarity and facts files give below: a layout is a claim about the file a reader has —
+     * "this slot is the largest bubble Kiruna takes in any year" — and the site sizes each year's
+     * bubble from the same published values, so the two have to agree to the digit. Built here,
+     * before `PantryData.parse`, because the layout is part of what each indicator's file carries
+     * and the cross-reference check joins every layout's codes to the municipalities.
+     *
+     * `buildBubbleLayout` throws, naming the indicator, when it cannot prove a layout reachable
+     * with the arrow keys — so this is a gate as well as a build step.
+     */
+    const seriesById = new Map(rounded.series.map((s) => [s.indicator, s]))
+    const layouts = rounded.indicators.map((indicator) => {
+      const own = seriesById.get(indicator.id)
+      if (!own) throw new Error(`publish: no series for indicator "${indicator.id}"`)
+      return {
+        indicator: indicator.id,
+        ...buildBubbleLayout({
+          indicator: indicator.id,
+          kind: indicator.scale.kind,
+          centroids: c,
+          municipalities,
+          series: own,
+          neighbours: adjacency.neighbours,
+        }),
+      }
+    })
+
     const published = PantryData.parse({
       schemaVersion: 1,
       municipalities,
       indicators: rounded.indicators,
       series: rounded.series,
       priceIndex: toPriceIndex(cpiIndex),
+      layouts,
     })
     writePantryParts(pantryDir, published)
     pruneIndicatorFiles(

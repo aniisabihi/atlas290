@@ -35,6 +35,8 @@ export function readPantry(pantryDir = join(root, 'public/pantry')) {
     indicators: parts.map((part) => part.indicator),
     series: parts.map((part) => part.series),
     priceIndex: index.priceIndex,
+    // Plan 21: each file carries its bubble layout; the assembled pantry lists them by indicator.
+    layouts: parts.map((part) => ({ indicator: part.indicator.id, ...part.layout })),
   }
 }
 

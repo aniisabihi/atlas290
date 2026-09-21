@@ -3,10 +3,9 @@ import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import rawTopology from '../../public/pantry/geometry/municipalities.topo.json'
 import rawAdjacency from '../../public/pantry/geometry/adjacency.json'
-import rawBubbles from '../../public/pantry/layout/bubbles.json'
 import rawSimilar from '../../public/pantry/data/similar.json'
 import rawFacts from '../../public/pantry/data/facts.json'
-import { Adjacency, Bubbles, Facts, Similar } from '../../shared/pantry'
+import { Adjacency, Facts, Similar } from '../../shared/pantry'
 import type { MunicipalityTopology } from '../../shared/geometry'
 import { App } from './App'
 import { SETTLE_MS } from './LiveRegion'
@@ -14,7 +13,6 @@ import { loadedDataFor } from '../test/pantry'
 
 const topology = rawTopology as unknown as MunicipalityTopology
 const adjacency = Adjacency.parse(rawAdjacency)
-const bubbles = Bubbles.parse(rawBubbles)
 const similar = Similar.parse(rawSimilar)
 const facts = Facts.parse(rawFacts)
 
@@ -26,9 +24,7 @@ const facts = Facts.parse(rawFacts)
  */
 const open = (url: string) => {
   window.history.replaceState(null, '', url)
-  return render(
-    <App loaded={{ ...loadedDataFor(), topology, adjacency, bubbles, similar, facts }} />,
-  )
+  return render(<App loaded={{ ...loadedDataFor(), topology, adjacency, similar, facts }} />)
 }
 
 const live = () => document.querySelector('[data-live-region]')!

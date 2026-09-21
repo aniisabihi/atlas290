@@ -1,6 +1,5 @@
 import {
   Adjacency,
-  Bubbles,
   Facts,
   PantryIndex,
   PantryIndicator,
@@ -25,7 +24,6 @@ export type LoadedPantry = {
   parts: ReadonlyMap<string, PantryIndicator>
   topology: MunicipalityTopology
   adjacency: Adjacency
-  bubbles: Bubbles
   similar: Similar
   facts: Facts
 }
@@ -73,27 +71,20 @@ export function withPart(loaded: LoadedPantry, part: PantryIndicator): LoadedPan
  * cold load, spent while the 36 kB topology is still in flight.
  */
 export async function loadPantry(): Promise<LoadedPantry> {
-  const [indexRes, topoRes, adjRes, bubbleRes, similarRes, factsRes] = await Promise.all([
+  // No bubble layout is fetched here: since Plan 21 each indicator's file carries its own, so
+  // the layout arrives with the series it sizes and never has to be matched to one afterwards.
+  const [indexRes, topoRes, adjRes, similarRes, factsRes] = await Promise.all([
     fetch(`${PANTRY}/data/index.json`),
     fetch(`${PANTRY}/geometry/municipalities.topo.json`),
     fetch(`${PANTRY}/geometry/adjacency.json`),
-    fetch(`${PANTRY}/layout/bubbles.json`),
     fetch(`${PANTRY}/data/similar.json`),
     fetch(`${PANTRY}/data/facts.json`),
   ])
-  if (
-    !indexRes.ok ||
-    !topoRes.ok ||
-    !adjRes.ok ||
-    !bubbleRes.ok ||
-    !similarRes.ok ||
-    !factsRes.ok
-  ) {
+  if (!indexRes.ok || !topoRes.ok || !adjRes.ok || !similarRes.ok || !factsRes.ok) {
     throw new Error('pantry files missing; run yarn kitchen publish')
   }
   const index = PantryIndex.parse(await indexRes.json())
   const adjacency = Adjacency.parse(await adjRes.json())
-  const bubbles = Bubbles.parse(await bubbleRes.json())
   const similar = Similar.parse(await similarRes.json())
   const facts = Facts.parse(await factsRes.json())
   const topology = (await topoRes.json()) as MunicipalityTopology
@@ -116,7 +107,6 @@ export async function loadPantry(): Promise<LoadedPantry> {
     parts,
     topology,
     adjacency,
-    bubbles,
     similar,
     facts,
   }

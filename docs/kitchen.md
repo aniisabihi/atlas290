@@ -2,11 +2,11 @@
 
 The kitchen is the offline data pipeline. It is the only code that talks to SCB.
 
-| Command                | Network | What it does                                                                                                                                                       |
-| ---------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `yarn kitchen fetch`   | yes     | Downloads the tables the indicators need and freezes each response under `kitchen/raw/<table>/<lang>/`. Already-frozen chunks are skipped, so re-running is cheap. |
-| `yarn kitchen publish` | **no**  | Reads only `kitchen/raw/`, builds geometry, adjacency, bubbles, the indicator file and the similarity file into `public/pantry/`. Refuses to touch the network.    |
-| `yarn kitchen all`     | yes     | Both, in order.                                                                                                                                                    |
+| Command                | Network | What it does                                                                                                                                                                                            |
+| ---------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `yarn kitchen fetch`   | yes     | Downloads the tables the indicators need and freezes each response under `kitchen/raw/<table>/<lang>/`. Already-frozen chunks are skipped, so re-running is cheap.                                      |
+| `yarn kitchen publish` | **no**  | Reads only `kitchen/raw/`, builds geometry, adjacency, the index, one file per indicator (series plus its own bubble layout), similarity and facts into `public/pantry/`. Refuses to touch the network. |
+| `yarn kitchen all`     | yes     | Both, in order.                                                                                                                                                                                         |
 
 Running `publish` twice produces byte-identical files. If a pull request shows a pantry diff, a
 number changed at SCB or the code changed; never both silently. `publish()` also refuses to

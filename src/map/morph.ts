@@ -13,6 +13,13 @@ import type { PlacedCircle } from './frame'
  * and the cartogram draws a real circle. The proxies are used only while `0 < t < 1`, where
  * everything is moving and nobody can see the difference. That is what lets the sample count be
  * chosen for the frame budget rather than for fidelity.
+ *
+ * **Why the circle is not sampled in advance.** Since Plan 21 a bubble's radius follows the year
+ * and its position the indicator, so the circle a shape travels to is not known when the outline
+ * is sampled. What IS fixed is the direction of each sample seen from the circle's centre: the
+ * outline's start angle decides those once (`unitCircle`), and every frame places them on
+ * whatever circle is current — a multiply and an add per point, against the `getPointAtLength`
+ * call an outline sample costs.
  */
 
 export type Point = readonly [number, number]
@@ -61,7 +68,8 @@ export function sampleOutline(path: SVGPathElement, d: string, n = SAMPLE_POINTS
 }
 
 /**
- * The same number of points around a circle, starting at `startAngle`.
+ * The directions of `n` equally spaced points on a circle, starting at `startAngle`, as unit
+ * vectors from the centre — the part of a circle's samples that does not depend on which circle.
  *
  * The start angle is not arbitrary. Both lists are walked in the same order during the lerp, so
  * point 0 of the outline travels to point 0 of the circle — and if the circle always started at
@@ -69,17 +77,25 @@ export function sampleOutline(path: SVGPathElement, d: string, n = SAMPLE_POINTS
  * on its way over. Starting the circle at the angle the shape's own first point sits at, seen
  * from its middle, means each point travels roughly outward rather than around.
  */
+export function unitCircle(startAngle: number, n = SAMPLE_POINTS): Point[] {
+  const points: Point[] = []
+  for (let i = 0; i < n; i++) {
+    const angle = startAngle + (2 * Math.PI * i) / n
+    points.push([Math.cos(angle), Math.sin(angle)])
+  }
+  return points
+}
+
+/** The same `n` points placed on a real circle. */
 export function sampleCircle(
   circle: Pick<PlacedCircle, 'x' | 'y' | 'r'>,
   startAngle: number,
   n = SAMPLE_POINTS,
 ): Point[] {
-  const points: Point[] = []
-  for (let i = 0; i < n; i++) {
-    const angle = startAngle + (2 * Math.PI * i) / n
-    points.push([circle.x + circle.r * Math.cos(angle), circle.y + circle.r * Math.sin(angle)])
-  }
-  return points
+  return unitCircle(startAngle, n).map(([ux, uy]) => [
+    circle.x + circle.r * ux,
+    circle.y + circle.r * uy,
+  ])
 }
 
 /** The mean of a point list — the shape's middle, for choosing the circle's start angle. */
@@ -104,12 +120,12 @@ export function startAngleFor(outline: readonly Point[]): number {
 
 export type MorphPair = {
   code: string
-  /** The real path data, drawn at each end. */
+  /** The real path data, drawn at the map end. */
   mapD: string
-  cartogramD: string
-  /** The proxies, used only in between. */
+  /** The outline's samples, used only in between. */
   from: Point[]
-  to: Point[]
+  /** Where each sample sits on the circle, as a direction from its centre, aimed at the outline. */
+  unit: Point[]
 }
 
 export function circlePath(circle: Pick<PlacedCircle, 'x' | 'y' | 'r'>): string {
@@ -119,40 +135,48 @@ export function circlePath(circle: Pick<PlacedCircle, 'x' | 'y' | 'r'>): string 
   return `M${x - r} ${y}A${r} ${r} 0 1 0 ${x + r} ${y}A${r} ${r} 0 1 0 ${x - r} ${y}Z`
 }
 
+/**
+ * Everything about a shape's journey that does not depend on where it is going. Built once per
+ * shape, per load; the circle is supplied per frame.
+ */
 export function pairFor(
   path: SVGPathElement,
   code: string,
   mapD: string,
-  circle: PlacedCircle,
   n = SAMPLE_POINTS,
 ): MorphPair {
   const from = sampleOutline(path, mapD, n)
-  const to = sampleCircle(circle, startAngleFor(from), n)
-  return { code, mapD, cartogramD: circlePath(circle), from, to }
+  return { code, mapD, from, unit: unitCircle(startAngleFor(from), n) }
 }
 
 /** How many decimals a coordinate carries into the `d` string while moving. */
 const PRECISION = 1
 
 /**
- * The path to draw at `t`.
+ * The path to draw at `t`, travelling toward `circle`.
  *
  * Exactly 0 and exactly 1 return the real geometry — the full coastline and the true circle —
  * so the resampling is never what a stationary visitor looks at.
  */
-export function morphD(pair: MorphPair, t: number): string {
+export function morphD(
+  pair: MorphPair,
+  t: number,
+  circle: Pick<PlacedCircle, 'x' | 'y' | 'r'>,
+): string {
   if (t <= 0) return pair.mapD
-  if (t >= 1) return pair.cartogramD
-  const { from, to } = pair
+  if (t >= 1) return circlePath(circle)
+  const { from, unit } = pair
   let d = 'M'
   for (let i = 0; i < from.length; i++) {
     const a = from[i]!
-    const b = to[i]!
+    const u = unit[i]!
+    const bx = circle.x + circle.r * u[0]
+    const by = circle.y + circle.r * u[1]
     d +=
       (i ? 'L' : '') +
-      (a[0] + (b[0] - a[0]) * t).toFixed(PRECISION) +
+      (a[0] + (bx - a[0]) * t).toFixed(PRECISION) +
       ' ' +
-      (a[1] + (b[1] - a[1]) * t).toFixed(PRECISION)
+      (a[1] + (by - a[1]) * t).toFixed(PRECISION)
   }
   return d + 'Z'
 }

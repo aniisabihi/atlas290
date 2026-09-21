@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  BubbleLayout,
   Indicator,
   IndicatorMeta,
   IndicatorSeries,
@@ -59,6 +60,21 @@ function seriesOf(id: string) {
   })
 }
 
+/** Two slots, one at the maximum and one at the floor, in the units shared/bubbles.ts describes. */
+const bareLayout = {
+  minR: 8,
+  maxR: 40,
+  cone: 45,
+  circles: [
+    { code: '0180', x: 500, y: 500, r: 40 },
+    { code: '1480', x: 300, y: 620, r: 8 },
+  ],
+}
+
+function layoutOf(id: string) {
+  return { indicator: id, ...bareLayout }
+}
+
 function pantryOf(ids: readonly string[]) {
   return PantryData.parse({
     schemaVersion: 1,
@@ -66,6 +82,7 @@ function pantryOf(ids: readonly string[]) {
     indicators: ids.map((id) => indicatorOf(id)),
     series: ids.map((id) => seriesOf(id)),
     priceIndex,
+    layouts: ids.map((id) => layoutOf(id)),
   })
 }
 
@@ -116,6 +133,7 @@ describe('PantryIndicator', () => {
     const part = PantryIndicator.parse({
       indicator: indicatorOf('population'),
       series: seriesOf('population'),
+      layout: bareLayout,
     })
     expect(part.series.indicator).toBe('population')
   })
@@ -127,6 +145,7 @@ describe('PantryIndicator', () => {
       PantryIndicator.parse({
         indicator: indicatorOf('population'),
         series: seriesOf('tax-rate'),
+        layout: bareLayout,
       }),
     ).toThrow(/tax-rate/)
   })
@@ -175,6 +194,7 @@ describe('splitPantry and assemblePantry are inverse', () => {
     const stray = PantryIndicator.parse({
       indicator: indicatorOf('stowaway'),
       series: seriesOf('stowaway'),
+      layout: bareLayout,
     })
     expect(() => assemblePantry(index, [...parts, stray])).toThrow(/stowaway/)
   })
@@ -184,6 +204,7 @@ describe('splitPantry and assemblePantry are inverse', () => {
     const short = {
       indicator: parts[0]!.indicator,
       series: { ...parts[0]!.series, values: [[1, 2]], status: [[0, 0]] },
+      layout: parts[0]!.layout,
     }
     expect(() => assemblePantry(index, [short])).toThrow(/rows/)
   })
@@ -214,6 +235,7 @@ describe('viewOf', () => {
     const stray = PantryIndicator.parse({
       indicator: indicatorOf('stowaway'),
       series: seriesOf('stowaway'),
+      layout: bareLayout,
     })
     expect(() => viewOf(index, [stray])).toThrow(/stowaway/)
   })
@@ -241,6 +263,8 @@ describe('viewOf keeps every check that only PantryView.parse was performing', (
         values: [[1, 2]],
         status: [[0, 0]],
       },
+      // One circle for one row, so the file's own check passes and the view's has to catch it.
+      layout: { ...bareLayout, circles: bareLayout.circles.slice(0, 1) },
     })
     expect(() => viewOf(index, [short])).toThrow(/rows \(1\) must equal municipalities \(2\)/)
   })
@@ -269,6 +293,7 @@ describe('viewOf keeps every check that only PantryView.parse was performing', (
         publishedStep: 100,
       }),
       series: seriesOf('income'),
+      layout: bareLayout,
     })
     expect(() => viewOf(index, [part])).toThrow(/adjusted to 1999, which the price index/)
   })
@@ -295,6 +320,7 @@ describe('viewOf keeps every check that only PantryView.parse was performing', (
         publishedStep: 100,
       }),
       series: { ...seriesOf('income'), values: [[1, 2]], status: [[0, 0]] },
+      layout: { ...bareLayout, circles: bareLayout.circles.slice(0, 1) },
     })
     const thrown = (() => {
       try {
@@ -325,5 +351,138 @@ describe('viewOf keeps every check that only PantryView.parse was performing', (
     expect(view.indicators).toEqual(index.indicators)
     expect(view.priceIndex).toEqual(index.priceIndex)
     expect(view.schemaVersion).toBe(index.schemaVersion)
+  })
+})
+
+/**
+ * Plan 21. The bubble layout stops being one file sized by population and becomes one layout per
+ * indicator, carried inside that indicator's own file. These pin the container: the layout
+ * travels with its indicator, a published file cannot be without one, and the codes are joined
+ * to the municipalities in both directions — the same join the kitchen makes for the shapes.
+ */
+describe('BubbleLayout', () => {
+  it('accepts a layout whose slots run from the floor to the maximum', () => {
+    expect(BubbleLayout.parse(bareLayout)).toEqual(bareLayout)
+  })
+
+  it('refuses two circles for one municipality', () => {
+    expect(() =>
+      BubbleLayout.parse({
+        ...bareLayout,
+        circles: [bareLayout.circles[0], bareLayout.circles[0]],
+      }),
+    ).toThrow(/0180 has two circles/)
+  })
+
+  it('refuses a slot below the floor or above the maximum', () => {
+    expect(() =>
+      BubbleLayout.parse({
+        ...bareLayout,
+        circles: [bareLayout.circles[0], { ...bareLayout.circles[1], r: 7 }],
+      }),
+    ).toThrow(/1480 has slot 7/)
+    expect(() =>
+      BubbleLayout.parse({
+        ...bareLayout,
+        circles: [{ ...bareLayout.circles[0], r: 40.5 }, bareLayout.circles[1]],
+      }),
+    ).toThrow(/0180 has slot 40.5/)
+  })
+
+  it('allows a slot a hundredth above the maximum, because slots round up and maxR rounds down', () => {
+    expect(() =>
+      BubbleLayout.parse({
+        ...bareLayout,
+        circles: [{ ...bareLayout.circles[0], r: 40.01 }, bareLayout.circles[1]],
+      }),
+    ).not.toThrow()
+  })
+
+  it('refuses a maximum below the floor, and a cone wider than a half-plane', () => {
+    expect(() => BubbleLayout.parse({ ...bareLayout, maxR: 4 })).toThrow(/below minR/)
+    expect(() => BubbleLayout.parse({ ...bareLayout, cone: 120 })).toThrow()
+  })
+})
+
+describe('the layout travels with its indicator', () => {
+  it('is put into each indicator’s own file by splitPantry', () => {
+    const { parts } = splitPantry(pantryOf(['population', 'tax-rate']))
+    for (const part of parts) expect(part.layout).toEqual(bareLayout)
+  })
+
+  it('refuses to split a pantry that has no layout for an indicator, because the file needs one', () => {
+    const pantry = pantryOf(['population', 'tax-rate'])
+    expect(() => splitPantry({ ...pantry, layouts: [layoutOf('population')] })).toThrow(
+      /no bubble layout for indicator "tax-rate"/,
+    )
+  })
+
+  it('comes back out of assemblePantry keyed by indicator', () => {
+    const pantry = pantryOf(['population', 'tax-rate'])
+    const { index, parts } = splitPantry(pantry)
+    expect(assemblePantry(index, parts).layouts).toEqual(pantry.layouts)
+  })
+
+  it('refuses a file whose layout has a different number of circles from its rows', () => {
+    expect(() =>
+      PantryIndicator.parse({
+        indicator: indicatorOf('population'),
+        series: seriesOf('population'),
+        layout: { ...bareLayout, circles: bareLayout.circles.slice(0, 1) },
+      }),
+    ).toThrow(/1 circles for 2 municipalities/)
+  })
+
+  it('refuses a pantry whose layout names an indicator it does not have', () => {
+    const pantry = pantryOf(['population'])
+    expect(() =>
+      PantryData.parse({ ...pantry, layouts: [...pantry.layouts!, layoutOf('stowaway')] }),
+    ).toThrow(/stowaway has no indicator/)
+  })
+
+  it('refuses a pantry whose layout is missing a municipality, naming it', () => {
+    const pantry = pantryOf(['population'])
+    expect(() =>
+      PantryData.parse({
+        ...pantry,
+        layouts: [{ ...layoutOf('population'), circles: bareLayout.circles.slice(0, 1) }],
+      }),
+    ).toThrow(/no circle for 1 municipalities \(1480\)/)
+  })
+
+  it('refuses a pantry whose layout has a circle for a municipality that does not exist', () => {
+    const pantry = pantryOf(['population'])
+    expect(() =>
+      PantryData.parse({
+        ...pantry,
+        layouts: [
+          {
+            ...layoutOf('population'),
+            circles: [bareLayout.circles[0], { ...bareLayout.circles[1], code: '9999' }],
+          },
+        ],
+      }),
+    ).toThrow(/unknown codes \(9999\)/)
+  })
+
+  it('is joined to the index’s municipalities by viewOf, part by part', () => {
+    // The site never holds a whole pantry, so the join has to be made as each file arrives —
+    // a circle drawn with nobody's data would otherwise be a silent absence on the cartogram.
+    const { index } = splitPantry(pantryOf(['population']))
+    const wrong = PantryIndicator.parse({
+      indicator: indicatorOf('population'),
+      series: seriesOf('population'),
+      layout: {
+        ...bareLayout,
+        circles: [bareLayout.circles[0], { ...bareLayout.circles[1], code: '9999' }],
+      },
+    })
+    expect(() => viewOf(index, [wrong])).toThrow(/no circle for 1 municipalities \(1480\)/)
+    expect(() => viewOf(index, [wrong])).toThrow(/unknown codes \(9999\)/)
+  })
+
+  it('carries no layouts on the view itself: they belong to the files', () => {
+    const { index, parts } = splitPantry(pantryOf(['population']))
+    expect('layouts' in viewOf(index, parts)).toBe(false)
   })
 })

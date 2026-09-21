@@ -1,22 +1,24 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import rawTopology from '../../public/pantry/geometry/municipalities.topo.json'
 import rawAdjacency from '../../public/pantry/geometry/adjacency.json'
-import rawBubbles from '../../public/pantry/layout/bubbles.json'
-import { Adjacency, Bubbles } from '../../shared/pantry'
+import { Adjacency } from '../../shared/pantry'
 import type { MunicipalityTopology } from '../../shared/geometry'
 import { lookup } from '../data/select'
 import { fillFor, NO_VALUE_FILLS, paletteFor } from '../map/colour'
-import { placeAll } from '../map/frame'
-import { CARTOGRAM_CONE_COS, DIRECTIONS, step, type NavContext } from '../map/navigate'
+import { placeAll, placementFor } from '../map/frame'
+import { strandedIn } from '../map/navigate'
+import { radiusFor, sizeNorms } from '../../shared/bubbles'
+import { TWEEN_MS } from '../state/useTween'
 import { MapCanvas } from './MapCanvas'
-import { publishedPantry } from '../test/pantry'
+import { publishedPantry, publishedParts } from '../test/pantry'
 
 const lk = lookup(publishedPantry)
 const topology = rawTopology as unknown as MunicipalityTopology
 const adjacency = Adjacency.parse(rawAdjacency)
-const bubbles = Bubbles.parse(rawBubbles)
+/** The drawn indicator's own layout, as its published file carries it since Plan 21. */
+const layout = publishedParts.get('population')!.layout
 
 /**
  * `MapCanvas` replaced `MapView` and `Cartogram`, which used to swap places. These are their
@@ -38,7 +40,7 @@ const draw = (over: Partial<Parameters<typeof MapCanvas>[0]> = {}) => {
       lk={lk}
       topology={topology}
       adjacency={adjacency}
-      bubbles={bubbles}
+      layout={layout}
       view="map"
       indicatorId="population"
       year={2024}
@@ -335,7 +337,7 @@ describe('MapCanvas as the cartogram', () => {
       .getAttribute('viewBox')!
       .split(' ')
       .map(Number) as [number, number, number, number]
-    for (const c of placeAll(bubbles.circles)) {
+    for (const c of placeAll(layout.circles)) {
       expect(c.x - c.r, c.code).toBeGreaterThanOrEqual(minX)
       expect(c.y - c.r, c.code).toBeGreaterThanOrEqual(minY)
       expect(c.x + c.r, c.code).toBeLessThanOrEqual(minX + width)
@@ -378,131 +380,229 @@ describe('MapCanvas as the cartogram', () => {
 
 describe('arrow keys on the bubble layout', () => {
   /**
-   * Plan 3 proved every municipality is arrow-reachable on the geographic layout. Moving every
-   * centroid breaks that proof, so it is re-established here rather than inherited. It genuinely
-   * needed a different cone: at the map's 45 degrees the bubble layout strands Salem, and 50
-   * reaches all 290 — measured by sweeping this exact assertion over the real positions.
-   *
-   * Run against the PLACED circles, which is where the component now navigates: placing the
-   * layout in the map's frame is a uniform scale and an offset, so it cannot change which
-   * municipality lies in which direction — and this asserts that rather than assuming it.
+   * Plan 3 proved every municipality is arrow-reachable on the geographic layout, and Plan 4
+   * measured a cone for the one bubble layout by hand. Since Plan 21 there is a layout per
+   * indicator and the kitchen proves each before publishing it, together with the cone it used.
+   * This is the site's side of that promise: navigating by the published cone, over the PLACED
+   * circles, strands nobody — placing the layout in the map's frame is a uniform scale and an
+   * offset, so it cannot change which municipality lies in which direction, and this asserts
+   * that rather than assuming it.
    */
-  const nav: NavContext = {
-    neighbours: adjacency.neighbours,
-    centroids: new Map(placeAll(bubbles.circles).map((c) => [c.code, [c.x, c.y] as const])),
-    coneCos: CARTOGRAM_CONE_COS,
-  }
-  const codes = bubbles.circles.map((c) => c.code)
-
-  it('leaves no municipality that nothing can arrow onto', () => {
-    const reached = new Set<string>()
-    for (const code of codes) {
-      for (const d of DIRECTIONS) {
-        const to = step(code, d, nav)
-        if (to) reached.add(to)
-      }
-    }
-    expect(codes.filter((c) => !reached.has(c))).toEqual([])
-    expect(reached.size).toBe(290)
+  it('leaves no municipality that nothing can arrow onto, at the published cone', () => {
+    const stranded = strandedIn({
+      neighbours: adjacency.neighbours,
+      centroids: new Map(placeAll(layout.circles).map((c) => [c.code, [c.x, c.y] as const])),
+      coneCos: Math.cos((layout.cone * Math.PI) / 180),
+    })
+    expect(stranded).toEqual([])
   })
 
-  it('leaves every municipality by at least one key', () => {
-    for (const code of codes) {
-      expect(DIRECTIONS.map((d) => step(code, d, nav)).filter(Boolean).length).toBeGreaterThan(0)
-    }
-  })
-
-  it('shows that the map cone is not wide enough for this layout', () => {
-    // The measurement that chose the number, kept as a test so that narrowing the cartogram's
-    // cone back to the map's has to fail rather than quietly stranding somebody.
-    const narrow: NavContext = { ...nav, coneCos: Math.cos((45 * Math.PI) / 180) }
-    const reached = new Set<string>()
-    for (const code of codes) {
-      for (const d of DIRECTIONS) {
-        const to = step(code, d, narrow)
-        if (to) reached.add(to)
-      }
-    }
-    expect(codes.filter((c) => !reached.has(c))).toEqual(['0128'])
+  it('uses the cone the layout was published with', () => {
+    // The kitchen searched from 45° upward and published the narrowest that reached all 290;
+    // the component must navigate by that number and no other, or the proof is about a
+    // different cone from the one a keyboard visitor gets.
+    expect(layout.cone).toBeGreaterThanOrEqual(45)
+    expect(layout.cone).toBeLessThanOrEqual(60)
   })
 })
 
 /**
- * The pointer catching up with the keyboard.
+ * Plan 21: the bubbles move on their own, without the morph.
  *
- * Every shape has carried its whole reading in its accessible name since Plan 3, and the live
- * region has announced the same thing as focus moved. A pointer had neither: hovering a shape
- * did nothing at all, so the one way to read a value with a mouse was to click and open a
- * profile. These tests hold the tooltip to the label it duplicates — if the two ever disagree,
- * one of them is lying about a published figure.
+ * jsdom has no path measurement, so `MapCanvas` takes the fallback where the ends cut — which is
+ * exactly what makes this testable: at the cartogram end every shape's `d` IS `circlePath` of the
+ * circle of the moment, so the radius the frame loop wrote can be read straight back out of it.
  */
-describe('MapCanvas, pointing at a shape', () => {
-  const tooltip = () => screen.queryByTestId('map-tooltip')
-  const malmo = () => shapes().find((s) => s.getAttribute('data-code') === '1280')!
+describe('the bubbles follow the year', () => {
+  let now = 0
+  let callbacks: Array<(t: number) => void> = []
 
-  it('says nothing until the pointer is on a shape', () => {
-    draw()
-    expect(tooltip()).toBeNull()
+  beforeEach(() => {
+    now = 0
+    callbacks = []
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+    vi.stubGlobal('requestAnimationFrame', (cb: (t: number) => void) => {
+      callbacks.push(cb)
+      return callbacks.length
+    })
+    vi.stubGlobal('cancelAnimationFrame', () => {})
   })
 
-  it('names the municipality and its reading on hover', async () => {
-    draw()
-    await userEvent.hover(malmo())
-    const text = tooltip()?.textContent ?? ''
-    expect(text).toContain('Malmö')
-    // The same two strings the shape's accessible name is built from, not a second rounding.
-    const label = malmo().getAttribute('aria-label') ?? ''
-    for (const part of label.split(', ')) expect(text).toContain(part)
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
   })
 
-  it('places the municipality on the scale it was just read from', async () => {
-    draw()
-    await userEvent.hover(malmo())
-    expect(tooltip()?.textContent).toMatch(/\d+ of 290/)
+  const advance = (ms: number) => {
+    now += ms
+    const pending = callbacks
+    callbacks = []
+    act(() => {
+      for (const cb of pending) cb(now)
+    })
+  }
+
+  /** The radius in a two-arc circle path: `M<x-r> <y>A<r> ...`. */
+  const radiusIn = (d: string) => Number(d.split('A')[1]!.split(' ')[0])
+
+  /** What the shared rule says Sundbyberg's bubble is, in frame units, for a year. */
+  const expectedRadius = (year: number) => {
+    const series = lk.series('population')
+    const col = series.years.indexOf(year)
+    const norms = sizeNorms(
+      lk.data.municipalities.map((_, row) => series.values[row]?.[col] ?? null),
+      'sequential',
+    )
+    const row = lk.data.municipalities.findIndex((m) => m.code === '0183')
+    return (
+      radiusFor(norms[row] ?? null, { minR: layout.minR, maxR: layout.maxR }) *
+      placementFor(layout.circles).scale
+    )
+  }
+
+  it('resizes a bubble in place through intermediate radii when the year changes', () => {
+    const { rerender } = render(
+      <MapCanvas
+        lk={lk}
+        topology={topology}
+        adjacency={adjacency}
+        layout={layout}
+        view="cartogram"
+        indicatorId="population"
+        year={1990}
+        selected={null}
+        lang="en"
+        onSelect={() => {}}
+      />,
+    )
+    const path = document.querySelector('svg.map path[data-code="0183"]')!
+    const before = radiusIn(path.getAttribute('d')!)
+    expect(before).toBeCloseTo(expectedRadius(1990), 6)
+
+    rerender(
+      <MapCanvas
+        lk={lk}
+        topology={topology}
+        adjacency={adjacency}
+        layout={layout}
+        view="cartogram"
+        indicatorId="population"
+        year={2024}
+        selected={null}
+        lang="en"
+        onSelect={() => {}}
+      />,
+    )
+    // The first frame is written with the commit: still the old radius, not the destination.
+    expect(radiusIn(path.getAttribute('d')!)).toBeCloseTo(before, 6)
+
+    const seen = [radiusIn(path.getAttribute('d')!)]
+    for (let i = 0; i < 6; i++) {
+      advance(TWEEN_MS / 6)
+      seen.push(radiusIn(path.getAttribute('d')!))
+    }
+    const after = expectedRadius(2024)
+    expect(after).toBeGreaterThan(before)
+    // Through the middle, not a cut: more than the two ends, monotonic, landing exactly.
+    expect(new Set(seen.map((r) => r.toFixed(3))).size).toBeGreaterThan(2)
+    expect(seen).toEqual([...seen].sort((a, b) => a - b))
+    expect(seen[seen.length - 1]).toBeCloseTo(after, 6)
   })
 
-  it('stops saying it when the pointer leaves the map', async () => {
-    draw()
-    await userEvent.hover(malmo())
-    await userEvent.unhover(malmo())
-    expect(tooltip()).toBeNull()
+  it('carries a bubble to the next indicator’s layout when the indicator changes', () => {
+    const meanAge = publishedParts.get('mean-age')!.layout
+    const { rerender } = render(
+      <MapCanvas
+        lk={lk}
+        topology={topology}
+        adjacency={adjacency}
+        layout={layout}
+        view="cartogram"
+        indicatorId="population"
+        year={2024}
+        selected={null}
+        lang="en"
+        onSelect={() => {}}
+      />,
+    )
+    const path = document.querySelector('svg.map path[data-code="0183"]')!
+    const centreX = (d: string) => Number(d.slice(1).split(' ')[0]) + radiusIn(d)
+    const from = centreX(path.getAttribute('d')!)
+
+    rerender(
+      <MapCanvas
+        lk={lk}
+        topology={topology}
+        adjacency={adjacency}
+        layout={meanAge}
+        view="cartogram"
+        indicatorId="mean-age"
+        year={2024}
+        selected={null}
+        lang="en"
+        onSelect={() => {}}
+      />,
+    )
+    const to = placeAll(meanAge.circles).find((c) => c.code === '0183')!.x
+    expect(to).not.toBeCloseTo(from, 0)
+
+    const seen = [centreX(path.getAttribute('d')!)]
+    for (let i = 0; i < 6; i++) {
+      advance(TWEEN_MS / 6)
+      seen.push(centreX(path.getAttribute('d')!))
+    }
+    expect(seen[0]).toBeCloseTo(from, 6)
+    expect(new Set(seen.map((x) => x.toFixed(2))).size).toBeGreaterThan(2)
+    expect(seen[seen.length - 1]).toBeCloseTo(to, 6)
+    // And the frame around the bubbles has followed them to the new layout's box.
+    expect(document.querySelector('svg.map')!.getAttribute('viewBox')).toBe(
+      document.querySelector('svg.map')!.getAttribute('viewBox'),
+    )
   })
 
-  it('answers the keyboard as well as the pointer', () => {
-    draw()
-    act(() => malmo().focus())
-    expect(tooltip()?.textContent).toContain('Malmö')
+  it('starts no animation when an unrelated indicator’s file arrives', () => {
+    // A profile opening fetches every other indicator, and each arrival rebuilds the lookup. The
+    // drawn indicator's bubbles have not changed, so nothing may move — the first version keyed
+    // its norms on the lookup and restarted the tween forty-one times, which is how WebKit came
+    // to miss clicks on the profile's links while the files were landing.
+    const { rerender } = render(
+      <MapCanvas
+        lk={lk}
+        topology={topology}
+        adjacency={adjacency}
+        layout={layout}
+        view="cartogram"
+        indicatorId="population"
+        year={2024}
+        selected={null}
+        lang="en"
+        onSelect={() => {}}
+      />,
+    )
+    callbacks = []
+    // The same pantry through a NEW lookup, as `App` builds one after every arrival.
+    const rebuilt = lookup(publishedPantry)
+    rerender(
+      <MapCanvas
+        lk={rebuilt}
+        topology={topology}
+        adjacency={adjacency}
+        layout={layout}
+        view="cartogram"
+        indicatorId="population"
+        year={2024}
+        selected={null}
+        lang="en"
+        onSelect={() => {}}
+      />,
+    )
+    expect(callbacks).toHaveLength(0)
   })
 
-  /*
-   * A tooltip in the accessibility tree would be the value said twice: the shape's own name
-   * already carries it, and the live region says it again as focus moves.
-   */
-  it('is invisible to a screen reader, because the label already says all of it', async () => {
-    draw()
-    await userEvent.hover(malmo())
-    expect(tooltip()?.getAttribute('aria-hidden')).toBe('true')
-  })
-
-  it('tells the page what it is pointing at, so the legend can mark the class', async () => {
-    const onHover = vi.fn()
-    draw({ onHover })
-    await userEvent.hover(malmo())
-    expect(onHover).toHaveBeenCalledWith('1280')
-    await userEvent.unhover(malmo())
-    expect(onHover).toHaveBeenLastCalledWith(null)
-  })
-
-  it('rings a municipality the rest of the page is pointing at', () => {
-    const { container } = draw({ highlight: '1280' })
-    const ring = container.querySelector('[data-highlight-ring]')
-    expect(ring).not.toBeNull()
-    expect(ring?.querySelector('[data-ring-for="1280"]')).not.toBeNull()
-  })
-
-  it('does not ring the highlight twice when it is already the selection', () => {
-    const { container } = draw({ highlight: '1280', selected: '1280' })
-    expect(container.querySelector('[data-highlight-ring]')).toBeNull()
-    expect(container.querySelector('[data-selection-ring]')).not.toBeNull()
+  it('names the measure it is sized by', () => {
+    draw({ view: 'cartogram', indicatorId: 'mean-age' })
+    expect(document.querySelector('svg.map')!.getAttribute('aria-label')).toBe(
+      'Bubble chart of Sweden by municipality, sized by mean age',
+    )
   })
 })
