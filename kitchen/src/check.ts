@@ -111,6 +111,22 @@ export const PLAUSIBLE_RANGES: Record<string, PlausibleRange> = {
   // signed, because men lead in some municipalities and women in most.
   'post-secondary-education-gap': { min: -100, max: 100 },
   'house-price-to-income': { min: 0, max: 200 },
+  // Plan 17. A Swedish household has never averaged above about 2.5 people and cannot be below
+  // 1; the ceiling is generous rather than tight. Cars per 1,000 cannot exceed 1,000 by much
+  // even where companies register fleets. The nature share is a share.
+  'persons-per-household': { min: 1, max: 10 },
+  'cars-per-1000': { min: 0, max: 5000 },
+  // Metres, and Sweden is large: the furthest municipality sits a few kilometres out.
+  'distance-to-protected-nature': { min: 0, max: 100_000 },
+  // A small municipality beside a large employer can draw in more commuters than it has
+  // residents, so this is not bounded by 1,000.
+  'in-commuters-per-1000': { min: 0, max: 5000 },
+  'out-commuter-share': { min: 0, max: 100 },
+  // Swedish life expectancy is in the eighties and has never approached either bound. The gap
+  // is signed: men outlive women in a handful of small municipalities in some windows.
+  'life-expectancy-women': { min: 0, max: 120 },
+  'life-expectancy-men': { min: 0, max: 120 },
+  'life-expectancy-gap': { min: -50, max: 50 },
 }
 
 /**

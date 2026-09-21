@@ -294,7 +294,13 @@ import {
 // These four divide by population's finished series through ctx.series, exactly as migration,
 // population-change and share-65-plus do, so like them they MUST be registered after population.
 import { naturalChangeDefinition } from './demography'
-import { emissionsDefinition } from './environment'
+import { emissionsDefinition, natureDefinition } from './environment'
+import { householdSizeDefinition } from './households'
+import { carsDefinition } from './transport'
+// in-commuters divides by population's finished series, so it must come after population.
+import { inCommutingDefinition, outCommutingDefinition } from './commuting'
+// The life-expectancy gap reads its two operands from ctx.series, so it comes after both.
+import { lifeGapDefinition, lifeMenDefinition, lifeWomenDefinition } from './longevity'
 
 /** Every indicator the pantry publishes, in build order. Population must stay first: it is
  * the only definition that derives `ctx.municipalities`, and every other definition depends
@@ -350,6 +356,14 @@ function ensureRegistered(): void {
     educationMenDefinition,
     educationGapDefinition,
     priceToIncomeDefinition,
+    householdSizeDefinition,
+    carsDefinition,
+    natureDefinition,
+    inCommutingDefinition,
+    outCommutingDefinition,
+    lifeWomenDefinition,
+    lifeMenDefinition,
+    lifeGapDefinition,
   )
 }
 

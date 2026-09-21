@@ -110,6 +110,8 @@ export const UNIT_DECIMALS: Record<Indicator['unit'], number> = {
   years: 1,
   'children-per-woman': 2,
   'tonnes-per-resident': 2,
+  'persons-per-household': 2,
+  metres: 0,
 }
 
 /**
@@ -139,6 +141,11 @@ const IndicatorFields = z.object({
     // string in every indicator, never as an index — so appending to it relabels nothing.
     'children-per-woman',
     'tonnes-per-resident',
+    // Plan 17, same reason as the two above: `count` rounds to nought decimals, and a household
+    // of 2.17 people would publish as 2 — which is every municipality in Sweden.
+    'persons-per-household',
+    // Plan 17: mean distance to protected nature, which SCB rounds to even hundreds of metres.
+    'metres',
   ]),
   /** 'fixed-latest-year' means values are inflation-adjusted to the latest year's kronor. */
   priceBasis: z.enum(['none', 'fixed-latest-year']),
@@ -642,7 +649,13 @@ export const Facts = z
 export type Facts = z.infer<typeof Facts>
 
 export const Manifest = z.object({
-  schemaVersion: z.literal(1),
+  /**
+   * 2 since plan 17, which turned `sources[].contentCode` into `contentCodes`: one chunk can
+   * now resolve several content codes, because `out-commuter-share` fetches its numerator and
+   * its denominator together. The field exists to signal exactly this kind of shape change, so
+   * it is bumped rather than the array being smuggled in under the old singular name.
+   */
+  schemaVersion: z.literal(2),
   license: z.literal('CC0-1.0'),
   sources: z.array(
     z.object({
@@ -657,12 +670,14 @@ export const Manifest = z.object({
        */
       selectionKey: z.string(),
       /**
-       * The ContentsCode this selection actually resolved to at fetch time (see
-       * `resolveContentCode` in kitchen/src/indicators/registry.ts), not a literal
-       * hardcoded in the indicator definition — so this tracks a codelist change the way the
-       * fetch itself does.
+       * The ContentsCodes this selection actually resolved to at fetch time (see
+       * `resolveContentCode` in kitchen/src/indicators/registry.ts), not literals hardcoded in
+       * the indicator definition — so this tracks a codelist change the way the fetch does.
+       *
+       * Several, since plan 17: one chunk can carry a numerator and a denominator that are two
+       * content codes of the same table.
        */
-      contentCode: z.string(),
+      contentCodes: z.array(z.string()).nonempty(),
       /** Copied from the frozen raw file; set once at freeze time, never at publish time. */
       fetchedAt: z.string().datetime(),
       sha256: z.string().length(64),

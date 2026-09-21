@@ -477,6 +477,122 @@ describe('published pantry: edge cells and status semantics', () => {
     })
   })
 
+  describe('the three measures SCB had already computed (plan 17)', () => {
+    // Each read on 2026-09-21 through a separate request before the indicator was declared.
+    it('reproduces household size, which is small everywhere and smallest in the north', () => {
+      expect(cell('persons-per-household', 'Stockholm', 2024).value).toBe(2.04)
+      expect(cell('persons-per-household', 'Borgholm', 2024).value).toBe(1.93)
+      expect(cell('persons-per-household', 'Arjeplog', 2024).value).toBe(1.86)
+    })
+
+    it('reproduces cars per 1,000, where a city is about half a rural municipality', () => {
+      const stockholm = cell('cars-per-1000', 'Stockholm', 2024).value!
+      expect(stockholm).toBe(354)
+      expect(cell('cars-per-1000', 'Borgholm', 2024).value).toBe(620)
+      expect(cell('cars-per-1000', 'Arjeplog', 2024).value).toBe(657)
+      // The pattern is the measure: if a city ever stopped being the least car-owning of the
+      // three, something has gone wrong with the owner-category selection rather than with
+      // Sweden.
+      expect(stockholm).toBeLessThan(cell('cars-per-1000', 'Borgholm', 2024).value!)
+    })
+
+    // The counter-intuitive one, and the reason the caveat exists: the mean is weighted over
+    // RESIDENTS, so a vast northern municipality whose people live in one town is further from
+    // protected nature than a city whose residents cluster beside an urban reserve.
+    it('reproduces distance to protected nature, with Arjeplog further out than Stockholm', () => {
+      expect(cell('distance-to-protected-nature', 'Stockholm', 2025).value).toBe(1100)
+      expect(cell('distance-to-protected-nature', 'Borgholm', 2025).value).toBe(1500)
+      expect(cell('distance-to-protected-nature', 'Arjeplog', 2025).value).toBe(3300)
+    })
+
+    it('publishes a distance for every municipality in every year, with no gaps', () => {
+      const s = seriesOf('distance-to-protected-nature')
+      expect(s.years).toHaveLength(13)
+      expect(s.values.flat().filter((v) => v !== null)).toHaveLength(290 * 13)
+    })
+  })
+
+  describe('commuting, stitched across three tables (plan 17)', () => {
+    // Solna is the case both measures exist for: an office district north of Stockholm with
+    // more people working in it than living in it. Read from TAB5839 on 2026-09-21 before the
+    // indicators were declared — 94,108 in-commuters, 33,987 out, 12,379 who both live and
+    // work there, so the out-commuter share is 33,987 / (33,987 + 12,379) = 73.30%.
+    it('reproduces Solna, where more people commute in than live there', () => {
+      expect(cell('in-commuters-per-1000', 'Solna', 2021).value!).toBeGreaterThan(1000)
+      expect(cell('in-commuters-per-1000', 'Solna', 2021).value).toBe(1117.84)
+      expect(cell('out-commuter-share', 'Solna', 2021).value).toBe(73.3)
+    })
+
+    it('reproduces Stockholm, whose share is computed from the same two content codes', () => {
+      // 142,587 / (142,587 + 379,098) = 27.33%.
+      expect(cell('out-commuter-share', 'Stockholm', 2021).value).toBe(27.33)
+    })
+
+    // The share is grouped by content LABEL, and the three tables use different codes for the
+    // same measure. If that ever broke, the years from one of the tables would go null rather
+    // than wrong — so the coverage of the whole stitch is the assertion that catches it.
+    it('covers all three stitched tables, 1993 to 2021, with no gap at the joins', () => {
+      const s = seriesOf('out-commuter-share')
+      expect(s.years[0]).toBe(1993)
+      expect(s.years[s.years.length - 1]).toBe(2021)
+      for (const year of [2003, 2004, 2018, 2019]) {
+        expect(cell('out-commuter-share', 'Stockholm', year).value, String(year)).not.toBeNull()
+      }
+    })
+  })
+
+  describe('life expectancy, with its five-year windows pinned (plan 17)', () => {
+    // TAB4394 publishes 1998-2002 … 2021-2025 and the pantry publishes each under the window's
+    // LAST year. Read from the table directly: 1998-2002 for Stockholm is 76.54 for men and
+    // 81.82 for women; 2021-2025 is 82.56 and 86.22.
+    it('publishes the 1998-2002 window under 2002, and 2021-2025 under 2025', () => {
+      expect(cell('life-expectancy-men', 'Stockholm', 2002).value).toBe(76.5)
+      expect(cell('life-expectancy-women', 'Stockholm', 2002).value).toBe(81.8)
+      expect(cell('life-expectancy-men', 'Stockholm', 2025).value).toBe(82.6)
+      expect(cell('life-expectancy-women', 'Stockholm', 2025).value).toBe(86.2)
+    })
+
+    it('lands the twenty-four overlapping windows on twenty-four consecutive years', () => {
+      const years = seriesOf('life-expectancy-women').years
+      expect(years).toHaveLength(24)
+      expect(years[0]).toBe(2002)
+      expect(years[years.length - 1]).toBe(2025)
+      for (let i = 1; i < years.length; i++) expect(years[i]! - years[i - 1]!).toBe(1)
+    })
+
+    // 86.22 - 82.56 = 3.66, which rounds to 3.7 — where the two ROUNDED values differ by 3.6.
+    // The gap is computed before rounding and rounded once, the same rule every derived figure
+    // in this pantry follows, and this is the cell that shows the difference it makes.
+    it('computes the gap before rounding, not from the rounded halves', () => {
+      const women = cell('life-expectancy-women', 'Stockholm', 2025).value!
+      const men = cell('life-expectancy-men', 'Stockholm', 2025).value!
+      expect(cell('life-expectancy-gap', 'Stockholm', 2025).value).toBe(3.7)
+      expect(Number((women - men).toFixed(1))).toBe(3.6)
+    })
+
+    // Written first as "women outlive men everywhere", which is false — and the three places it
+    // is false are the caveat's own argument rather than a counter-example to it. Norberg has
+    // about 5,600 residents and Dorotea about 2,500; over a five-year window that is few enough
+    // deaths for the order to reverse by chance. Naming them keeps the claim honest AND keeps a
+    // fourth from appearing unnoticed.
+    it('has women outliving men almost everywhere, and names the three windows where they do not', () => {
+      const gap = seriesOf('life-expectancy-gap')
+      const negative: string[] = []
+      for (let i = 0; i < gap.values.length; i++) {
+        for (let j = 0; j < gap.years.length; j++) {
+          const v = gap.values[i]?.[j]
+          if (v !== null && v !== undefined && v <= 0) {
+            negative.push(`${data.municipalities[i]?.name.sv} ${gap.years[j]}`)
+          }
+        }
+      }
+      expect(negative).toEqual(['Norberg 2008', 'Dorotea 2015', 'Dorotea 2018'])
+      const all = gap.values.flat().filter((v): v is number => v !== null)
+      expect(all).toHaveLength(6959)
+      expect(Math.max(...all)).toBeLessThan(15)
+    })
+  })
+
   /**
    * Which tables carry SCB's Cell Key Method note is a per-table fact, and getting it wrong in
    * either direction is a published lie: a perturbed cell presented as exact, or an exact cell

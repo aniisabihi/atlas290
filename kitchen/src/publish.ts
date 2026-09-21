@@ -190,20 +190,26 @@ function pruneIndicatorFiles(pantryDir: string, keep: readonly string[]): void {
 }
 
 /**
- * The ContentsCode a frozen chunk's selection actually resolved to (review finding 3):
+ * The ContentsCodes a frozen chunk's selection actually resolved to (review finding 3):
  * read off the frozen `selection` itself, which `resolveContentCode`
- * (kitchen/src/indicators/population.ts) resolved by label at fetch time — never a literal
+ * (kitchen/src/indicators/source.ts) resolved by label at fetch time — never a literal
  * hardcoded here — so the manifest tracks a codelist change the same way the fetch does.
+ *
+ * A set rather than one code, since plan 17. `out-commuter-share` fetches its numerator and its
+ * denominator together — two content codes in one selection — because they are two codes of one
+ * table and fetching them separately would be two requests where one answers. The guard that
+ * matters is unchanged: a data chunk with NO ContentsCode cannot be attributed to a source at
+ * all, and still throws.
  */
-function sourceContentCode(f: FrozenData): string {
+function sourceContentCodes(f: FrozenData): readonly string[] {
   const codes = f.selection['ContentsCode']
-  if (!codes || codes.length !== 1) {
+  if (!codes || codes.length === 0) {
     throw new Error(
-      `${f.table} ${f.lang}: expected exactly one ContentsCode in the frozen selection for ` +
-        `provenance, got ${JSON.stringify(codes)}`,
+      `${f.table} ${f.lang}: the frozen selection names no ContentsCode, so this chunk cannot ` +
+        'be attributed to an indicator source for provenance',
     )
   }
-  return codes[0]!
+  return codes
 }
 
 /**
@@ -270,7 +276,8 @@ export function buildIndicatorSources(
     const rows: Array<{ table: string; contentCode: string; selectionKey: string }> = []
     for (const source of indicator.sources) {
       for (const f of ownChunks) {
-        if (f.table !== source.table || sourceContentCode(f) !== source.contentCode) continue
+        if (f.table !== source.table || !sourceContentCodes(f).includes(source.contentCode))
+          continue
         rows.push({
           table: f.table,
           contentCode: source.contentCode,
@@ -294,7 +301,7 @@ export function buildManifest(
     (f) => `${f.table}|${f.lang}|${computeSelectionKey(f.selection)}`,
   )
   return Manifest.parse({
-    schemaVersion: 1,
+    schemaVersion: 2,
     license: 'CC0-1.0',
     sources: dataChunks
       .map((f) => ({
@@ -302,7 +309,7 @@ export function buildManifest(
         lang: f.lang,
         url: f.url,
         selectionKey: computeSelectionKey(f.selection),
-        contentCode: sourceContentCode(f),
+        contentCodes: sourceContentCodes(f) as [string, ...string[]],
         fetchedAt: f.fetchedAt,
         sha256: createHash('sha256').update(JSON.stringify(f.response)).digest('hex'),
         cells: f.response.value.length,

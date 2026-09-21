@@ -718,7 +718,7 @@ indicator, which nothing else would have noticed.
 
 Why these choices: [docs/decisions/0013-the-pantry-splits.md](decisions/0013-the-pantry-splits.md).
 
-## What an indicator is (Plans 14, 15 and 16, 2026-09-18)
+## What an indicator is (Plans 14 to 17, 2026-09-21)
 
 Nine of the ten indicators are **declarations**, not modules. One is not, for a stated reason.
 
@@ -768,12 +768,31 @@ they are not. The years are the ones both operands publish; an absent operand ma
 absent and carries WHY, and perturbation propagates, because a figure computed from a Cell Key
 Method value is itself fuzzed.
 
+**A source can name several contents.** `content` takes a list as well as a single label, and
+with `groupBy: 'ContentsCode'` the resolved rows are keyed by the content LABEL rather than its
+code. `out-commuter-share` needs it: its numerator and denominator are two codes of one table,
+and the three stitched commuting tables use three different codes for the same measure while
+labelling all three identically. The label is the stable identity — decision 0001's trap 2.
+
+**A source can map a year to a period code.** `period: (year) => string` says which `Tid` code a
+published year asks for, for the two tables that key by something that is not a year. Life
+expectancy's five-year windows are pinned to their last year; because they overlap by four, the
+twenty-four land on twenty-four consecutive years and the series is dense. Whatever a period is
+pinned to, the caveat has to say so — for life expectancy it also has to say that consecutive
+values share four years of data.
+
 **A source can also subtract.** `Source.subtract` takes a source away from what earlier sources
 left rather than replacing it, which is how `natural-change-rate` says births minus deaths without
 a builder of its own. Either side unknown makes the difference unknown.
 
 Modifiers: `scale` (SCB publishes money in thousands), `inflationAdjust`, and `minCount` (a mean
 price resting on a handful of sales is noise wearing a number's clothes).
+
+**Read the metadata, then FETCH ONE CELL.** Metadata tells you a content code exists. It does not
+tell you whether that code has values at municipal level, and SCB publishes plenty of codes that
+do not. Plan 17 lost a fetch to this: `TAB4422` advertises the share of residents within 1 km of
+protected nature, and all five of its share-within-a-distance codes are null for all 290
+municipalities in all thirteen years. The indicator became the mean distance, which is complete.
 
 **Before adding an indicator, read the table's own metadata.** Plan 16 verified thirteen tables
 against live SCB metadata before writing a line, and six of the fifteen the design named came out

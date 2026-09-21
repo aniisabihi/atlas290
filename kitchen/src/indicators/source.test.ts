@@ -1,3 +1,6 @@
+import { mkdtempSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parseMetadata } from '../scb/client'
 import { freezeMetadata } from '../scb/freeze'
@@ -259,5 +262,158 @@ describe('a subtracting source', () => {
       deps: { fetchImpl: offline },
     })
     expect(rows.values.get('0180|2024')).toBeNull()
+  })
+})
+
+/**
+ * Plan 17: two things a source could not say, each needed by one indicator.
+ *
+ * Both are tested against fabricated tables rather than frozen ones, because both exist to
+ * handle a shape no table in the pantry had yet — and a test written against the one table that
+ * needs a feature cannot show the feature is general.
+ */
+describe('a source naming several contents', () => {
+  /**
+   * A table served from memory, in SCB's own JSON-stat metadata shape rather than the parsed
+   * one — so the fake goes through exactly the parser the real tables go through.
+   */
+  function fakeTable(
+    id: string,
+    contents: Array<{ code: string; label: string }>,
+    years: string[],
+  ) {
+    const dim = (codes: string[], labels: Record<string, string>) => ({
+      category: { index: codes, label: labels },
+    })
+    return {
+      id: ['Region', 'ContentsCode', 'Tid'],
+      label: id,
+      dimension: {
+        Region: dim(['00', '0180', '0330'], {
+          '00': 'Riket',
+          '0180': 'Stockholm',
+          '0330': 'Knivsta',
+        }),
+        ContentsCode: dim(
+          contents.map((c) => c.code),
+          Object.fromEntries(contents.map((c) => [c.code, c.label])),
+        ),
+        Tid: dim(years, Object.fromEntries(years.map((y) => [y, y]))),
+      },
+    }
+  }
+
+  /** Serves that metadata, and data whose every cell is 10. */
+  function serve(tables: Record<string, ReturnType<typeof fakeTable>>): typeof fetch {
+    return (async (url: string | URL, init?: RequestInit) => {
+      const u = String(url)
+      const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200 })
+      if (init?.method === 'POST') {
+        const body = JSON.parse(init.body as string) as {
+          selection: Array<{ variableCode: string; valueCodes: string[] }>
+        }
+        const dimension: Record<string, { category: { index: string[] } }> = {}
+        for (const sel of body.selection) {
+          dimension[sel.variableCode] = { category: { index: sel.valueCodes } }
+        }
+        const sizes = body.selection.map((sel) => sel.valueCodes.length)
+        return json({
+          id: body.selection.map((sel) => sel.variableCode),
+          size: sizes,
+          dimension,
+          value: Array.from({ length: sizes.reduce((n, x) => n * x, 1) }, () => 10),
+        })
+      }
+      const table = /tables\/([A-Z0-9]+)\/metadata/.exec(u)?.[1]
+      const meta = table ? tables[table] : undefined
+      if (!meta) throw new Error(`no fake table for ${u}`)
+      return json(meta)
+    }) as unknown as typeof fetch
+  }
+
+  /** Parses a fake table the same way the pipeline parses a real one. */
+  async function metaOf(tables: Record<string, ReturnType<typeof fakeTable>>, id: string) {
+    const res = await serve(tables)(`https://x/tables/${id}/metadata?lang=sv`)
+    return parseMetadata(id, JSON.parse(await res.text()) as unknown)
+  }
+
+  const OUT = 'Utpendlare över kommungräns'
+  const HOME = 'Bor och arbetar i kommunen'
+
+  it('selects every named content code, not just the first', async () => {
+    const meta = await metaOf(
+      {
+        T1: fakeTable(
+          'T1',
+          [
+            { code: 'AAA', label: OUT },
+            { code: 'BBB', label: HOME },
+          ],
+          ['2000'],
+        ),
+      },
+      'T1',
+    )
+    const selection = selectionFor(meta, {
+      table: 'T1',
+      content: [OUT, HOME],
+      years: [2000],
+      regions: 'four-digit',
+    })
+    expect(selection.ContentsCode).toEqual(['AAA', 'BBB'])
+  })
+
+  it('keys by content LABEL across two tables that use different codes for it', async () => {
+    // The whole reason this exists. The three commuting tables call the same measure
+    // AM0207H9, AM0207C8 and 00000548; only the label is stable, so only the label can be the
+    // identity a stitched share is grouped by.
+    const rawDir = mkdtempSync(join(tmpdir(), 'source-multi-'))
+    const rows = await resolveSources(
+      [
+        { table: 'T1', content: [OUT, HOME], years: [2000], regions: 'four-digit' },
+        { table: 'T2', content: [OUT, HOME], years: [2001], regions: 'four-digit' },
+      ],
+      {
+        rawDir,
+        clock: () => '2026-09-21T00:00:00.000Z',
+        deps: {
+          fetchImpl: serve({
+            T1: fakeTable(
+              'T1',
+              [
+                { code: 'AAA', label: OUT },
+                { code: 'BBB', label: HOME },
+              ],
+              ['2000'],
+            ),
+            // Different codes, same labels.
+            T2: fakeTable(
+              'T2',
+              [
+                { code: 'ZZZ', label: OUT },
+                { code: 'YYY', label: HOME },
+              ],
+              ['2001'],
+            ),
+          }),
+        },
+      },
+      undefined,
+      'ContentsCode',
+    )
+    expect(rows.values.get(`0180|2000|${OUT}`)).toBe(10)
+    expect(rows.values.get(`0180|2001|${OUT}`)).toBe(10)
+    // Never keyed by the code, which would make the two tables two different measures.
+    expect(rows.values.has('0180|2001|ZZZ')).toBe(false)
+  })
+
+  it('still fails by name when one of several labels is missing', async () => {
+    const meta = await metaOf(
+      { T1: fakeTable('T1', [{ code: 'AAA', label: OUT }], ['2000']) },
+      'T1',
+    )
+    expect(() => selectionFor(meta, { table: 'T1', content: [OUT, HOME], years: [2000] })).toThrow(
+      /Bor och arbetar i kommunen/,
+    )
   })
 })
