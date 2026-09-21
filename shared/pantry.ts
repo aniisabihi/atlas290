@@ -175,10 +175,20 @@ const IndicatorFields = z.object({
    * assumed to be the same everywhere.
    */
   publishedStep: z.number().positive().optional(),
-  /** Neutral scale hint. There is deliberately no "higher is better" flag. */
+  /**
+   * Neutral scale hint. There is deliberately no "higher is better" flag.
+   *
+   * `kind` is the whole of it. It picks the colour ramp, it decides whether a figure shows its
+   * sign, and it is what tells the legend to mark the class zero falls in. Plan 20 removed a
+   * `reference` field that sat beside it: `'zero'` was declared by seven indicators and read by
+   * nobody, because the zero those scales want marked is derived from `kind` rather than from
+   * the field, and `'national-median'` had no producer and no consumer. A median reference could
+   * not get one either — the breaks below are fixed across every year and a national median is
+   * not, so colouring against it would change a municipality's colour as the slider moved
+   * without its value changing.
+   */
   scale: z.object({
     kind: z.enum(['sequential', 'diverging']),
-    reference: z.enum(['zero', 'national-median']).optional(),
     /** Fixed class breaks across all years, computed in the kitchen. */
     breaks: z.array(z.number()),
   }),

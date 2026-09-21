@@ -43,7 +43,12 @@ export const COUNCILLORS_WOMEN: Indicator = Indicator.parse({
   },
   unit: 'percent',
   priceBasis: 'none',
-  scale: { kind: 'diverging', reference: 'zero', breaks: [] },
+  // Sequential, not diverging. Plan 19 declared this diverging and plan 20 found the mistake:
+  // the values run 24 to 58 and never approach zero, so the legend was marking a zero class
+  // twenty-four points outside the data and the map drew a signed ramp for an unsigned measure.
+  // Parity at 50 would be a defensible midpoint, but naming one would be the "higher is better"
+  // flag this project does not have — the other shares are sequential and so is this.
+  scale: { kind: 'sequential', breaks: [] },
   coverage: {
     from: MANDATE_YEARS[0],
     to: MANDATE_YEARS[MANDATE_YEARS.length - 1]!,

@@ -80,7 +80,7 @@ export const LIFE_GAP: Indicator = Indicator.parse({
   },
   unit: 'years',
   priceBasis: 'none',
-  scale: { kind: 'diverging', reference: 'zero', breaks: [] },
+  scale: { kind: 'diverging', breaks: [] },
   coverage: { from: LIFE_YEARS[0]!, to: LIFE_YEARS[LIFE_YEARS.length - 1]! },
   caveat: {
     sv: `Skillnaden i år mellan de två publicerade delserierna, så varje tal här går att kontrollera mot dem. ${SHARED_CAVEAT_SV} Gapet har minskat i riket under lång tid, men i en enskild liten kommun rör det sig kraftigt av slumpskäl.`,

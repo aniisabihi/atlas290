@@ -40,7 +40,7 @@ export const MIGRATION: Indicator = Indicator.parse({
   // Diverging, not sequential: a municipality gaining people and one losing them are not two
   // points on one ramp, they are opposite directions from a meaningful zero — the design
   // requires the colour scale to say so (Task 6 of docs/plans/2026-09-14-02-the-ten-indicators.md).
-  scale: { kind: 'diverging', reference: 'zero', breaks: [] },
+  scale: { kind: 'diverging', breaks: [] },
   coverage: { from: MIGRATION_YEARS[0]!, to: MIGRATION_YEARS[MIGRATION_YEARS.length - 1]! },
   caveat: {
     sv: 'Publicerat som en kvot (flyttningsöverskott per 1 000 invånare), inte en summa, eftersom den absoluta summan i stort sett bara återger folkmängden. Byggd av tre tabeller (1968–1996, 1997–2024, 2025). 50 av dagens kommuner saknar underlag för 1968–1996: den äldsta tabellen publicerar dem under de kommunkoder som gällde då, och dessa matchar inte dagens 290 koder. 47 av dem omnumrerades vid länssammanslagningarna 1998 (13 i Skåne, 34 i Västra Götaland); de tre övriga är Mullsjö och Habo, som bytte län 1998, och Heby, som bytte län 2007. Från 2025 är värdena CKM-störda, liksom befolkningen.',

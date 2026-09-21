@@ -290,7 +290,7 @@ export const EDUCATION_GAP: Indicator = Indicator.parse({
   },
   unit: 'percent',
   priceBasis: 'none',
-  scale: { kind: 'diverging', reference: 'zero', breaks: [] },
+  scale: { kind: 'diverging', breaks: [] },
   coverage: { from: EDUCATION_YEARS[0]!, to: EDUCATION_YEARS[EDUCATION_YEARS.length - 1]! },
   caveat: {
     sv: 'Procentenheter, inte procent: ett gap på 10 betyder att andelen kvinnor är tio enheter högre än andelen män, inte tio procent högre. Gapet säger ingenting om nivån — två kommuner med samma gap kan ha helt olika utbildningsnivå. Räknas ur de två publicerade delserierna, så varje tal här går att kontrollera mot dem.',

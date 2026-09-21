@@ -88,14 +88,14 @@ describe('IndicatorMeta', () => {
         priceBasisYear: 2025,
         publishedStep: 1000,
         minCount: 20,
-        scale: { kind: 'diverging', reference: 'national-median', breaks: [1, 2, 3, 4, 5, 6] },
+        scale: { kind: 'diverging', breaks: [1, 2, 3, 4, 5, 6] },
       }),
     )
     expect(meta.unit).toBe('sek')
     expect(meta.priceBasisYear).toBe(2025)
     expect(meta.publishedStep).toBe(1000)
     expect(meta.minCount).toBe(20)
-    expect(meta.scale.reference).toBe('national-median')
+    expect(meta.scale.kind).toBe('diverging')
     expect(meta.coverage).toEqual({ from: 2024, to: 2025 })
   })
 
