@@ -71,6 +71,10 @@ export const NO_VALUE_FILLS: Record<NoValueStatus, { patternId: string; ground: 
   'too-few-cases': { patternId: 'fill-too-few-cases', ground: '#f7f7f7' },
   'structural-break': { patternId: 'fill-structural-break', ground: '#f7f7f7' },
   'outside-coverage': { patternId: 'fill-not-yet-published', ground: '#f7f7f7' },
+  // Widely spaced horizontals, told apart from the 45-degree hatch of 'not-yet-published' by
+  // direction as well as spacing — the two are the absences most easily confused, and they are
+  // the two whose difference matters most: nothing to count, against not published yet.
+  'nothing-to-count': { patternId: 'fill-nothing-to-count', ground: '#f7f7f7' },
 }
 
 export function fillFor(

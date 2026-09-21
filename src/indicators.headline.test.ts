@@ -100,6 +100,10 @@ describe('published pantry: headline facts', () => {
         'share-land-built',
         'green-space-within-200m',
         'councillors-women-share',
+        // Plan 21. Holiday homes waited for a status that could describe 106 municipalities
+        // with no holiday-home area; Q30 waited for someone to notice it was an indicator.
+        'holiday-homes-per-1000',
+        'share-65-plus-vs-country',
       ].sort(),
     )
   })

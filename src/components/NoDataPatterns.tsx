@@ -8,7 +8,8 @@ import { NO_VALUE_FILLS } from '../map/colour'
  * the document, and leaving them inside the map would make the legend's swatches depend on the
  * map having rendered first.
  */
-/** Diagonal hatch, cross-hatch, stipple, and a plain ground: absence told apart without colour. */
+/** Diagonal hatch, stipple, cross-hatch, horizontals and a plain ground: absence told apart
+ * without colour. */
 function Patterns() {
   const stroke = '#6b6b6b'
   return (
@@ -40,6 +41,15 @@ function Patterns() {
       >
         <rect width={7} height={7} fill={NO_VALUE_FILLS['structural-break'].ground} />
         <path d="M0,0 L7,7 M7,0 L0,7" stroke={stroke} strokeWidth={1} />
+      </pattern>
+      <pattern
+        id={NO_VALUE_FILLS['nothing-to-count'].patternId}
+        width={6}
+        height={6}
+        patternUnits="userSpaceOnUse"
+      >
+        <rect width={6} height={6} fill={NO_VALUE_FILLS['nothing-to-count'].ground} />
+        <line x1={0} y1={3} x2={6} y2={3} stroke={stroke} strokeWidth={1.2} />
       </pattern>
       <pattern
         id={NO_VALUE_FILLS['did-not-exist'].patternId}

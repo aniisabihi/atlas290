@@ -643,13 +643,16 @@ describe('published pantry: the sparse seven', () => {
       .values.flat()
       .filter((v): v is number => v !== null)
 
-  it('publishes an explicit year list for each of the seven, and for nothing that is dense', () => {
+  it('publishes an explicit year list for every sparse indicator, and for nothing dense', () => {
+    // Eight, not the seven plan 19 shipped: plan 21 brought holiday homes in once
+    // `nothing-to-count` existed to describe its absences.
     const sparse = data.indicators.filter((i) => i.coverage.years).map((i) => i.id)
     expect(sparse.sort()).toEqual(
       [
         'councillors-women-share',
         'farmland-hectares',
         'green-space-within-200m',
+        'holiday-homes-per-1000',
         'share-land-built',
         'turnout-gap-general-municipal',
         'turnout-general-election',
@@ -777,5 +780,133 @@ describe('published pantry: the scale says what the data does', () => {
     for (const indicator of data.indicators) {
       expect(Object.keys(indicator.scale).sort(), indicator.id).toEqual(['breaks', 'kind'])
     }
+  })
+})
+
+/**
+ * Plan 21. Q30 at last, and the two things about it a reader could not check for themselves.
+ */
+describe('published pantry: share 65+ against the country', () => {
+  const data = publishedPantry
+  const seriesFor = (id: string): IndicatorSeries => {
+    const s = data.series.find((x) => x.indicator === id)
+    if (!s) throw new Error(`no series for ${id}`)
+    return s
+  }
+  const share = seriesFor('share-65-plus')
+  const vs = seriesFor('share-65-plus-vs-country')
+
+  /** The national share implied by the PUBLISHED difference, for one year. */
+  const impliedNational = (year: number): number[] => {
+    const a = share.years.indexOf(year)
+    const b = vs.years.indexOf(year)
+    const out: number[] = []
+    for (const [i] of data.municipalities.entries()) {
+      const own = share.values[i]?.[a]
+      const diff = vs.values[i]?.[b]
+      if (own === null || diff === null || own === undefined || diff === undefined) continue
+      out.push(own - diff)
+    }
+    return out
+  }
+
+  it('subtracts one and the same national figure from every municipality that year', () => {
+    // If the national share were recomputed per municipality — over a subset, say — this would
+    // scatter. It is one number per year by construction and this is what says so.
+    for (const year of [1968, 2000, 2024, 2025]) {
+      const implied = impliedNational(year)
+      expect(implied.length, `${year}`).toBeGreaterThan(280)
+      const spread = Math.max(...implied) - Math.min(...implied)
+      // Both operands are published to two decimals, so the recovered figure can wobble in the
+      // second place; anything larger would be a different national share, not rounding.
+      expect(spread, `${year} national share is not constant`).toBeLessThan(0.03)
+    }
+  })
+
+  it('agrees with the national share Sweden actually had, which is the external check', () => {
+    // 20.8% of Sweden was 65 or over in 2024 and about 13.4% in 1968 — SCB's own published
+    // national figures, not something this pipeline produced. This is the one assertion here
+    // that could catch the whole computation being wrong in the same direction.
+    const in2024 = impliedNational(2024)[0]!
+    const in1968 = impliedNational(1968)[0]!
+    expect(in2024).toBeGreaterThan(20.5)
+    expect(in2024).toBeLessThan(21.2)
+    expect(in1968).toBeGreaterThan(13.0)
+    expect(in1968).toBeLessThan(13.8)
+  })
+
+  it('weights by population rather than averaging the 290 shares', () => {
+    // The check that matters most, because switching to an unweighted mean would still produce
+    // a plausible-looking map. In 2024 the two differ by more than four percentage points:
+    // most municipalities are small and old, so an unweighted mean is dragged up, and using it
+    // would quietly move every single value.
+    const a = share.years.indexOf(2024)
+    const present = data.municipalities
+      .map((_, i) => share.values[i]?.[a])
+      .filter((v): v is number => v !== null && v !== undefined)
+    const unweighted = present.reduce((t, v) => t + v, 0) / present.length
+    const weighted = impliedNational(2024)[0]!
+    expect(unweighted - weighted).toBeGreaterThan(3)
+  })
+
+  it('is signed, and roughly half of Sweden sits either side of the country', () => {
+    const a = vs.years.indexOf(2024)
+    const values = data.municipalities
+      .map((_, i) => vs.values[i]?.[a])
+      .filter((v): v is number => v !== null && v !== undefined)
+    const above = values.filter((v) => v > 0).length
+    expect(above).toBeGreaterThan(values.length * 0.5)
+    expect(Math.min(...values)).toBeLessThan(0)
+  })
+
+  it('says nothing where the municipality itself says nothing', () => {
+    // A place that did not exist yet has no share to compare, and inherits that reason rather
+    // than being reported as merely unpublished.
+    const a = share.years.indexOf(1968)
+    const b = vs.years.indexOf(1968)
+    for (const [i] of data.municipalities.entries()) {
+      if (share.values[i]?.[a] !== null) continue
+      expect(vs.values[i]?.[b]).toBeNull()
+      expect(OBSERVATION_STATUS[vs.status[i]?.[b] ?? 0]).toBe(
+        OBSERVATION_STATUS[share.status[i]?.[a] ?? 0],
+      )
+    }
+  })
+})
+
+/**
+ * Plan 21, the other half: holiday homes, and the status that let them ship.
+ */
+describe('published pantry: holiday homes and nothing to count', () => {
+  const data = publishedPantry
+  const series = data.series.find((s) => s.indicator === 'holiday-homes-per-1000')!
+
+  it('marks a municipality with no holiday-home area as nothing to count', () => {
+    // Solna has no cluster of fifty holiday homes, so SCB publishes nothing — and this is NOT
+    // the same claim as "not published for this year", which is what it used to say.
+    const i = data.municipalities.findIndex((m) => m.code === '0184')
+    expect(series.values[i]).toEqual([null, null])
+    for (const s of series.status[i]!) {
+      expect(OBSERVATION_STATUS[s]).toBe('nothing-to-count')
+    }
+  })
+
+  it('uses that status for every absence here, and never not-yet-published', () => {
+    const counts = new Map<string, number>()
+    for (const row of series.status) {
+      for (const s of row) {
+        const name = OBSERVATION_STATUS[s]!
+        counts.set(name, (counts.get(name) ?? 0) + 1)
+      }
+    }
+    expect(counts.get('present')).toBe(369)
+    expect(counts.get('nothing-to-count')).toBe(211)
+    expect(counts.get('not-yet-published')).toBeUndefined()
+  })
+
+  it('still publishes a real figure where the areas exist', () => {
+    // Mörbylånga is on Öland and is mostly summer houses.
+    const i = data.municipalities.findIndex((m) => m.code === '0840')
+    expect(series.values[i]?.[0]).toBeGreaterThan(50)
   })
 })

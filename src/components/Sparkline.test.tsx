@@ -3,6 +3,7 @@ import { render } from '@testing-library/react'
 import { lookup } from '../data/select'
 import { Sparkline, segmentsFor } from './Sparkline'
 import { publishedPantry } from '../test/pantry'
+import { OBSERVATION_STATUS } from '../../shared/pantry'
 
 const lk = lookup(publishedPantry)
 const draw = (indicatorId: string, code: string, year = 2024) =>
@@ -78,7 +79,7 @@ describe('Sparkline', () => {
     expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThan(20)
   })
 
-  it('has something to draw everywhere except the one pair SCB publishes nothing for', () => {
+  it('has something to draw everywhere except where the pantry explains why not', () => {
     // The component returns null when a series is wholly empty, and that branch was purely
     // defensive until plan 16: no municipality was missing an entire indicator.
     //
@@ -87,14 +88,47 @@ describe('Sparkline', () => {
     // for the measure to mean anything. That is SCB's own judgement, not a gap in this pipeline,
     // and the honest thing is to name it rather than loosen the assertion to "mostly".
     //
-    // Listing the exceptions keeps the guarantee: a second one appearing still fails here.
-    const empty: string[] = []
+    // Plan 21 added a whole CLASS of legitimate emptiness, and the guarantee is kept rather
+    // than loosened. 106 municipalities have no holiday-home area at all, so holiday homes are
+    // empty for every one of them — but the pantry says exactly that, in every cell, with
+    // `nothing-to-count`. An empty series whose own cells explain themselves is not the defect
+    // this test is looking for; an empty series that does not is.
+    //
+    // So the list below still names every unexplained one, and is still one item long.
+    const unexplained: string[] = []
     for (const indicator of lk.data.indicators) {
       for (const m of lk.data.municipalities) {
-        if (segmentsFor(lk, indicator.id, m.code).length === 0)
-          empty.push(`${indicator.id}/${m.code}`)
+        if (segmentsFor(lk, indicator.id, m.code).length > 0) continue
+        const row = lk.rowOf(m.code)
+        const series = lk.hasSeries(indicator.id) ? lk.series(indicator.id) : null
+        const statuses = (row === undefined ? [] : (series?.status[row] ?? [])).map(
+          (s) => OBSERVATION_STATUS[s],
+        )
+        const explained = statuses.length > 0 && statuses.every((s) => s === 'nothing-to-count')
+        if (!explained) unexplained.push(`${indicator.id}/${m.code}`)
       }
     }
-    expect(empty).toEqual(['fertility-rate/2403'])
+    expect(unexplained).toEqual(['fertility-rate/2403'])
+  })
+
+  it('draws nothing for a municipality with no holiday-home area, and says why in the cells', () => {
+    // The class the test above now tolerates, pinned in its own right so "explained" cannot
+    // quietly start covering something else.
+    //
+    // A hundred, not the 106 absent in 2020: eleven municipalities have an area in one survey
+    // and not the other — six lost theirs between 2015 and 2020 (Danderyd, Knivsta, Alingsås,
+    // Ulricehamn, Kil, Kungsör) and five gained one (Vadstena, Östra Göinge, Filipstad,
+    // Ockelbo, Överkalix). Those still draw a single point, so only the hundred absent in BOTH
+    // years draw nothing at all. 100 × 2 + 11 = the 211 empty cells.
+    const empty = lk.data.municipalities.filter(
+      (m) => segmentsFor(lk, 'holiday-homes-per-1000', m.code).length === 0,
+    )
+    expect(empty.length).toBe(100)
+    for (const m of empty) {
+      const row = lk.rowOf(m.code)!
+      for (const s of lk.series('holiday-homes-per-1000').status[row]!) {
+        expect(OBSERVATION_STATUS[s]).toBe('nothing-to-count')
+      }
+    }
   })
 })

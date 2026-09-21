@@ -1,4 +1,9 @@
-import { statusCode, type Indicator, type IndicatorSeries } from '../../../shared/pantry'
+import {
+  statusCode,
+  type Indicator,
+  type IndicatorSeries,
+  type ObservationStatus,
+} from '../../../shared/pantry'
 import { existed } from '../municipalities'
 import { buildRows, type BuildContext } from './registry'
 import { toCurrentKronor } from './cpi'
@@ -67,6 +72,20 @@ export type Definition = {
    * is a full calendar year too early for them; one is the shift they need.
    */
   existsShift?: number
+  /**
+   * What a MISSING source value means for this indicator, when it does not mean "not published
+   * yet".
+   *
+   * Plan 21. `TAB4198` carries nothing for the 106 municipalities that have no holiday-home
+   * area, and calling that `not-yet-published` promises a figure that is never coming. Defaults
+   * to `not-yet-published`, so every indicator that does not set it is untouched.
+   *
+   * This describes the SOURCE being silent, not every absence: a municipality that did not
+   * exist yet still gets `did-not-exist`, and a ratio whose denominator is missing is still a
+   * question with no answer rather than nothing to count.
+   */
+  absentMeans?: ObservationStatus
+
   modifiers?: Modifiers
   /**
    * Every value of the dimension a `share` is partitioned by — the whole denominator.
@@ -144,7 +163,9 @@ function directSeries(
     const key = `${m.code}|${y}`
     const value = values.get(key) ?? null
     const count = counts ? (counts.get(key) ?? null) : undefined
-    if (value === null || count === null) return { v: null, s: statusCode('not-yet-published') }
+    if (value === null || count === null) {
+      return { v: null, s: statusCode(definition.absentMeans ?? 'not-yet-published') }
+    }
     if (mods.minCount && count !== undefined && count < mods.minCount.threshold) {
       return { v: null, s: statusCode('too-few-cases') }
     }
@@ -326,7 +347,8 @@ function ratioSeries(
       return { v: null as number | null, s: statusCode('did-not-exist') }
     }
     const count = counts.get(`${m.code}|${y}`) ?? null
-    if (count === null) return { v: null, s: statusCode('not-yet-published') }
+    if (count === null)
+      return { v: null, s: statusCode(definition.absentMeans ?? 'not-yet-published') }
     const row = rowOf.get(m.code)
     const col = colOf.get(y)
     const denom =
