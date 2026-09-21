@@ -36,6 +36,8 @@ import { educationMenDefined, educationWomenDefined } from './education'
 import { emissionsDefined, natureDefined } from './environment'
 import { householdSizeDefined } from './households'
 import { carsDefined } from './transport'
+import { inCommutingDefined, outCommutingDefined } from './commuting'
+import { lifeMenDefined, lifeWomenDefined } from './longevity'
 
 /**
  * Plan 14, widened by plan 15: an indicator built from its definition must equal the one the
@@ -108,6 +110,10 @@ const DEFINED: ReadonlyArray<readonly [id: string, definition: () => Definition]
   ['persons-per-household', householdSizeDefined],
   ['cars-per-1000', carsDefined],
   ['distance-to-protected-nature', natureDefined],
+  ['in-commuters-per-1000', inCommutingDefined],
+  ['out-commuter-share', outCommutingDefined],
+  ['life-expectancy-women', lifeWomenDefined],
+  ['life-expectancy-men', lifeMenDefined],
 ]
 
 /**

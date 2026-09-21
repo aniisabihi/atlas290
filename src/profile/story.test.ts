@@ -214,14 +214,14 @@ describe('coverage across the whole country', () => {
   })
 
   it('tells most of them where they stand', () => {
-    // 185 before plan 16, 249 after it and 256 after plan 17: the rise is the point rather than a
+    // 185 before plan 16, 249 after it and 267 after plan 17: the rise is the point rather than a
     // regression, because a standing needs a municipality near the top or bottom of SOME measure,
     // and there are more measures now. Design D4 predicted exactly this — "the facts may simply
     // become different overnight, which is correct behaviour and will still be surprising".
     //
     // The bounds are what the test really defends: every municipality having a standing would
     // mean the threshold is meaningless, and very few would mean the sentence never fires.
-    expect(counts.standing).toBe(256)
+    expect(counts.standing).toBe(267)
     expect(counts.standing).toBeGreaterThan(120)
     expect(counts.standing).toBeLessThan(280)
   })

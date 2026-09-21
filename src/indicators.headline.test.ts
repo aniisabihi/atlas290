@@ -86,6 +86,11 @@ describe('published pantry: headline facts', () => {
         'persons-per-household',
         'cars-per-1000',
         'distance-to-protected-nature',
+        'in-commuters-per-1000',
+        'out-commuter-share',
+        'life-expectancy-women',
+        'life-expectancy-men',
+        'life-expectancy-gap',
       ].sort(),
     )
   })

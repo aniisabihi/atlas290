@@ -118,6 +118,15 @@ export const PLAUSIBLE_RANGES: Record<string, PlausibleRange> = {
   'cars-per-1000': { min: 0, max: 5000 },
   // Metres, and Sweden is large: the furthest municipality sits a few kilometres out.
   'distance-to-protected-nature': { min: 0, max: 100_000 },
+  // A small municipality beside a large employer can draw in more commuters than it has
+  // residents, so this is not bounded by 1,000.
+  'in-commuters-per-1000': { min: 0, max: 5000 },
+  'out-commuter-share': { min: 0, max: 100 },
+  // Swedish life expectancy is in the eighties and has never approached either bound. The gap
+  // is signed: men outlive women in a handful of small municipalities in some windows.
+  'life-expectancy-women': { min: 0, max: 120 },
+  'life-expectancy-men': { min: 0, max: 120 },
+  'life-expectancy-gap': { min: -50, max: 50 },
 }
 
 /**

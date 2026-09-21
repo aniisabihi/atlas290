@@ -76,7 +76,18 @@ function valueByLabel(meta: TableMeta, dim: string, label: string): string {
  */
 export type Source = {
   table: string
-  content: string
+  /**
+   * The Swedish label of the content this source reads — or several labels, where one indicator
+   * needs a numerator and a denominator that the table publishes as two content codes.
+   *
+   * Several only makes sense together with `groupBy: 'ContentsCode'`, which keys the resolved
+   * rows by LABEL rather than by code. That is not a convenience: the three commuting tables
+   * call the same measure `AM0207H9`, `AM0207C8` and `00000548`, so a share keyed by code could
+   * not span the stitch, while the labels are identical across all three. Decision 0001's trap 2
+   * — the code varies by table and by era, the label is stable — applied to the one place that
+   * had not needed it.
+   */
+  content: string | readonly string[]
   years: readonly number[]
   /** Every dimension beyond Region, ContentsCode and Tid. Omit where the table has none. */
   dims?: Readonly<Record<string, DimRule>>
@@ -116,6 +127,16 @@ export type Source = {
    * many.
    */
   subtract?: boolean
+  /**
+   * Maps the year this indicator publishes under to the `Tid` code SCB keys the table by.
+   *
+   * Two tables do not key by year at all. Life expectancy is published for five-year windows
+   * (`1998-2002`) and councillors by mandate period (`2023-2026`), and `IndicatorSeries.years`
+   * is a list of integers. Rather than widen the contract, each period is pinned to one
+   * representative year and this says which code that year asks for — the fifth slice design's
+   * D6, and the reason those indicators' caveats have to say what the year means.
+   */
+  period?: (year: number) => string
 }
 
 /** What a resolved source yields: one value per `region|year`, and what was read to get it. */
@@ -159,8 +180,9 @@ export function selectionFor(
                 )
               : [...rule.values]
   }
-  selection['ContentsCode'] = [resolveContentCode(meta, source.content)]
-  selection['Tid'] = source.years.map(String)
+  const contents = typeof source.content === 'string' ? [source.content] : source.content
+  selection['ContentsCode'] = contents.map((label) => resolveContentCode(meta, label))
+  selection['Tid'] = source.years.map((y) => (source.period ? source.period(y) : String(y)))
   return selection
 }
 
@@ -175,14 +197,19 @@ export function selectionFor(
  */
 function sumByRegionYear(
   chunks: readonly FrozenData[],
-  groupBy?: string,
+  groupBy: string | undefined,
+  /** The published year a `Tid` code stands for, where the two differ (`Source.period`). */
+  yearOf: (tid: string) => string,
+  /** What a grouped dimension's value is called in the key — its label, for ContentsCode. */
+  groupValue: (code: string) => string,
 ): Map<string, number | null> {
   const parts = new Map<string, { sum: number; sawNull: boolean }>()
   for (const chunk of chunks) {
     for (const row of toRows(chunk.response)) {
+      const year = yearOf(row.dims['Tid'] ?? '')
       const key = groupBy
-        ? `${row.dims['Region']}|${row.dims['Tid']}|${row.dims[groupBy]}`
-        : `${row.dims['Region']}|${row.dims['Tid']}`
+        ? `${row.dims['Region']}|${year}|${groupValue(row.dims[groupBy] ?? '')}`
+        : `${row.dims['Region']}|${year}`
       const entry = parts.get(key) ?? { sum: 0, sawNull: false }
       if (row.value === null) entry.sawNull = true
       else entry.sum += row.value
@@ -238,7 +265,27 @@ export async function resolveSources(
       'sv',
       freeze,
     )
-    for (const [key, value] of sumByRegionYear(chunks, groupBy)) {
+    // A period-keyed table's rows come back keyed by the period code and are published under
+    // the representative year, so the map back is built from this source's own declaration
+    // rather than guessed from the code.
+    const yearOfTid = source.period
+      ? (() => {
+          const byCode = new Map(source.years.map((y) => [source.period!(y), String(y)]))
+          return (tid: string) => byCode.get(tid) ?? tid
+        })()
+      : (tid: string) => tid
+    // Grouping by ContentsCode keys by the LABEL, the only identity stable across a stitch of
+    // tables that use different codes for the same measure.
+    const labelOfContent =
+      groupBy === 'ContentsCode'
+        ? (() => {
+            const v = parsed.variables.find((x) => x.code === 'ContentsCode')
+            const byCode = new Map((v?.values ?? []).map((x) => [x.code, x.label]))
+            return (code: string) => byCode.get(code) ?? code
+          })()
+        : (code: string) => code
+
+    for (const [key, value] of sumByRegionYear(chunks, groupBy, yearOfTid, labelOfContent)) {
       if (!source.subtract) {
         merged.set(key, value)
         continue

@@ -118,7 +118,7 @@ describe('buildManifest', () => {
     expect(m.sources).toHaveLength(1)
     expect(m.sources[0]?.cells).toBe(1)
     expect(m.sources[0]?.sha256).toMatch(/^[0-9a-f]{64}$/)
-    expect(m.sources[0]?.contentCode).toBe('BE0101N1')
+    expect(m.sources[0]?.contentCodes).toEqual(['BE0101N1'])
     expect(m.sources[0]?.selectionKey).toMatch(/^[0-9a-f]{16}$/)
     expect(m.geometry).toEqual(fakeGeometrySource)
   })
