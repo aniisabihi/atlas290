@@ -49,6 +49,14 @@ and CI passes no URL at all, so nobody has to remember.
 second number would invent a precision the measurements do not support. 72 stays, for the reasons
 [0008](0008-headers-and-discoverability.md) gives.
 
+The budget holds three other floors — accessibility 100, best practices 100, SEO 90 — whose
+comment says they have returned the same number on every run ever recorded. That record was the
+ROOT's, because nothing else had ever been measured, so the municipality page was measured
+against all three before being gated on them: **100 / 100 / 100**, built with `SITE_ORIGIN` set
+the way CI builds it. Without `SITE_ORIGIN` the same page scores 83 on SEO, for the absolute
+canonical and the hreflang alternates a bare local build does not write — the trap 0008 already
+records on the root, which is why a local `yarn budget` and CI's differ.
+
 **D6 — Neither of 0013's two options was taken whole.** The per-municipality file would also cut
 the 49 requests, and it is a change to the published shape. It is not needed: see Consequences.
 
@@ -109,6 +117,11 @@ Same machine, same preview server, `/en/stockholm-0180/` built the way CI builds
 
 - **`yarn budget` now takes about twice as long**, locally and in CI, because it measures two
   pages at three runs each. That is the price of the gate.
+
+- **A URL that cannot be measured at all is now a failure of that URL**, not a stack trace that
+  loses whatever the other pages found. A dead server scores 0 rather than throwing — verified —
+  so the catch is for the cases that do throw. `BUDGET_RUNS=0` used to reach
+  `writeFileSync(path, null)` and fail three steps from its cause; it now says so.
 
 - **Stage B is unblocked.** The fifth slice's seven remaining indicators can land without each one
   making every other one slower to load.
