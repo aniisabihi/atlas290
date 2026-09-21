@@ -139,7 +139,7 @@ it exists; read that before changing it.
 | `build-pages.mjs`       | `yarn build`         | The 580 municipality pages, with their own head tags. |
 | `build-cards.mjs`       | `yarn cards`         | The 290 preview PNGs. Deliberately outside the build. |
 | `pantry-guard.mjs`      | the refresh workflow | Refuses a refresh that loses observations.            |
-| `lighthouse-budget.mjs` | `yarn budget`        | A performance budget with measured thresholds.        |
+| `lighthouse-budget.mjs` | `yarn budget`        | Measured budget, root and a municipality page.        |
 
 ## Generated — do not hand-edit
 

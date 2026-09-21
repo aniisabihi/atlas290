@@ -469,6 +469,23 @@ export function assemblePantry(index: PantryIndex, parts: readonly PantryIndicat
 /**
  * Builds what the site renders from the index plus however many series have arrived. Series are
  * ordered by the index, for the same reason `assemblePantry` orders indicators by it.
+ *
+ * **This does not re-validate what it was handed, and that is the point.** `index` came out of
+ * `PantryIndex.parse` and every `part` out of `PantryIndicator.parse`, both at the fetch boundary
+ * where the bytes were still untrusted. Running `PantryView.parse` here would walk all 290 rows
+ * of every series AGAIN, once per arrival — and a profile open fetches all thirty-five, so the
+ * work is quadratic in the indicator count. Measured at 1,023 ms per profile open with zod's JIT
+ * off, which is the path the browser takes; ADR-0013 predicted it at ten indicators and deferred
+ * it, and ADR-0019 is where it was finally paid.
+ *
+ * What `parse` did that the inputs' own parses do not is `checkPantryCrossReferences`, which
+ * relates the parts to each other — so that still runs, on every call, in full. It is O(series),
+ * not O(cells).
+ *
+ * The assembled object SHARES `municipalities`, `indicators` and `priceIndex` with the index
+ * rather than copying them, where `parse` returned fresh arrays. Nothing in this project mutates
+ * published data, and a per-arrival deep copy of 290 municipalities was part of what this
+ * function was costing.
  */
 export function viewOf(index: PantryIndex, loaded: readonly PantryIndicator[]): PantryView {
   for (const part of loaded) {
@@ -480,13 +497,30 @@ export function viewOf(index: PantryIndex, loaded: readonly PantryIndicator[]): 
   const series = [...loaded]
     .sort((a, b) => (order.get(a.indicator.id) ?? 0) - (order.get(b.indicator.id) ?? 0))
     .map((part) => part.series)
-  return PantryView.parse({
+  const view: PantryView = {
     schemaVersion: index.schemaVersion,
     municipalities: index.municipalities,
     indicators: index.indicators,
     series,
     priceIndex: index.priceIndex,
-  })
+  }
+  assertCrossReferences('viewOf', view)
+  return view
+}
+
+/**
+ * `checkPantryCrossReferences` outside a zod parse: collect its issues and throw them together.
+ *
+ * All of them, not the first — zod reported every issue in one error and a caller reading the
+ * message should not lose that by the check moving house.
+ */
+function assertCrossReferences(
+  who: string,
+  p: Parameters<typeof checkPantryCrossReferences>[0],
+): void {
+  const messages: string[] = []
+  checkPantryCrossReferences(p, { addIssue: (issue) => messages.push(issue.message) })
+  if (messages.length > 0) throw new Error(`${who}: ${messages.join('; ')}`)
 }
 
 /** Keyboard neighbours. `synthetic` lists edges added so islands are reachable. */

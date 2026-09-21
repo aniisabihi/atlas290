@@ -218,3 +218,112 @@ describe('viewOf', () => {
     expect(() => viewOf(index, [stray])).toThrow(/stowaway/)
   })
 })
+
+/**
+ * Plan 18. `viewOf` stopped running `PantryView.parse` over parts it was handed already parsed —
+ * that re-validation was 1,023 ms per profile open at thirty-five indicators, and every cell it
+ * looked at had been validated once already by `PantryIndicator.parse` at the fetch boundary.
+ *
+ * What `parse` ALSO did was the cross-reference check, and nothing else was doing that. These
+ * pin each of those checks by name, because a fast function that quietly stopped checking is a
+ * worse outcome than the slow one.
+ */
+describe('viewOf keeps every check that only PantryView.parse was performing', () => {
+  it('refuses a series whose rows do not match the municipality list', () => {
+    // IndicatorSeries cannot catch this on its own: it does not know how many municipalities
+    // there are. Before this change PantryView.parse caught it; now the cross-reference check
+    // does, and it has to still be there.
+    const { index } = splitPantry(pantryOf(['population']))
+    const short = PantryIndicator.parse({
+      indicator: indicatorOf('population'),
+      series: {
+        ...seriesOf('population'),
+        values: [[1, 2]],
+        status: [[0, 0]],
+      },
+    })
+    expect(() => viewOf(index, [short])).toThrow(/rows \(1\) must equal municipalities \(2\)/)
+  })
+
+  it('refuses an indicator adjusted to a year the price index does not cover', () => {
+    // PantryIndex accepts this — checkPriceBasis only pairs the two fields — so viewOf is the
+    // only thing standing between a published index and the site dividing by undefined.
+    const index = PantryIndex.parse({
+      schemaVersion: 1,
+      municipalities: [stockholm, goteborg],
+      indicators: [
+        IndicatorMeta.parse(
+          indicatorOf('income', {
+            priceBasis: 'fixed-latest-year',
+            priceBasisYear: 1999,
+            publishedStep: 100,
+          }),
+        ),
+      ],
+      priceIndex,
+    })
+    const part = PantryIndicator.parse({
+      indicator: indicatorOf('income', {
+        priceBasis: 'fixed-latest-year',
+        priceBasisYear: 1999,
+        publishedStep: 100,
+      }),
+      series: seriesOf('income'),
+    })
+    expect(() => viewOf(index, [part])).toThrow(/adjusted to 1999, which the price index/)
+  })
+
+  it('reports every cross-reference failure at once, not just the first', () => {
+    const index = PantryIndex.parse({
+      schemaVersion: 1,
+      municipalities: [stockholm, goteborg],
+      indicators: [
+        IndicatorMeta.parse(
+          indicatorOf('income', {
+            priceBasis: 'fixed-latest-year',
+            priceBasisYear: 1999,
+            publishedStep: 100,
+          }),
+        ),
+      ],
+      priceIndex,
+    })
+    const short = PantryIndicator.parse({
+      indicator: indicatorOf('income', {
+        priceBasis: 'fixed-latest-year',
+        priceBasisYear: 1999,
+        publishedStep: 100,
+      }),
+      series: { ...seriesOf('income'), values: [[1, 2]], status: [[0, 0]] },
+    })
+    const thrown = (() => {
+      try {
+        viewOf(index, [short])
+        return null
+      } catch (error) {
+        return error instanceof Error ? error.message : String(error)
+      }
+    })()
+    expect(thrown).toMatch(/rows \(1\)/)
+    expect(thrown).toMatch(/adjusted to 1999/)
+  })
+
+  it('returns an object PantryView.parse accepts unchanged, at every size', () => {
+    // The property that says the shortcut is honest: whatever viewOf assembles, the schema it
+    // claims to produce still validates it and changes nothing about it.
+    const { index, parts } = splitPantry(pantryOf(['population', 'tax-rate', 'density']))
+    for (let n = 0; n <= parts.length; n++) {
+      const view = viewOf(index, parts.slice(0, n))
+      expect(PantryView.parse(view)).toEqual(view)
+    }
+  })
+
+  it('strips nothing the index carries and adds nothing of its own', () => {
+    const { index, parts } = splitPantry(pantryOf(['population', 'tax-rate']))
+    const view = viewOf(index, parts)
+    expect(view.municipalities).toEqual(index.municipalities)
+    expect(view.indicators).toEqual(index.indicators)
+    expect(view.priceIndex).toEqual(index.priceIndex)
+    expect(view.schemaVersion).toBe(index.schemaVersion)
+  })
+})
