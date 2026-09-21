@@ -169,9 +169,18 @@ describe('the standing', () => {
   })
 
   it('names the real denominator, which is not always 290', () => {
-    // House prices are suppressed for too few sales in five municipalities, so Åsele's
-    // lowest-price claim is of 285, not of 290.
-    expect(sentence('2463', 'standing')?.text.sv).toMatch(/av 285 kommuner/)
+    // House prices are suppressed for too few sales in five municipalities, so ANY standing
+    // claim about them is of 285 rather than 290.
+    //
+    // This pinned Åsele until plan 17, whose distance-to-protected-nature gave Åsele a stronger
+    // standing and quietly turned the test into a check that Åsele's top fact had not changed —
+    // which is not what it is for. It now finds whichever municipality the house-price standing
+    // belongs to, so it keeps testing the rule as the pantry grows.
+    const housePrices = data.municipalities
+      .map((m) => sentence(m.code, 'standing')?.text.sv)
+      .filter((t): t is string => t !== undefined && /Småhuspriser/.test(t))
+    expect(housePrices.length).toBeGreaterThan(0)
+    for (const claim of housePrices) expect(claim).toMatch(/av 285 kommuner/)
     expect(sentence('0180', 'standing')?.text.sv).toMatch(/av 290 kommuner/)
   })
 
@@ -205,14 +214,14 @@ describe('coverage across the whole country', () => {
   })
 
   it('tells most of them where they stand', () => {
-    // 185 before plan 16 and 249 after, and the rise is the point rather than a regression: a
-    // standing sentence needs the municipality to be near the top or the bottom of SOME measure,
+    // 185 before plan 16, 249 after it and 256 after plan 17: the rise is the point rather than a
+    // regression, because a standing needs a municipality near the top or bottom of SOME measure,
     // and there are more measures now. Design D4 predicted exactly this — "the facts may simply
     // become different overnight, which is correct behaviour and will still be surprising".
     //
     // The bounds are what the test really defends: every municipality having a standing would
     // mean the threshold is meaningless, and very few would mean the sentence never fires.
-    expect(counts.standing).toBe(249)
+    expect(counts.standing).toBe(256)
     expect(counts.standing).toBeGreaterThan(120)
     expect(counts.standing).toBeLessThan(280)
   })

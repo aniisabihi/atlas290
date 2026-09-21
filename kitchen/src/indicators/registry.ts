@@ -294,7 +294,9 @@ import {
 // These four divide by population's finished series through ctx.series, exactly as migration,
 // population-change and share-65-plus do, so like them they MUST be registered after population.
 import { naturalChangeDefinition } from './demography'
-import { emissionsDefinition } from './environment'
+import { emissionsDefinition, natureDefinition } from './environment'
+import { householdSizeDefinition } from './households'
+import { carsDefinition } from './transport'
 
 /** Every indicator the pantry publishes, in build order. Population must stay first: it is
  * the only definition that derives `ctx.municipalities`, and every other definition depends
@@ -350,6 +352,9 @@ function ensureRegistered(): void {
     educationMenDefinition,
     educationGapDefinition,
     priceToIncomeDefinition,
+    householdSizeDefinition,
+    carsDefinition,
+    natureDefinition,
   )
 }
 

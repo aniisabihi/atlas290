@@ -477,6 +477,41 @@ describe('published pantry: edge cells and status semantics', () => {
     })
   })
 
+  describe('the three measures SCB had already computed (plan 17)', () => {
+    // Each read on 2026-09-21 through a separate request before the indicator was declared.
+    it('reproduces household size, which is small everywhere and smallest in the north', () => {
+      expect(cell('persons-per-household', 'Stockholm', 2024).value).toBe(2.04)
+      expect(cell('persons-per-household', 'Borgholm', 2024).value).toBe(1.93)
+      expect(cell('persons-per-household', 'Arjeplog', 2024).value).toBe(1.86)
+    })
+
+    it('reproduces cars per 1,000, where a city is about half a rural municipality', () => {
+      const stockholm = cell('cars-per-1000', 'Stockholm', 2024).value!
+      expect(stockholm).toBe(354)
+      expect(cell('cars-per-1000', 'Borgholm', 2024).value).toBe(620)
+      expect(cell('cars-per-1000', 'Arjeplog', 2024).value).toBe(657)
+      // The pattern is the measure: if a city ever stopped being the least car-owning of the
+      // three, something has gone wrong with the owner-category selection rather than with
+      // Sweden.
+      expect(stockholm).toBeLessThan(cell('cars-per-1000', 'Borgholm', 2024).value!)
+    })
+
+    // The counter-intuitive one, and the reason the caveat exists: the mean is weighted over
+    // RESIDENTS, so a vast northern municipality whose people live in one town is further from
+    // protected nature than a city whose residents cluster beside an urban reserve.
+    it('reproduces distance to protected nature, with Arjeplog further out than Stockholm', () => {
+      expect(cell('distance-to-protected-nature', 'Stockholm', 2025).value).toBe(1100)
+      expect(cell('distance-to-protected-nature', 'Borgholm', 2025).value).toBe(1500)
+      expect(cell('distance-to-protected-nature', 'Arjeplog', 2025).value).toBe(3300)
+    })
+
+    it('publishes a distance for every municipality in every year, with no gaps', () => {
+      const s = seriesOf('distance-to-protected-nature')
+      expect(s.years).toHaveLength(13)
+      expect(s.values.flat().filter((v) => v !== null)).toHaveLength(290 * 13)
+    })
+  })
+
   /**
    * Which tables carry SCB's Cell Key Method note is a per-table fact, and getting it wrong in
    * either direction is a published lie: a perturbed cell presented as exact, or an exact cell

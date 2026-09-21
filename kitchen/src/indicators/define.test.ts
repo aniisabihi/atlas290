@@ -33,7 +33,9 @@ import {
   stockDefined,
 } from './dwellings'
 import { educationMenDefined, educationWomenDefined } from './education'
-import { emissionsDefined } from './environment'
+import { emissionsDefined, natureDefined } from './environment'
+import { householdSizeDefined } from './households'
+import { carsDefined } from './transport'
 
 /**
  * Plan 14, widened by plan 15: an indicator built from its definition must equal the one the
@@ -103,6 +105,9 @@ const DEFINED: ReadonlyArray<readonly [id: string, definition: () => Definition]
   ['share-rentals', shareRentalsDefined],
   ['post-secondary-education-women', educationWomenDefined],
   ['post-secondary-education-men', educationMenDefined],
+  ['persons-per-household', householdSizeDefined],
+  ['cars-per-1000', carsDefined],
+  ['distance-to-protected-nature', natureDefined],
 ]
 
 /**

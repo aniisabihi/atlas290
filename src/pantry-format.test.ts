@@ -70,6 +70,8 @@ describe('published pantry: file format (regression guards, this task)', () => {
     // 1.45 children per woman publishes as 1, and 4.17 tonnes of CO2e per resident as 4.
     'children-per-woman': 2,
     'tonnes-per-resident': 2,
+    'persons-per-household': 2,
+    metres: 0,
   }
 
   /** Counts the decimal digits a number's own JS string representation actually carries —

@@ -110,6 +110,8 @@ export const UNIT_DECIMALS: Record<Indicator['unit'], number> = {
   years: 1,
   'children-per-woman': 2,
   'tonnes-per-resident': 2,
+  'persons-per-household': 2,
+  metres: 0,
 }
 
 /**
@@ -139,6 +141,11 @@ const IndicatorFields = z.object({
     // string in every indicator, never as an index — so appending to it relabels nothing.
     'children-per-woman',
     'tonnes-per-resident',
+    // Plan 17, same reason as the two above: `count` rounds to nought decimals, and a household
+    // of 2.17 people would publish as 2 — which is every municipality in Sweden.
+    'persons-per-household',
+    // Plan 17: mean distance to protected nature, which SCB rounds to even hundreds of metres.
+    'metres',
   ]),
   /** 'fixed-latest-year' means values are inflation-adjusted to the latest year's kronor. */
   priceBasis: z.enum(['none', 'fixed-latest-year']),

@@ -82,6 +82,10 @@ describe('published pantry: headline facts', () => {
         'post-secondary-education-men',
         'post-secondary-education-gap',
         'house-price-to-income',
+        // Plan 17.
+        'persons-per-household',
+        'cars-per-1000',
+        'distance-to-protected-nature',
       ].sort(),
     )
   })

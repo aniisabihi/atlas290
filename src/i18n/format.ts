@@ -41,6 +41,8 @@ const UNITS: Record<IndicatorMeta['unit'], Record<Lang, string>> = {
   'per-km2': { sv: 'inv/km²', en: 'people/km²' },
   'children-per-woman': { sv: 'barn per kvinna', en: 'children per woman' },
   'tonnes-per-resident': { sv: 'ton per invånare', en: 'tonnes per resident' },
+  'persons-per-household': { sv: 'personer per hushåll', en: 'persons per household' },
+  metres: { sv: 'm', en: 'm' },
 }
 
 export function unitSuffix(indicator: IndicatorMeta, lang: Lang): string {
