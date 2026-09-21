@@ -23,6 +23,20 @@ request and writes its own line to [docs/refresh-log.md](docs/refresh-log.md); a
 change to the software. See
 [decision 0012](docs/decisions/0012-releases-and-a-changelog.md).
 
+## [1.4.0](https://github.com/aniisabihi/atlas290/compare/v1.3.1...v1.4.0) (2026-09-21)
+
+
+### Added
+
+* **kitchen:** absence that says which, and a place against the country ([#44](https://github.com/aniisabihi/atlas290/issues/44)) ([b5565ca](https://github.com/aniisabihi/atlas290/commit/b5565ca191893ba82c650275d47c31a9cf9c7e41)), closes [#40](https://github.com/aniisabihi/atlas290/issues/40) [#42](https://github.com/aniisabihi/atlas290/issues/42)
+
+## [1.3.1](https://github.com/aniisabihi/atlas290/compare/v1.3.0...v1.3.1) (2026-09-21)
+
+
+### Fixed
+
+* **kitchen:** scale.reference goes, and a share stops pretending to diverge ([#41](https://github.com/aniisabihi/atlas290/issues/41)) ([85ce5e7](https://github.com/aniisabihi/atlas290/commit/85ce5e72d9278ac31dc0815019c2291647bd9b91))
+
 ## [1.3.0](https://github.com/aniisabihi/atlas290/compare/v1.2.0...v1.3.0) (2026-09-21)
 
 

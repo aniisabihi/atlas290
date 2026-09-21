@@ -39,7 +39,7 @@ const ARROWS: Record<string, Direction> = {
  * follows the drawn year's value inside its slot. Two more movements follow from that, both
  * driven by `useTween` and written to the DOM the way the morph is: a change of year resizes
  * every bubble in place, and a change of indicator carries every bubble to its new position.
- * See docs/decisions/0023-bubbles-sized-by-the-measure.md.
+ * See docs/decisions/0024-bubbles-sized-by-the-measure.md.
  */
 
 /**

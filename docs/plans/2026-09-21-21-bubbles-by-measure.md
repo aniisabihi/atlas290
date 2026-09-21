@@ -17,7 +17,7 @@
 
 DESIGN section 1 says each bubble is "sized by population, so the visual lie of a normal Swedish
 map is fixed in one gesture". The request is to make size follow the measure on screen, and
-[ADR-0023](../decisions/0023-bubbles-sized-by-the-measure.md) records what that took to do
+[ADR-0024](../decisions/0024-bubbles-sized-by-the-measure.md) records what that took to do
 honestly. In one paragraph:
 
 Size cannot follow the value on the population layout, because the positions were solved for

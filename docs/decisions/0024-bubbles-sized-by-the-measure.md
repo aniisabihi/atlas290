@@ -1,4 +1,4 @@
-# 0023 — Bubbles sized by the measure
+# 0024 — Bubbles sized by the measure
 
 **Date:** 2026-09-21
 **Plan:** [Plan 21](../plans/2026-09-21-21-bubbles-by-measure.md)

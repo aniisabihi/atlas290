@@ -56,6 +56,19 @@ export const OBSERVATION_STATUS = [
   // the underlying level genuinely moved only because of a boundary redraw — not because
   // anyone moved. Appended at the end, per the rule above.
   'structural-break',
+  /**
+   * Appended by plan 21: the thing this indicator measures does not exist in this municipality
+   * at all, so there is nothing to publish — as opposed to a figure that exists and has not
+   * been published, which is `not-yet-published`.
+   *
+   * Holiday homes forced it. SCB counts only homes inside a holiday-home AREA, meaning a
+   * cluster of at least fifty, and 106 of the 290 municipalities have no such area; telling
+   * them "not published for this year" would promise a figure that is never coming. Any measure
+   * whose universe excludes some municipalities by definition wants this rather than that.
+   *
+   * Appended at the end, per the rule above.
+   */
+  'nothing-to-count',
 ] as const
 export type ObservationStatus = (typeof OBSERVATION_STATUS)[number]
 export function statusCode(status: ObservationStatus): number {
@@ -473,7 +486,7 @@ function checkPantryCrossReferences(
  * with, published rather than assumed, so a change to the shared constants cannot leave a layout
  * on disk that a bubble outgrows. `cone` is the arrow-key cone the kitchen proved reaches every
  * municipality on this layout; the right angle is a property of the arrangement, so it travels
- * with it. See docs/decisions/0023-bubbles-sized-by-the-measure.md.
+ * with it. See docs/decisions/0024-bubbles-sized-by-the-measure.md.
  */
 const BubbleLayoutFields = z.object({
   minR: z.number().positive(),
