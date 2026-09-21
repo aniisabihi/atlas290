@@ -96,11 +96,20 @@ describe('App', () => {
     expect(window.location.pathname + window.location.search).toBe('/en/?i=mean-age&y=2024')
   })
 
-  it('opens a profile for the selected municipality and puts focus on its heading', () => {
+  it('opens a profile for the selected municipality named in the link', () => {
     open('/en/?y=2024&m=0180')
-    const heading = screen.getByRole('heading', { level: 2, name: 'Stockholm' })
-    expect(heading).toBe(document.activeElement)
+    expect(screen.getByRole('heading', { level: 2, name: 'Stockholm' })).toBeTruthy()
     expect(screen.getByText('995,574 residents')).toBeTruthy()
+  })
+
+  it('leaves focus alone on a link that arrives already showing a municipality', () => {
+    // Nobody opened this profile: the link did. Moving focus into it would drop an arriving
+    // visitor below the map — the heading is after it in the document, so the search, the year
+    // and the map itself are all behind them — and it would happen at an unpredictable moment,
+    // because the pantry has to arrive before there is anything to focus. See
+    // docs/decisions/0018-the-focus-a-link-never-asked-for.md.
+    open('/en/?y=2024&m=0180')
+    expect(document.activeElement).toBe(document.body)
   })
 
   it('returns focus to the map shape when the profile is closed', async () => {
@@ -169,7 +178,11 @@ describe('App', () => {
   })
 
   it('closes the profile with Escape, and gives focus back', async () => {
+    // From inside the panel, because that is what non-modal means: the key belongs to the surface
+    // the visitor is on. A deep link no longer puts them there, so the test says where it stands
+    // rather than inheriting a focus nobody asked for.
     open('/en/?y=2024&m=0180')
+    act(() => screen.getByRole('heading', { level: 2, name: 'Stockholm' }).focus())
     await userEvent.keyboard('{Escape}')
     expect(window.location.search).toBe('?y=2024')
     expect(document.activeElement?.getAttribute('aria-label')).toMatch(/^Stockholm/)

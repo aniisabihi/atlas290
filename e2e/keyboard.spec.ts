@@ -170,6 +170,33 @@ test.describe('arrow keys move, and show that they moved', () => {
     await expect(page.getByRole('heading', { level: 2, name: 'Malmö' })).toBeFocused()
   })
 
+  test('a link that names a municipality takes no focus of its own', async ({ page }) => {
+    /*
+     * The WebKit flake of issue #32, as a test.
+     *
+     * The profile used to focus its own heading whenever it appeared, arrival included. This
+     * application mounts only once the pantry has been fetched, so on a deep link that focus
+     * landed at an unpredictable moment AFTER the page was readable — and the heading sits below
+     * the map in the document, so it dropped an arriving visitor past the search, the year and
+     * the map itself.
+     *
+     * It is also what made three tests in this suite fail in Linux WebKit alone: each focused a
+     * shape on a deep link and lost focus to the heading a moment later, on the one engine slow
+     * enough for the moment to fall on the wrong side. Reproduced by delaying the heading's focus
+     * by 300 ms, which turns all three red on every engine.
+     * docs/decisions/0018-the-focus-a-link-never-asked-for.md.
+     */
+    await page.goto('/en/?y=2024&m=1280&v=map')
+    await page.getByRole('heading', { level: 2, name: 'Malmö' }).waitFor()
+    // An open profile asks for every indicator file, and each arrival is another commit with
+    // another round of effects. Focus has to survive all of them, so the wait is for the network
+    // to go quiet rather than for a fixed number of milliseconds.
+    await page.waitForLoadState('networkidle')
+    expect(await page.evaluate(() => document.activeElement?.tagName.toLowerCase() ?? 'none')).toBe(
+      'body',
+    )
+  })
+
   test('clicking the selected municipality deselects it and leaves focus on the shape', async ({
     page,
   }) => {

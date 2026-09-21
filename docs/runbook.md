@@ -102,3 +102,38 @@ acting on it. If that line is ever removed, this comes back — see
 [issue #26](https://github.com/aniisabihi/atlas290/issues/26), diagnosed 2026-09-18 by serving each
 response header on its own from a bare Node server: COOP alone reproduced it 29 times in 150 fresh
 pages, every other header 0.
+
+## A browser test fails only in WebKit, straight after `.focus()`
+
+**Symptom:** the browser job goes red on WebKit alone, never Chromium, never Firefox, on a change
+that touched nothing the test exercises, and a re-run goes green. The failing assertion is always
+the one after a `.focus()` on a page whose URL names a municipality:
+
+```
+expect(locator).toHaveCount(expected) failed   # [data-focus-ring], expected 1, got 0
+expect(locator).toBeFocused() failed           # received: "inactive"
+```
+
+**Cause:** something moved focus after the test did. Until 2026-09-21 that something was the
+profile panel, which focused its own `<h2>` whenever it appeared — including on arrival, at an
+unpredictable moment, because the panel cannot render until the pantry has been fetched. The test
+focused a shape, the heading took focus a beat later, and the arrow key that followed went to
+`<body>`. WebKit on Linux CI is not special; it is just slow enough, often enough, for the two to
+land in the wrong order.
+
+**Fix:** find what else takes focus, rather than adding a retry or a wait to the test. Reproduce it
+on any engine by delaying the suspect focus:
+
+```bash
+npx playwright test --project=webkit e2e/keyboard.spec.ts:147 --repeat-each=8 --workers=6
+```
+
+`e2e/keyboard.spec.ts` now guards the class: it opens a deep link, waits for the network to go
+quiet and asserts `document.activeElement` is still `<body>`. If that test is red, a focus is being
+moved that nobody asked for — see
+[decision 0018](decisions/0018-the-focus-a-link-never-asked-for.md).
+
+**Seen:** three CI runs, filed as
+[issue #32](https://github.com/aniisabihi/atlas290/issues/32) after
+[decision 0017](decisions/0017-the-flake-was-a-security-header.md) closed the unrelated Firefox
+cause and said this strand was still open. Twice it left a merged release un-deployed.
