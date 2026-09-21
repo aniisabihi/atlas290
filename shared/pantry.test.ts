@@ -322,3 +322,47 @@ describe('coversYear', () => {
     expect(coversYear(dense, 2024)).toBe(false)
   })
 })
+
+/**
+ * Plan 20 (fifth slice, stage C). `scale.reference` is gone, and this is the design's own
+ * verification for that stage: "the field is gone and the schema test says so".
+ *
+ * It was two dead things wearing one name. `'zero'` was declared by seven indicators and read by
+ * nobody — the zero those scales want marked is derived from `kind: 'diverging'` in
+ * `src/map/colour.ts`, not from this field. `'national-median'` had no producer and no consumer
+ * at all, and could not get one without contradicting fixed breaks: the breaks are quantiles
+ * fixed across every year, and a national median moves, so colouring against it would change a
+ * municipality's colour as the slider is dragged without its value changing.
+ */
+describe('scale', () => {
+  const scaleOf = (scale: unknown) =>
+    Indicator.parse({
+      id: 'population',
+      name: { sv: 'Folkmängd', en: 'Population' },
+      description: { sv: 'Antal invånare.', en: 'Residents.' },
+      unit: 'count',
+      priceBasis: 'none',
+      scale,
+      coverage: { from: 2024, to: 2025 },
+      caveat: { sv: '', en: '' },
+      sensitivity: 'none',
+      sources: [{ table: 'TAB638', contentCode: 'BE0101N1', note: '' }],
+      derivation: 'Sum over sex and marital status.',
+    }).scale
+
+  it('carries a kind and breaks, and nothing else', () => {
+    expect(Object.keys(scaleOf({ kind: 'sequential', breaks: [1, 2] })).sort()).toEqual([
+      'breaks',
+      'kind',
+    ])
+  })
+
+  it('drops a reference rather than storing one, so the field cannot come back by accident', () => {
+    // zod strips unknown keys, so a pantry published before plan 20 still parses — it simply
+    // loses the key. That is why this removal needs no schemaVersion bump: compatible in both
+    // directions, unlike plan 17's contentCode -> contentCodes rename.
+    const scale = scaleOf({ kind: 'diverging', reference: 'national-median', breaks: [1, 2] })
+    expect(scale).not.toHaveProperty('reference')
+    expect(scale).toEqual({ kind: 'diverging', breaks: [1, 2] })
+  })
+})

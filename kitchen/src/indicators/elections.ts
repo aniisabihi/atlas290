@@ -100,7 +100,7 @@ export const TURNOUT_GAP: Indicator = Indicator.parse({
   },
   unit: 'percent',
   priceBasis: 'none',
-  scale: { kind: 'diverging', reference: 'zero', breaks: [] },
+  scale: { kind: 'diverging', breaks: [] },
   coverage: {
     from: ELECTION_YEARS[0],
     to: ELECTION_YEARS[ELECTION_YEARS.length - 1]!,

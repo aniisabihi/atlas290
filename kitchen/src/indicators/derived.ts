@@ -41,7 +41,7 @@ export const POPULATION_CHANGE: Indicator = Indicator.parse({
   // view: population change, slider at 1968"), so unlike migration's rate this one doubles as
   // the first thing a visitor's eye has to read at a glance; growth and decline must be visually
   // distinguishable immediately, which a sequential ramp cannot do around zero.
-  scale: { kind: 'diverging', reference: 'zero', breaks: [] },
+  scale: { kind: 'diverging', breaks: [] },
   // 1968 onwards, per docs/DESIGN.md's indicator table. Hardcoded rather than imported from
   // population.ts's LATEST_YEAR/POPULATION.coverage, exactly as every other indicator module
   // (tax.ts, density.ts, migration.ts) hardcodes its OWN year range instead of borrowing

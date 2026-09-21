@@ -170,7 +170,7 @@ export const NATURAL_CHANGE: Indicator = Indicator.parse({
   },
   unit: 'per-thousand',
   priceBasis: 'none',
-  scale: { kind: 'diverging', reference: 'zero', breaks: [] },
+  scale: { kind: 'diverging', breaks: [] },
   coverage: { from: NATURAL_YEARS[0]!, to: NATURAL_YEARS[NATURAL_YEARS.length - 1]! },
   caveat: {
     sv: 'Detta är befolkningsförändringen utan flyttningar: en kommun kan ha kraftigt födelseöverskott och ändå krympa, eller tvärtom. Läs den tillsammans med flyttningsöverskottet. Nämnaren är folkmängden vid årets slut, medan födda och döda räknas under året. Från 2025 är både födda och döda hämtade ur SCB:s störningsskyddade tabeller (Cell Key Method), så talet för det året är medvetet något oskarpt — i en liten kommun kan det märkas.',

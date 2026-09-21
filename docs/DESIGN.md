@@ -117,7 +117,10 @@ picked. The third was added by [decision 0010](decisions/0010-the-place-beside-t
 Three concepts, deliberately few.
 
 - **Municipality**: code, names in both languages, county, land area, geometry, bubble position, keyboard neighbours.
-- **Indicator**: identifier, names and descriptions in both languages, exact definition (which SCB table, content code, age band, treatment of unknowns), unit, price basis for money, scale hint (sequential or diverging and around what reference), fixed colour breaks, coverage years, a bilingual caveat, a minimum-count rule for indicators built from events such as house sales, and a sensitivity class.
+- **Indicator**: identifier, names and descriptions in both languages, exact definition (which SCB table, content code, age band, treatment of unknowns), unit, price basis for money, scale hint (sequential or diverging), fixed colour breaks, coverage years, a bilingual caveat, a minimum-count rule for indicators built from events such as house sales, and a sensitivity class.
+
+  **Correction, Plan 20 (2026-09-21):** this bullet previously said the scale hint carried "sequential or diverging **and around what reference**". The reference half never worked. `scale.reference` was declared as `'zero'` by seven indicators and read by nothing — the zero a diverging legend marks is derived from the KIND, not from the field — and its other value, `'national-median'`, had no producer and no consumer and could not get one: the breaks are fixed across all years (the decision three rows above), and a national median is not, so colouring against it would move a municipality's colour while its value stood still. The field is removed. See [docs/decisions/0022-the-reference-scale-is-not-built.md](decisions/0022-the-reference-scale-is-not-built.md).
+
 - **Observation**: a municipality, a year, a value, and a status: present, not yet published, municipality did not exist, perturbed by SCB noise, too few cases. Absence renders as absence, never zero.
 
 There is no "higher is better" flag. Comparison says "higher on 7 of 10", never "wins". If a preference-ranking feature is ever built, the visitor supplies the direction.

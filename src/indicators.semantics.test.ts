@@ -748,3 +748,34 @@ describe('published pantry: the sparse seven', () => {
     )
   })
 })
+
+/**
+ * Plan 20. `scale.kind` is the whole of the scale contract now that `reference` is gone, so the
+ * one claim it makes has to be true of the data rather than of the author's intention.
+ */
+describe('published pantry: the scale says what the data does', () => {
+  const data = publishedPantry
+
+  it('gives every diverging indicator values that actually straddle zero', () => {
+    // The rule, not the instance. `kind: 'diverging'` picks a signed colour ramp, prints figures
+    // with an explicit +, and tells the legend to mark the class zero falls in — all three are
+    // nonsense for a measure that never goes near zero. Plan 19 declared
+    // councillors-women-share diverging when it runs 24 to 58, and nothing caught it; this does.
+    const wrong = data.indicators
+      .filter((i) => i.scale.kind === 'diverging')
+      .map((i) => {
+        const series = data.series.find((s) => s.indicator === i.id)
+        const values = (series?.values ?? []).flat().filter((v): v is number => v !== null)
+        return { id: i.id, min: Math.min(...values), max: Math.max(...values) }
+      })
+      .filter((x) => x.min >= 0 || x.max <= 0)
+      .map((x) => `${x.id} runs ${x.min} to ${x.max}`)
+    expect(wrong).toEqual([])
+  })
+
+  it('no longer publishes a scale reference, in the index or in any indicator file', () => {
+    for (const indicator of data.indicators) {
+      expect(Object.keys(indicator.scale).sort(), indicator.id).toEqual(['breaks', 'kind'])
+    }
+  })
+})
