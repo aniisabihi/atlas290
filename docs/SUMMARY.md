@@ -3,8 +3,8 @@
 An interactive atlas of Sweden's 290 municipalities, built entirely from Statistics Sweden (SCB)
 open data. One repository holds two programs: **the kitchen**, an offline Node pipeline that
 fetches and freezes SCB responses and publishes a deterministic static data "pantry"; and **the
-site**, a React 19 + Vite 8 front end that reads only those committed files. Ten measures from
-1968 to 2026, in Swedish and English, as a choropleth, a bubble cartogram, per-municipality
+site**, a React 19 + Vite 8 front end that reads only those committed files. Measure by measure,
+from 1968 to 2026, in Swedish and English, as a choropleth, a bubble cartogram, per-municipality
 profiles and a plain table twin of every view. The output is static: no server, no runtime API,
 no tracking.
 

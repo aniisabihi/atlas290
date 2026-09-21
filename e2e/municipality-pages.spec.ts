@@ -19,7 +19,7 @@ test.describe('a municipality page', () => {
 
     const head = await page.evaluate(() => document.head.innerHTML)
     expect(head).toContain('Malmö · Atlas 290')
-    expect(head).toContain('Malmö in ten measures')
+    expect(head).toContain('Malmö in measures')
     expect(head).toContain('/share/1280.png')
     expect(head).toContain('summary_large_image')
     expect(head).toContain('rel="canonical"')
@@ -51,7 +51,7 @@ test.describe('a municipality page', () => {
     await page.goto('/sv/malmo-1280/')
     expect(await page.evaluate(() => document.documentElement.lang)).toBe('sv')
     const head = await page.evaluate(() => document.head.innerHTML)
-    expect(head).toContain('i tio mått från SCB')
+    expect(head).toContain('i mått från SCB')
     expect(head).toContain('sv_SE')
   })
 

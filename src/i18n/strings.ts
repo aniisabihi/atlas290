@@ -16,7 +16,7 @@ const sv = {
   // Swedish and English cannot have a name that reads as foreign in half of it, and the number
   // says the same thing in both. See docs/decisions/0006-the-name.md.
   siteName: 'Atlas 290',
-  tagline: 'Sveriges alla kommuner i tio mått, 1968–2026. Allt från SCB.',
+  tagline: 'Sveriges alla kommuner, mått för mått, 1968–2026. Allt från SCB.',
   skipToMap: 'Hoppa till kartan',
   skipToTable: 'Hoppa till tabellen',
 
@@ -132,7 +132,8 @@ export type Strings = typeof sv
 
 const en: Strings = {
   siteName: 'Atlas 290',
-  tagline: 'Every municipality in Sweden in ten measures, 1968–2026. All from Statistics Sweden.',
+  tagline:
+    'Every municipality in Sweden, measure by measure, 1968–2026. All from Statistics Sweden.',
   skipToMap: 'Skip to the map',
   skipToTable: 'Skip to the table',
 

@@ -36,7 +36,7 @@ describe('pageFor', () => {
     // one, and a crawler may use the other.
     expect(html.match(/<title>/g)).toHaveLength(1)
     expect(html.match(/name="description"/g)).toHaveLength(1)
-    expect(html).toContain('Malmö in ten measures')
+    expect(html).toContain('Malmö in measures')
   })
 
   it('names itself canonical and points at both languages', () => {
@@ -80,7 +80,7 @@ describe('pageFor', () => {
       name: malmo.name.sv,
       code: malmo.code,
     })
-    expect(sv).toContain('i tio mått från SCB')
+    expect(sv).toContain('i mått från SCB')
     expect(sv).toContain('og:locale" content="sv_SE"')
   })
 

@@ -46,14 +46,14 @@ const COPY = {
   sv: {
     title: (name, site) => `${name} · ${site}`,
     description: (name) =>
-      `${name} i tio mått från SCB, år för år från 1968 till i dag: folkmängd, medelålder, ` +
+      `${name} i mått från SCB, år för år från 1968 till i dag: folkmängd, medelålder, ` +
       `inkomst, skattesats och mer.`,
     site: 'Atlas 290',
   },
   en: {
     title: (name, site) => `${name} · ${site}`,
     description: (name) =>
-      `${name} in ten measures from Statistics Sweden, year by year from 1968 to today: ` +
+      `${name} in measures from Statistics Sweden, year by year from 1968 to today: ` +
       `population, mean age, income, tax rate and more.`,
     site: 'Atlas 290',
   },

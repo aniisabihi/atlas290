@@ -7,9 +7,10 @@
 An interactive atlas of Sweden's 290 municipalities — the number is the name — built entirely from
 Statistics Sweden (SCB) open data. Not affiliated with SCB. Static site, no server, no runtime API, no tracking.
 
-Ten measures from 1968 to 2026: a choropleth you can drive with a mouse, a keyboard or a search
-box, a year you can drag or play, a bubble cartogram that fixes the visual lie a geographic map
-tells about where people live — with the 290 shapes travelling between the two rather than cutting — a profile with ten small histories per municipality, an explicit
+Measure by measure, from 1968 to 2026: a choropleth you can drive with a mouse, a keyboard or a
+search box, a year you can drag or play, a bubble cartogram that fixes the visual lie a geographic
+map tells about where people live — with the 290 shapes travelling between the two rather than
+cutting — a profile with one small history per measure per municipality, an explicit
 comparison that declines to declare a winner, and a plain sortable table twin of every view.
 Everything is in the URL, so every view is a link — and every municipality has its own page at
 `/en/malmo-1280/`, with its own title, description and preview card.
@@ -17,8 +18,8 @@ Everything is in the URL, so every view is a link — and every municipality has
 The five facts on the front page are found by the kitchen rather than written by hand — one from
 each of five families, from the whole country down to a single municipality against its twins.
 Each profile opens with a few sentences telling that municipality's own story, and names the
-five places most like it — measured across all ten indicators over the last ten complete years,
-with the method stated on the page and the reasoning in
+five places most like it — measured across the ten core indicators over the last ten complete
+years, with the method stated on the page and the reasoning in
 [decision 0002](docs/decisions/0002-similarity-metric.md).
 
 ## Running it
