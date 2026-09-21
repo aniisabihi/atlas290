@@ -143,3 +143,70 @@ export const natureDefinition: IndicatorDefinition = {
   indicator: NATURE,
   build: (ctx) => buildDefined(natureDefined(), ctx),
 }
+
+export const GREEN_SPACE_TABLE = 'TAB5591'
+
+/** `TAB5591` publishes two points, six years apart. Plan 19's sparse machinery carries them. */
+export const GREEN_SPACE_YEARS = [2015, 2020] as const
+
+/**
+ * Two hundred metres, and the id says so.
+ *
+ * `TAB5591.AvstandGrOmr` offers 200, 300 and 500 metres, and the design named a content code
+ * without naming a distance. 200 m is taken because it is the SHORTEST the table offers and so
+ * the one that separates municipalities most. That is a relative claim and a weak one: even at
+ * 200 m the published median is 97 percent and only 46 of 580 points fall below 90, so this
+ * measure is close to saturated whichever distance is chosen, and the caveat says so rather
+ * than the id pretending otherwise. Naming the distance in the id follows
+ * [0016](../../../docs/decisions/0016-the-fifteen.md), where rent had to say "per square metre".
+ */
+const WITHIN_200M = '200'
+
+const GREEN_SPACE_CONTENT_LABEL = 'Andel av tätortsbefolkningen'
+
+export const GREEN_SPACE: Indicator = Indicator.parse({
+  id: 'green-space-within-200m',
+  name: { sv: 'Grönområde inom 200 meter', en: 'Green space within 200 metres' },
+  description: {
+    sv: 'Andel av kommunens tätortsbefolkning som har ett grönområde inom 200 meter från bostaden.',
+    en: 'Share of the municipality’s urban population with a green space within 200 metres of home.',
+  },
+  unit: 'percent',
+  priceBasis: 'none',
+  scale: { kind: 'sequential', breaks: [] },
+  coverage: {
+    from: GREEN_SPACE_YEARS[0],
+    to: GREEN_SPACE_YEARS[GREEN_SPACE_YEARS.length - 1]!,
+    years: [...GREEN_SPACE_YEARS],
+  },
+  caveat: {
+    sv: 'Måttet är nästan mättat: medianen är 97 procent och bara 46 av 580 mätpunkter ligger under 90, så kartan skiljer kommuner åt i sin nedre ände och knappt alls i sin övre. 200 meter är det kortaste avstånd SCB redovisar — 300 och 500 meter finns också och skiljer ännu mindre. Nämnaren är tätortsbefolkningen, inte hela kommunen: den som bor på landsbygden räknas inte alls, vilket är varför talet kan vara högt i en kommun där de flesta bor långt från varandra. Avståndet är fågelvägen från bostaden. Två mätpunkter, 2015 och 2020.',
+    en: 'The measure is close to saturated: the median is 97 percent and only 46 of 580 points fall below 90, so the map separates municipalities at its lower end and hardly at all at its upper. 200 metres is the shortest distance SCB publishes — 300 and 500 also exist and separate even less. The denominator is the urban population, not the whole municipality: anyone living outside a built-up area is not counted at all, which is why the figure can be high in a municipality where most people live far apart. The distance is as the crow flies from the home. Two survey points, 2015 and 2020.',
+  },
+  sensitivity: 'none',
+  sources: [{ table: GREEN_SPACE_TABLE, contentCode: '0000046N', note: '2015, 2020, 200 m' }],
+  derivation:
+    'One SCB cell per municipality and survey year: TAB5591’s share of the urban population, ' +
+    'at the 200-metre distance. SCB computes the share; nothing is divided here.',
+})
+
+export function greenSpaceDefined(): Definition {
+  return {
+    indicator: GREEN_SPACE,
+    sources: [
+      {
+        table: GREEN_SPACE_TABLE,
+        content: GREEN_SPACE_CONTENT_LABEL,
+        years: [...GREEN_SPACE_YEARS],
+        dims: { AvstandGrOmr: { values: [WITHIN_200M] } },
+        regions: 'known',
+      },
+    ],
+    spec: { kind: 'direct' },
+  }
+}
+
+export const greenSpaceDefinition: IndicatorDefinition = {
+  indicator: GREEN_SPACE,
+  build: (ctx) => buildDefined(greenSpaceDefined(), ctx),
+}

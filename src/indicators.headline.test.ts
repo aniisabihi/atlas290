@@ -91,6 +91,15 @@ describe('published pantry: headline facts', () => {
         'life-expectancy-women',
         'life-expectancy-men',
         'life-expectancy-gap',
+        // Plan 19. Both turnout splits ship so the gap between them can be checked against
+        // them, the same reason plan 16 published both education splits.
+        'turnout-general-election',
+        'turnout-municipal-election',
+        'turnout-gap-general-municipal',
+        'farmland-hectares',
+        'share-land-built',
+        'green-space-within-200m',
+        'councillors-women-share',
       ].sort(),
     )
   })

@@ -87,9 +87,21 @@ export function classOf(indicator: IndicatorMeta, value: number | null): number 
   return klass
 }
 
+/**
+ * The closest year this indicator actually has, which is where `EmptyYear`'s one button goes.
+ *
+ * Plan 19: a sparse indicator has holes INSIDE its range, so clamping into `from`..`to` is no
+ * longer the same question — 1974 sits inside turnout's 1973–2022 and has nothing in it. A tie
+ * breaks toward the EARLIER year, so the jump never skips forward past a value.
+ */
 export function nearestCoveredYear(indicator: IndicatorMeta, year: number): number {
-  const { from, to } = indicator.coverage
-  return Math.min(to, Math.max(from, year))
+  const { from, to, years } = indicator.coverage
+  if (!years) return Math.min(to, Math.max(from, year))
+  let best = years[0]!
+  for (const candidate of years) {
+    if (Math.abs(candidate - year) < Math.abs(best - year)) best = candidate
+  }
+  return best
 }
 
 export type Rank = { rank: number; outOf: number }

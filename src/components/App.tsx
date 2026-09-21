@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { coversYear } from '../../shared/pantry'
 import { fetchIndicatorPart, withPart, type LoadedPantry } from '../data/pantry'
 import { classOf, lookup, observationAt, observationSentence } from '../data/select'
+import { coveragePhrase } from '../i18n/format'
 import { t } from '../i18n/strings'
 import { titleFor } from '../state/title'
 import { metaFrom } from '../state/url'
@@ -108,7 +110,7 @@ export function App({ loaded: opened }: { loaded: LoadedPantry }) {
   const [highlight, setHighlight] = useState<string | null>(null)
   const reducedMotion = useReducedMotion()
   const indicator = lk.indicator(drawn)
-  const covered = state.year >= indicator.coverage.from && state.year <= indicator.coverage.to
+  const covered = coversYear(indicator, state.year)
   /**
    * Which class on the ramp the highlighted municipality sits in, so the legend can tick it.
    * Null where it has no value this year: a tick on an absence would claim a place on a scale
@@ -323,8 +325,16 @@ export function App({ loaded: opened }: { loaded: LoadedPantry }) {
           </div>
 
           <div className="reading-column">
+            {/*
+             * The measure's own span, not the axis's. Plan 19: this read
+             * "Green space within 200 m · 1968–2026" for a measure with two values in it,
+             * because it paired the indicator's NAME with the axis's range. It was already
+             * wrong for every ragged indicator — mean age starts in 1998 — and a sparse one
+             * made it absurd.
+             */}
             <p className="kicker">
-              {lk.indicator(drawn).name[state.lang]} · {meta.years.min}–{meta.years.max}
+              {lk.indicator(drawn).name[state.lang]} ·{' '}
+              {coveragePhrase(lk.indicator(drawn), state.lang)}
             </p>
             <p className="tagline">{strings.tagline}</p>
 

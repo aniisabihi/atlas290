@@ -1,5 +1,7 @@
 import { useEffect } from 'react'
+import { coversYear } from '../../shared/pantry'
 import type { Lookup } from '../data/select'
+import { notPublishedSentence } from '../i18n/format'
 import { t } from '../i18n/strings'
 import { useReducedMotion } from '../state/useReducedMotion'
 import type { Lang, PantryMeta } from '../state/url'
@@ -42,17 +44,35 @@ export function YearSlider({
   const strings = t(lang)
   const reducedMotion = useReducedMotion()
   const { min, max } = meta.years
-  const covered = (y: number) => y >= indicator.coverage.from && y <= indicator.coverage.to
+  const covered = (y: number) => coversYear(indicator, y)
+
+  /**
+   * Where playback goes next, and where it stops.
+   *
+   * Plan 19: a sparse indicator counted by one would spend most of its run on an empty map —
+   * turnout would show fourteen blank years for every election. So playback steps to the next
+   * year the indicator HAS, and stops at its last one rather than running out the axis.
+   *
+   * A dense indicator gets exactly the old behaviour, because for it "the next year with data"
+   * and "one more" are the same number, and it stops at `max` because its own last year IS the
+   * axis end or beyond it.
+   */
+  const sparseYears = indicator.coverage.years
+  const nextYear = sparseYears
+    ? (sparseYears.find((y) => y > year) ?? null)
+    : year < max
+      ? year + 1
+      : null
 
   useEffect(() => {
     if (!playing) return
-    if (year >= max) {
+    if (nextYear === null) {
       onPlayingChange(false)
       return
     }
-    const timer = setTimeout(() => onYear(year + 1, true), STEP_MS)
+    const timer = setTimeout(() => onYear(nextYear, true), STEP_MS)
     return () => clearTimeout(timer)
-  }, [playing, year, max, onYear, onPlayingChange])
+  }, [playing, nextYear, onYear, onPlayingChange])
 
   const years = Array.from({ length: max - min + 1 }, (_, i) => min + i)
 
@@ -73,13 +93,7 @@ export function YearSlider({
         step={1}
         value={year}
         aria-valuetext={
-          covered(year)
-            ? String(year)
-            : `${year} — ${strings.notPublishedFor(
-                indicator.name[lang],
-                indicator.coverage.from,
-                indicator.coverage.to,
-              )}`
+          covered(year) ? String(year) : `${year} — ${notPublishedSentence(indicator, lang)}`
         }
         onChange={(event) => {
           // Taking hold of the slider stops the playback, rather than fighting it.

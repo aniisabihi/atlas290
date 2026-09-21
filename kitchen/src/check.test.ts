@@ -31,7 +31,7 @@ function makeMunicipalities(n = N): Municipality[] {
 /** Minimal but schema-shaped Indicator, mirroring registry.test.ts's own fakeIndicator. */
 function makeIndicator(
   id: string,
-  coverage: { from: number; to: number },
+  coverage: Indicator['coverage'],
   unit: Indicator['unit'] = 'count',
 ): Indicator {
   return {
@@ -218,4 +218,51 @@ describe('the real dataset, built by buildAll() from the committed kitchen/raw c
     const result = await buildAll({ deps: { fetchImpl: offline } })
     expect(() => check(result)).not.toThrow()
   }, 30_000)
+})
+
+/**
+ * Rule 7 (plan 19). `coverage.years` is DECLARED in an indicator module and the series is BUILT
+ * from SCB, so the two can drift — and if they do, the site's slider and empty-year card both
+ * lie about data they are not reading. The same reasoning as 0018's "assert 290 rather than
+ * trust the catalogue": the declaration is a claim, and a claim gets checked.
+ */
+describe('rule 7: a declared coverage.years matches the series exactly', () => {
+  const sparse = (declared: number[] | undefined, actual: number[]): CheckInput => {
+    const municipalities = makeMunicipalities()
+    const indicator = makeIndicator(
+      'tax-rate',
+      declared
+        ? { from: actual[0]!, to: actual[actual.length - 1]!, years: declared }
+        : { from: actual[0]!, to: actual[actual.length - 1]! },
+      'percent',
+    )
+    return {
+      municipalities,
+      indicators: [indicator],
+      series: [makeUniformSeries('tax-rate', actual, 30, municipalities)],
+    }
+  }
+
+  it('passes when the declaration and the series agree', () => {
+    expect(() => check(sparse([1973, 1976, 1982], [1973, 1976, 1982]))).not.toThrow()
+  })
+
+  it('refuses a declaration that claims a year the series does not have', () => {
+    expect(() => check(sparse([1973, 1976, 1979, 1982], [1973, 1976, 1982]))).toThrow(/1979/)
+  })
+
+  it('refuses a series that has a year the declaration does not claim', () => {
+    expect(() => check(sparse([1973, 1982], [1973, 1976, 1982]))).toThrow(/1976/)
+  })
+
+  it('refuses a SPARSE series that declares no years at all', () => {
+    // The dangerous direction: without this an indicator with holes ships looking dense, the
+    // slider lights fifty-nine years for fifteen values, and nothing anywhere goes red. That is
+    // the exact defect this plan exists to fix, so forgetting the declaration has to fail.
+    expect(() => check(sparse(undefined, [1973, 1976, 1982]))).toThrow(/has gaps/)
+  })
+
+  it('leaves a genuinely dense series alone, declaration or not', () => {
+    expect(() => check(sparse(undefined, [2000, 2001, 2002]))).not.toThrow()
+  })
 })

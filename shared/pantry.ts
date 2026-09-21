@@ -112,6 +112,7 @@ export const UNIT_DECIMALS: Record<Indicator['unit'], number> = {
   'tonnes-per-resident': 2,
   'persons-per-household': 2,
   metres: 0,
+  hectares: 0,
 }
 
 /**
@@ -146,6 +147,9 @@ const IndicatorFields = z.object({
     'persons-per-household',
     // Plan 17: mean distance to protected nature, which SCB rounds to even hundreds of metres.
     'metres',
+    // Plan 19. Farmland is an area, and neither `count` ('residents') nor any per-something
+    // unit describes it. Whole hectares: a decimal on 32,000 hectares would be noise.
+    'hectares',
   ]),
   /** 'fixed-latest-year' means values are inflation-adjusted to the latest year's kronor. */
   priceBasis: z.enum(['none', 'fixed-latest-year']),
@@ -178,7 +182,51 @@ const IndicatorFields = z.object({
     /** Fixed class breaks across all years, computed in the kitchen. */
     breaks: z.array(z.number()),
   }),
-  coverage: z.object({ from: z.number().int(), to: z.number().int() }),
+  /**
+   * The span this indicator publishes for, and — when it is not a dense run — exactly which
+   * years it has.
+   *
+   * `years` exists because the index must be able to answer "does this indicator have 1974?"
+   * BEFORE the series is fetched. Plan 13's rule is that the year axis cannot depend on which
+   * series happens to be loaded, and turnout has fifteen values across fifty years: without this,
+   * the map draws 290 grey shapes for 1974 and explains nothing.
+   *
+   * Written only when the series is NOT the dense run from `from` to `to`, so a dense indicator
+   * carries nothing new and the index barely grows. Additive and safe in the sense 0016 D6
+   * describes: no index into this array is persisted in any published cell, unlike
+   * `OBSERVATION_STATUS`.
+   */
+  coverage: z
+    .object({
+      from: z.number().int(),
+      to: z.number().int(),
+      years: z.array(z.number().int()).nonempty().optional(),
+    })
+    .superRefine((c, ctx) => {
+      if (!c.years) return
+      const first = c.years[0]
+      const last = c.years[c.years.length - 1]
+      if (first !== c.from || last !== c.to) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `coverage.years runs ${first}-${last} but coverage says ${c.from}-${c.to}; the two must agree at both ends`,
+        })
+      }
+      for (let i = 1; i < c.years.length; i++) {
+        if (c.years[i]! <= c.years[i - 1]!) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `coverage.years must ascend strictly: ${c.years[i - 1]} is followed by ${c.years[i]}`,
+          })
+        }
+      }
+      if (c.years.length === c.to - c.from + 1) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `coverage.years lists every year from ${c.from} to ${c.to}, so it says nothing the range does not; omit it`,
+        })
+      }
+    }),
   caveat: Bilingual,
   /** For indicators built from events (house sales): below this count the cell is 'too-few-cases'. */
   minCount: z.number().int().positive().optional(),
@@ -247,6 +295,25 @@ export const INDICATOR_PROSE = {
  */
 export const IndicatorMeta = IndicatorFields.omit(INDICATOR_PROSE).superRefine(checkPriceBasis)
 export type IndicatorMeta = z.infer<typeof IndicatorMeta>
+
+/**
+ * Does this indicator have this year?
+ *
+ * The one definition of "covered", shared by both programs, because before plan 19 the same
+ * range check was written out in three places in the site and each would have had to learn about
+ * sparse series separately. A sparse indicator answers from its explicit list; a dense one from
+ * its range, which for it says exactly the same thing.
+ *
+ * Typed structurally rather than as `IndicatorMeta`, so the kitchen can ask it of an indicator it
+ * is still building and a test can ask it of a literal.
+ */
+export function coversYear(
+  indicator: { coverage: { from: number; to: number; years?: readonly number[] | undefined } },
+  year: number,
+): boolean {
+  const { from, to, years } = indicator.coverage
+  return years ? years.includes(year) : year >= from && year <= to
+}
 
 /**
  * Columnar series: values[m][y] where m indexes PantryData.municipalities and y indexes years.

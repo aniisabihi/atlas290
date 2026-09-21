@@ -618,3 +618,133 @@ describe('published pantry: edge cells and status semantics', () => {
     })
   })
 })
+
+/**
+ * Plan 19's seven, and the three claims their caveats make that a reader could check.
+ *
+ * Each of these was written the wrong way round first and corrected by the published figures —
+ * which is the reason they are tests rather than prose alone. ADR-0021 recorded the same shape
+ * of correction for "women outlive men everywhere", which is false in three windows.
+ */
+describe('published pantry: the sparse seven', () => {
+  const data = publishedPantry
+  const seriesOf = (id: string): IndicatorSeries => {
+    const s = data.series.find((x) => x.indicator === id)
+    if (!s) throw new Error(`no series for ${id}`)
+    return s
+  }
+  const metaOf = (id: string) => {
+    const i = data.indicators.find((x) => x.id === id)
+    if (!i) throw new Error(`no indicator ${id}`)
+    return i
+  }
+  const cells = (id: string) =>
+    seriesOf(id)
+      .values.flat()
+      .filter((v): v is number => v !== null)
+
+  it('publishes an explicit year list for each of the seven, and for nothing that is dense', () => {
+    const sparse = data.indicators.filter((i) => i.coverage.years).map((i) => i.id)
+    expect(sparse.sort()).toEqual(
+      [
+        'councillors-women-share',
+        'farmland-hectares',
+        'green-space-within-200m',
+        'share-land-built',
+        'turnout-gap-general-municipal',
+        'turnout-general-election',
+        'turnout-municipal-election',
+      ].sort(),
+    )
+  })
+
+  it('every declared year list matches its own series, year for year', () => {
+    for (const indicator of data.indicators) {
+      if (!indicator.coverage.years) continue
+      expect(indicator.coverage.years, indicator.id).toEqual(seriesOf(indicator.id).years)
+    }
+  })
+
+  it('pins the fifteen election years, including the three-to-four-year change in 1994', () => {
+    // Sweden moved from three-year to four-year terms in 1994, so this list cannot be generated
+    // from a step and a start — which is exactly why it is written out.
+    expect(metaOf('turnout-general-election').coverage.years).toEqual([
+      1973, 1976, 1979, 1982, 1985, 1988, 1991, 1994, 1998, 2002, 2006, 2010, 2014, 2018, 2022,
+    ])
+  })
+
+  it('makes the turnout gap reproducible from the two series it is published beside', () => {
+    // The reason both splits ship rather than the gap alone (0016 D6): a reader can check it.
+    const gap = seriesOf('turnout-gap-general-municipal')
+    const general = seriesOf('turnout-general-election')
+    const municipal = seriesOf('turnout-municipal-election')
+    for (const [i] of data.municipalities.entries()) {
+      for (const [j] of gap.years.entries()) {
+        const a = general.values[i]?.[j]
+        const b = municipal.values[i]?.[j]
+        const d = gap.values[i]?.[j]
+        if (a === null || b === null || a === undefined || b === undefined) {
+          expect(d ?? null).toBeNull()
+          continue
+        }
+        expect(Math.abs((d ?? NaN) - (a - b))).toBeLessThanOrEqual(0.005)
+      }
+    }
+  })
+
+  it('names the four points where municipal turnout BEAT the general election', () => {
+    // The caveat says the gap is "almost always positive". Almost: four of 4,288, all within a
+    // tenth of a point of zero. Named here so a fifth cannot appear unnoticed.
+    const gap = seriesOf('turnout-gap-general-municipal')
+    const negative: string[] = []
+    data.municipalities.forEach((m, i) =>
+      gap.years.forEach((y, j) => {
+        const v = gap.values[i]?.[j]
+        if (v !== null && v !== undefined && v < 0) negative.push(`${m.name.sv} ${y}`)
+      }),
+    )
+    expect(negative.sort()).toEqual([
+      'Bjurholm 2002',
+      'Timrå 1973',
+      'Vilhelmina 1973',
+      'Öckerö 1973',
+    ])
+  })
+
+  it('records that green space within 200 m barely separates anybody', () => {
+    // The caveat's own numbers. 200 m was chosen as the most discriminating distance SCB
+    // offers, and it still saturates — which is the honest version of that choice.
+    const v = cells('green-space-within-200m')
+    expect(v).toHaveLength(580)
+    expect(v.filter((x) => x < 90)).toHaveLength(46)
+    expect(Math.max(...v)).toBe(100)
+  })
+
+  it('keeps farmland an area rather than a share, zeros included', () => {
+    // Stockholm publishes 0 hectares for 1990, 1995 and 2000 and 462 for 2005. That is SCB's
+    // own figure, re-read off the frozen chunk, not a null summed to zero — the method changed
+    // between surveys, which is what the caveat warns about.
+    const s = seriesOf('farmland-hectares')
+    const i = data.municipalities.findIndex((m) => m.code === '0180')
+    expect(s.values[i]).toEqual([38, 0, 0, 0, 462, 353, 259, 124])
+  })
+
+  it('has every councillor share inside a plausible half of the range', () => {
+    // 24 to 58 across five mandate periods: no municipality has ever had a council that was
+    // more than 58 percent women, and none below 24.
+    const v = cells('councillors-women-share')
+    expect(Math.min(...v)).toBeGreaterThanOrEqual(20)
+    expect(Math.max(...v)).toBeLessThanOrEqual(60)
+    expect(v).toHaveLength(1443)
+  })
+
+  it('leaves seven municipalities without a 2023 council figure, and says how many', () => {
+    const s = seriesOf('councillors-women-share')
+    const j = s.years.indexOf(2023)
+    const absent = s.values.filter((row) => row[j] === null)
+    expect(absent).toHaveLength(7)
+    expect(OBSERVATION_STATUS[s.status[s.values.findIndex((r) => r[j] === null)]![j]!]).toBe(
+      'not-yet-published',
+    )
+  })
+})

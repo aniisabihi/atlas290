@@ -203,3 +203,36 @@ describe('statusesIn', () => {
     expect(statusesIn(lk, 'population', 2025)).toContain('perturbed')
   })
 })
+
+/**
+ * Plan 19. A sparse indicator has holes INSIDE its range, so "nearest covered" stops meaning
+ * "clamped into the range" — 1974 is inside turnout's 1973–2022 and has nothing in it.
+ */
+describe('coverage, when the indicator is sparse', () => {
+  const turnout = {
+    ...indicator('population'),
+    id: 'turnout',
+    coverage: { from: 1973, to: 1982, years: [1973, 1976, 1982] },
+  }
+
+  it('jumps to the nearest year that HAS data, not to the edge of the range', () => {
+    expect(nearestCoveredYear(turnout, 1974)).toBe(1973)
+    expect(nearestCoveredYear(turnout, 1977)).toBe(1976)
+    expect(nearestCoveredYear(turnout, 1981)).toBe(1982)
+  })
+
+  it('stays put on a year it has', () => {
+    expect(nearestCoveredYear(turnout, 1976)).toBe(1976)
+  })
+
+  it('clamps to the ends from outside', () => {
+    expect(nearestCoveredYear(turnout, 1950)).toBe(1973)
+    expect(nearestCoveredYear(turnout, 2030)).toBe(1982)
+  })
+
+  it('breaks a tie toward the earlier year, deliberately and not by accident', () => {
+    // 1979 is three from 1976 and three from 1982. Something has to win; the earlier one does,
+    // so the jump never skips a value the visitor has not seen yet.
+    expect(nearestCoveredYear(turnout, 1979)).toBe(1976)
+  })
+})

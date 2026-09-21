@@ -77,8 +77,20 @@ const sv = {
   caveatHeading: 'Att tänka på',
 
   coverage: (from: number, to: number) => `${from}–${to}`,
+  /**
+   * What a SPARSE indicator publishes for. Plan 19: "1973–2022" is true of turnout and tells
+   * the reader nothing about the fourteen empty years between each pair of values.
+   *
+   * Two forms, because few enough years read better listed outright — "2 enskilda år mellan
+   * 2015 och 2020" is a worse sentence than "2015 och 2020". Which form is used is decided in
+   * `coveragePhrase`; this table holds the copy and the conjunction, not the rule.
+   */
+  coverageYearsMany: (count: number, from: number, to: number) =>
+    `${count} enskilda år mellan ${from} och ${to}`,
   notPublishedFor: (indicator: string, from: number, to: number) =>
     `${indicator} publiceras för ${from}–${to}. Det finns inget att visa för det här året.`,
+  notPublishedForYears: (indicator: string, coverage: string) =>
+    `${indicator} publiceras för ${coverage}. Det finns inget att visa för det här året.`,
   jumpToYear: (year: number) => `Gå till ${year}`,
 
   rank: (rank: number, outOf: number) => `plats ${rank} av ${outOf}`,
@@ -190,8 +202,12 @@ const en: Strings = {
   caveatHeading: 'Worth knowing',
 
   coverage: (from: number, to: number) => `${from}–${to}`,
+  coverageYearsMany: (count: number, from: number, to: number) =>
+    `${count} separate years between ${from} and ${to}`,
   notPublishedFor: (indicator: string, from: number, to: number) =>
     `${indicator} is published for ${from}–${to}. There is nothing to show for this year.`,
+  notPublishedForYears: (indicator: string, coverage: string) =>
+    `${indicator} is published for ${coverage}. There is nothing to show for this year.`,
   jumpToYear: (year: number) => `Go to ${year}`,
 
   rank: (rank: number, outOf: number) => `rank ${rank} of ${outOf}`,

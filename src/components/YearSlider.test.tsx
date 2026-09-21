@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { lookup } from '../data/select'
 import { metaFrom } from '../state/url'
 import { YearSlider } from './YearSlider'
-import { publishedPantry } from '../test/pantry'
+import { pantryWithSparse, publishedPantry } from '../test/pantry'
 
 const data = publishedPantry
 const lk = lookup(data)
@@ -144,5 +144,132 @@ describe('YearSlider motion', () => {
     stubMediaQuery('(prefers-reduced-motion: reduce)')
     const { container } = draw()
     expect(container.querySelector('[data-animate="false"]')).not.toBeNull()
+  })
+})
+
+/**
+ * Plan 19, stage B. Everything here is against a FABRICATED two-value indicator, because no
+ * published one is sparse yet and the design's §6 asks for the behaviour proven before the data
+ * arrives. Two values across a fifty-nine-year axis is the hardest case the design names.
+ */
+describe('YearSlider, a sparse indicator', () => {
+  const sparseData = pantryWithSparse([2015, 2020])
+  const sparseLk = lookup(sparseData)
+  const sparseMeta = metaFrom(sparseData)
+
+  const drawSparse = (over: Partial<Parameters<typeof YearSlider>[0]> = {}) => {
+    const onYear = vi.fn()
+    const onPlayingChange = vi.fn()
+    const result = render(
+      <YearSlider
+        lk={sparseLk}
+        meta={sparseMeta}
+        indicatorId="fabricated-sparse"
+        year={2015}
+        lang="en"
+        playing={false}
+        onYear={onYear}
+        onPlayingChange={onPlayingChange}
+        {...over}
+      />,
+    )
+    return { onYear, onPlayingChange, ...result }
+  }
+
+  it('lights exactly the two years that have data', () => {
+    // Before this, `covered` was a range check, so 2016 through 2019 lit up with nothing in them
+    // and the strip told the visitor the opposite of the truth.
+    const { container } = drawSparse()
+    const ticks = [...container.querySelectorAll('[data-year-tick]')]
+    const lit = ticks.filter((t) => t.getAttribute('data-covered') === 'true')
+    expect(lit).toHaveLength(2)
+    expect(ticks).toHaveLength(59)
+  })
+
+  it('says a year INSIDE the range is empty, which is the whole point', () => {
+    const { container } = drawSparse({ year: 2017 })
+    expect(container.querySelector('input')?.getAttribute('aria-valuetext')).toMatch(
+      /2017.*published for 2015 and 2020.*nothing to show/i,
+    )
+  })
+
+  it('lists two years rather than counting them', () => {
+    // "2 separate years between 2015 and 2020" is a worse sentence than "2015 and 2020".
+    const { container } = drawSparse({ year: 2017 })
+    expect(container.querySelector('input')?.getAttribute('aria-valuetext')).toContain(
+      '2015 and 2020',
+    )
+  })
+
+  it('counts them rather than listing when there are many', () => {
+    const many = pantryWithSparse([1973, 1976, 1979, 1982, 1985], 'fabricated-sparse')
+    const { container } = render(
+      <YearSlider
+        lk={lookup(many)}
+        meta={metaFrom(many)}
+        indicatorId="fabricated-sparse"
+        year={1974}
+        lang="en"
+        playing={false}
+        onYear={vi.fn()}
+        onPlayingChange={vi.fn()}
+      />,
+    )
+    expect(container.querySelector('input')?.getAttribute('aria-valuetext')).toContain(
+      '5 separate years between 1973 and 1985',
+    )
+  })
+
+  it('still reads as a plain year on a year it has', () => {
+    const { container } = drawSparse({ year: 2020 })
+    expect(container.querySelector('input')?.getAttribute('aria-valuetext')).toBe('2020')
+  })
+})
+
+describe('YearSlider play, a sparse indicator', () => {
+  beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true }))
+  afterEach(() => vi.useRealTimers())
+
+  const sparseData = pantryWithSparse([2015, 2020])
+  const sparseLk = lookup(sparseData)
+  const sparseMeta = metaFrom(sparseData)
+
+  const playFrom = (year: number) => {
+    const onYear = vi.fn()
+    const onPlayingChange = vi.fn()
+    render(
+      <YearSlider
+        lk={sparseLk}
+        meta={sparseMeta}
+        indicatorId="fabricated-sparse"
+        year={year}
+        lang="en"
+        playing
+        onYear={onYear}
+        onPlayingChange={onPlayingChange}
+      />,
+    )
+    return { onYear, onPlayingChange }
+  }
+
+  it('jumps to the next year that has data instead of counting by one', () => {
+    // Counting by one would show four empty maps between the two values, which is neither
+    // informative nor watchable — and turnout would show fourteen between each pair.
+    const { onYear } = playFrom(2015)
+    vi.advanceTimersByTime(1000)
+    expect(onYear).toHaveBeenCalledWith(2020, true)
+  })
+
+  it('reaches the first year with data from before the series starts', () => {
+    const { onYear } = playFrom(1990)
+    vi.advanceTimersByTime(1000)
+    expect(onYear).toHaveBeenCalledWith(2015, true)
+  })
+
+  it('stops at the last year it has, not at the end of the axis', () => {
+    const { onYear, onPlayingChange } = playFrom(2020)
+    vi.advanceTimersByTime(3000)
+    expect(onYear).not.toHaveBeenCalled()
+    expect(onPlayingChange).toHaveBeenCalledWith(false)
   })
 })

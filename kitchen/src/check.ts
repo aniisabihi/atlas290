@@ -127,6 +127,20 @@ export const PLAUSIBLE_RANGES: Record<string, PlausibleRange> = {
   'life-expectancy-women': { min: 0, max: 120 },
   'life-expectancy-men': { min: 0, max: 120 },
   'life-expectancy-gap': { min: -50, max: 50 },
+  // Plan 19, the sparse seven. Turnout is a share and cannot leave 0-100; its gap is signed and
+  // bounded by the same two numbers. Farmland is an area in hectares and Sweden's largest
+  // municipality is about 2 million of them. The built share is tiny nearly everywhere and is
+  // still a share. Holiday homes per 1,000 residents is NOT bounded by 1,000: a small
+  // municipality full of summer houses can have several times its own population in them.
+  // (holiday-homes-per-1000 is deferred — see plan 19; 106 municipalities have no holiday-home
+  // area at all and no OBSERVATION_STATUS says so honestly.)
+  'turnout-general-election': { min: 0, max: 100 },
+  'turnout-municipal-election': { min: 0, max: 100 },
+  'turnout-gap-general-municipal': { min: -100, max: 100 },
+  'farmland-hectares': { min: 0, max: 3_000_000 },
+  'share-land-built': { min: 0, max: 100 },
+  'green-space-within-200m': { min: 0, max: 100 },
+  'councillors-women-share': { min: 0, max: 100 },
 }
 
 /**
@@ -264,6 +278,47 @@ function checkCoverage(
 }
 
 /**
+ * Rule 7 (plan 19): a declared `coverage.years` describes the series exactly, and a series with
+ * gaps declares one.
+ *
+ * `coverage.years` is written by hand in an indicator module; the series is built from SCB. The
+ * two can drift, and when they do the site lies in both directions: the slider lights a year
+ * with nothing in it, or dims one that has a value. The same reasoning as
+ * [0021](../../docs/decisions/0021-stage-a-and-what-the-tables-said.md)'s 290-region assertion —
+ * the declaration is a claim, so the build checks it rather than trusting it.
+ *
+ * The second half matters more than the first. Without it, an indicator whose series has holes
+ * ships looking DENSE — `covered` falls back to the range, the slider lights fifty-nine years
+ * for fifteen values, and nothing anywhere goes red. That is the defect plan 19 exists to fix,
+ * so forgetting the declaration has to fail the build.
+ */
+function checkDeclaredYears(indicator: Indicator, s: IndicatorSeries): void {
+  const declared = indicator.coverage.years
+  const dense = s.years.length === s.years[s.years.length - 1]! - s.years[0]! + 1
+
+  if (!declared) {
+    if (!dense) {
+      throw new Error(
+        `check: ${indicator.id}: the series has gaps — ${s.years.length} years between ` +
+          `${s.years[0]} and ${s.years[s.years.length - 1]} — but coverage declares no ` +
+          '`years` list, so the site would light every year in the range as if it had data',
+      )
+    }
+    return
+  }
+
+  const missing = declared.filter((y) => !s.years.includes(y))
+  const extra = s.years.filter((y) => !declared.includes(y))
+  if (missing.length > 0 || extra.length > 0) {
+    throw new Error(
+      `check: ${indicator.id}: coverage.years does not match the series — ` +
+        `declared but absent: [${missing.join(', ')}]; ` +
+        `in the series but not declared: [${extra.join(', ')}]`,
+    )
+  }
+}
+
+/**
  * Rule 5: every value lies inside its indicator's declared plausible range (`PLAUSIBLE_RANGES`
  * above). Refuses to check an indicator with no declared range at all, rather than silently
  * skipping the rule for it — a tenth indicator added later without updating this map is exactly
@@ -357,6 +412,7 @@ export function check({ municipalities, indicators, series }: CheckInput): void 
     }
     checkSeriesShape(indicator, s, municipalities)
     checkCoverage(indicator, s, municipalities)
+    checkDeclaredYears(indicator, s)
     checkPlausibleRange(indicator, s, municipalities)
     checkNonEmpty(indicator, s)
   }

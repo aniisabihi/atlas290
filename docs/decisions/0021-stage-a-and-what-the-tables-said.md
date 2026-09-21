@@ -1,10 +1,17 @@
-# ADR-0018: Stage A, and what the tables said
+# ADR-0021: Stage A, and what the tables said
 
 - **Status:** Accepted | **Date:** 2026-09-21
 - **Decided by:** Aniisa Bihi (draft by Claude Opus 5)
 - **Affects:** `kitchen/src/indicators/**`, `kitchen/src/publish.ts`, `shared/pantry.ts`
 - **Related:** [Fifth slice design](../plans/2026-09-21-fifth-slice-design.md),
-  [Plan 17](../plans/2026-09-21-17-stage-a-the-unblocked-six.md)
+  [Plan 17](../plans/2026-09-21-17-stage-a-the-unblocked-six.md),
+  [issue #37](https://github.com/aniisabihi/atlas290/issues/37)
+
+> **Filed as ADR-0018 and renumbered to 0021 on 2026-09-21.** Two sessions running in parallel
+> each read `docs/decisions/` when 0017 was the highest number, and both merged — this record in
+> PR #34 and [0018](0018-the-focus-a-link-never-asked-for.md) in PR #33. PR #33 merged first, so
+> that record keeps the number and this one moves. Nothing in the decision below changed; only
+> its identifier did. `tools/decisions.test.ts` now fails the build on a repeat.
 
 ## Context
 
