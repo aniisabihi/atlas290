@@ -23,6 +23,13 @@ request and writes its own line to [docs/refresh-log.md](docs/refresh-log.md); a
 change to the software. See
 [decision 0012](docs/decisions/0012-releases-and-a-changelog.md).
 
+## [1.5.0](https://github.com/aniisabihi/atlas290/compare/v1.4.0...v1.5.0) (2026-09-21)
+
+
+### Added
+
+* **site:** bubbles sized by the measure, a table that arrives, and an editorial polish ([#46](https://github.com/aniisabihi/atlas290/issues/46)) ([9fb2ce7](https://github.com/aniisabihi/atlas290/commit/9fb2ce7057020989d6c5b3bb0648f72ae705db98))
+
 ## [1.4.0](https://github.com/aniisabihi/atlas290/compare/v1.3.1...v1.4.0) (2026-09-21)
 
 
