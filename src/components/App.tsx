@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { coversYear } from '../../shared/pantry'
 import { fetchIndicatorPart, withPart, type LoadedPantry } from '../data/pantry'
 import { classOf, lookup, observationAt, observationSentence } from '../data/select'
 import { t } from '../i18n/strings'
@@ -108,7 +109,7 @@ export function App({ loaded: opened }: { loaded: LoadedPantry }) {
   const [highlight, setHighlight] = useState<string | null>(null)
   const reducedMotion = useReducedMotion()
   const indicator = lk.indicator(drawn)
-  const covered = state.year >= indicator.coverage.from && state.year <= indicator.coverage.to
+  const covered = coversYear(indicator, state.year)
   /**
    * Which class on the ramp the highlighted municipality sits in, so the legend can tick it.
    * Null where it has no value this year: a tick on an absence would claim a place on a scale

@@ -7,6 +7,7 @@ import {
   Similar,
   OBSERVATION_STATUS,
   PantryData,
+  coversYear,
   statusCode,
 } from './pantry'
 
@@ -244,5 +245,80 @@ describe('Facts', () => {
 
   it('refuses a family it does not know', () => {
     expect(() => Facts.parse({ ...valid, facts: [fact({ family: 'surprising' })] })).toThrow()
+  })
+})
+
+/**
+ * Plan 19 (fifth slice, stage B). Turnout has fifteen values across fifty years, and the index
+ * has to be able to say which fifteen BEFORE the series is fetched — otherwise the map draws 290
+ * grey shapes for 1974 and the slider gives no hint that it will.
+ */
+describe('coverage.years', () => {
+  const base = {
+    id: 'turnout',
+    name: { sv: 'Valdeltagande', en: 'Turnout' },
+    description: { sv: 'Andel röstande.', en: 'Share who voted.' },
+    unit: 'percent',
+    priceBasis: 'none',
+    scale: { kind: 'sequential', breaks: [1, 2, 3, 4, 5, 6] },
+    caveat: { sv: '', en: '' },
+    sensitivity: 'none',
+    sources: [{ table: 'TAB2707', contentCode: 'ME0104B8', note: '' }],
+    derivation: 'One SCB cell per municipality and election year.',
+  }
+  const withCoverage = (coverage: unknown) => () => Indicator.parse({ ...base, coverage })
+
+  it('is optional, so a dense indicator carries nothing new', () => {
+    const dense = withCoverage({ from: 1968, to: 2025 })()
+    expect(dense.coverage.years).toBeUndefined()
+  })
+
+  it('accepts a sparse list that agrees with from and to', () => {
+    const sparse = withCoverage({ from: 1973, to: 1982, years: [1973, 1976, 1979, 1982] })()
+    expect(sparse.coverage.years).toEqual([1973, 1976, 1979, 1982])
+  })
+
+  it('refuses a list whose ends disagree with from and to', () => {
+    // The two would then say different things about the same indicator, and every reader would
+    // have to know which one wins.
+    expect(withCoverage({ from: 1973, to: 2022, years: [1976, 1979] })).toThrow(/must agree/)
+  })
+
+  it('refuses a list that does not ascend strictly', () => {
+    expect(withCoverage({ from: 1973, to: 1982, years: [1973, 1979, 1976, 1982] })).toThrow(
+      /ascend strictly/,
+    )
+    expect(withCoverage({ from: 1973, to: 1982, years: [1973, 1976, 1976, 1982] })).toThrow(
+      /ascend strictly/,
+    )
+  })
+
+  it('refuses a list that is just the dense run written out', () => {
+    // Otherwise two shapes would mean the same thing, and `coversYear` would have two paths to
+    // test for every indicator instead of one.
+    expect(withCoverage({ from: 2020, to: 2022, years: [2020, 2021, 2022] })).toThrow(/omit it/)
+  })
+
+  it('refuses an empty list, which would mean an indicator with no data at all', () => {
+    expect(withCoverage({ from: 1973, to: 2022, years: [] })).toThrow()
+  })
+})
+
+describe('coversYear', () => {
+  const sparse = { coverage: { from: 1973, to: 1982, years: [1973, 1976, 1982] } }
+  const dense = { coverage: { from: 2020, to: 2023 } }
+
+  it('asks the list when there is one', () => {
+    expect(coversYear(sparse, 1976)).toBe(true)
+    expect(coversYear(sparse, 1977)).toBe(false)
+    expect(coversYear(sparse, 1972)).toBe(false)
+    expect(coversYear(sparse, 1983)).toBe(false)
+  })
+
+  it('falls back to the range when there is not', () => {
+    expect(coversYear(dense, 2020)).toBe(true)
+    expect(coversYear(dense, 2022)).toBe(true)
+    expect(coversYear(dense, 2019)).toBe(false)
+    expect(coversYear(dense, 2024)).toBe(false)
   })
 })
