@@ -23,6 +23,13 @@ request and writes its own line to [docs/refresh-log.md](docs/refresh-log.md); a
 change to the software. See
 [decision 0012](docs/decisions/0012-releases-and-a-changelog.md).
 
+## [1.6.0](https://github.com/aniisabihi/atlas290/compare/v1.5.0...v1.6.0) (2026-09-23)
+
+
+### Added
+
+* **site:** the editorial pass ([#49](https://github.com/aniisabihi/atlas290/issues/49)) ([c3bb7af](https://github.com/aniisabihi/atlas290/commit/c3bb7af85975b1f5f70a278c25b26e94e6800610))
+
 ## [1.5.0](https://github.com/aniisabihi/atlas290/compare/v1.4.0...v1.5.0) (2026-09-21)
 
 
