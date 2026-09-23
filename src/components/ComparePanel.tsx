@@ -65,6 +65,30 @@ export function ComparePanel({
   const rows = compareOf(lk, selected, compare, year)
   const summary = summarise(rows)
 
+  /** A figure, or which absence it is — styled as an absence, so it never reads as a value. */
+  const cell = (value: number | null, row: (typeof rows)[number], label: string) => (
+    <td role="cell" className={value === null ? 'is-absent' : undefined}>
+      {/*
+       * The column's name, repeated inside the cell for the phone layout, where the header row is
+       * not on screen and two bare figures side by side would not say whose each one is. Hidden
+       * from assistive technology, which already has the column header for exactly this.
+       */}
+      <span className="compare-cell-label" aria-hidden="true">
+        {label}
+      </span>
+      <span className="compare-cell-value">
+        {value === null
+          ? statusPhrase(
+              lk.series(row.indicator.id).years.includes(year)
+                ? 'not-yet-published'
+                : 'outside-coverage',
+              lang,
+            )
+          : formatWithUnit(value, row.indicator, lang)}
+      </span>
+    </td>
+  )
+
   return (
     <section className="compare panel" aria-labelledby="compare-heading">
       <div className="profile-header">
@@ -77,7 +101,7 @@ export function ComparePanel({
       </div>
 
       <p className="compare-summary">
-        {nameOf(selected)}: {strings.higherOn(summary.aHigher, summary.comparable)}
+        {strings.higherOn(nameOf(selected), summary.aHigher, summary.comparable)}
         {summary.notComparable > 0 && <> · {strings.notComparable(summary.notComparable)}</>}
       </p>
 
@@ -85,7 +109,14 @@ export function ComparePanel({
 
       {/* A table may scroll in its own box; the page may not. WCAG 2.2 SC 1.4.10. */}
       <div className="table-scroll">
-        <table className="compare-table">
+        {/*
+         * Explicit roles on a native table, which would ordinarily be redundant. On a phone the
+         * stylesheet sets each row as a small grid so both municipalities fit on screen at once —
+         * the four-column table scrolled the second one out of sight — and WebKit drops a table's
+         * semantics as soon as its display changes. Stating the roles keeps it a table for a
+         * screen reader whatever the stylesheet does with it.
+         */}
+        <table className="compare-table" role="table">
           {/*
            * A caption rather than relying on the section heading: a screen reader listing the
            * page's tables should be able to tell this one from the map's twin without leaving it.
@@ -93,39 +124,31 @@ export function ComparePanel({
           <caption className="visually-hidden">
             {strings.tableCaption(`${nameOf(selected)} ${strings.and} ${nameOf(compare)}`, year)}
           </caption>
-          <thead>
-            <tr>
-              <th scope="col">{strings.indicatorLegend}</th>
-              <th scope="col">{nameOf(selected)}</th>
-              <th scope="col">{nameOf(compare)}</th>
-              <th scope="col">{strings.bothOverTime}</th>
+          <thead role="rowgroup">
+            <tr role="row">
+              <th scope="col" role="columnheader">
+                {strings.indicatorLegend}
+              </th>
+              <th scope="col" role="columnheader">
+                {nameOf(selected)}
+              </th>
+              <th scope="col" role="columnheader">
+                {nameOf(compare)}
+              </th>
+              <th scope="col" role="columnheader">
+                {strings.bothOverTime}
+              </th>
             </tr>
           </thead>
-          <tbody>
+          <tbody role="rowgroup">
             {rows.map((row) => (
-              <tr key={row.indicator.id}>
-                <th scope="row">{row.indicator.name[lang]}</th>
-                <td data-higher={row.higher === 'a' ? 'true' : undefined}>
-                  {row.a === null
-                    ? statusPhrase(
-                        lk.series(row.indicator.id).years.includes(year)
-                          ? 'not-yet-published'
-                          : 'outside-coverage',
-                        lang,
-                      )
-                    : formatWithUnit(row.a, row.indicator, lang)}
-                </td>
-                <td data-higher={row.higher === 'b' ? 'true' : undefined}>
-                  {row.b === null
-                    ? statusPhrase(
-                        lk.series(row.indicator.id).years.includes(year)
-                          ? 'not-yet-published'
-                          : 'outside-coverage',
-                        lang,
-                      )
-                    : formatWithUnit(row.b, row.indicator, lang)}
-                </td>
-                <td className="compare-trend">
+              <tr key={row.indicator.id} role="row">
+                <th scope="row" role="rowheader">
+                  {row.indicator.name[lang]}
+                </th>
+                {cell(row.a, row, nameOf(selected))}
+                {cell(row.b, row, nameOf(compare))}
+                <td className="compare-trend" role="cell">
                   <Sparkline
                     lk={lk}
                     indicatorId={row.indicator.id}

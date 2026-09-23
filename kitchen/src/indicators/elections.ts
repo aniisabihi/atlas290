@@ -98,7 +98,7 @@ export const TURNOUT_GAP: Indicator = Indicator.parse({
     sv: 'Valdeltagandet i riksdagsvalet minus valdeltagandet i kommunfullmäktigvalet, i procentenheter. Positivt tal betyder att fler röstade till riksdagen.',
     en: 'Turnout in the general election minus turnout in the municipal election, in percentage points. A positive figure means more people voted for the parliament.',
   },
-  unit: 'percent',
+  unit: 'percentage-points',
   priceBasis: 'none',
   scale: { kind: 'diverging', breaks: [] },
   coverage: {

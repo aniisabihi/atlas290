@@ -288,7 +288,7 @@ export const EDUCATION_GAP: Indicator = Indicator.parse({
     sv: 'Kvinnors andel med eftergymnasial utbildning minus mäns, i procentenheter. Positivt tal betyder att fler kvinnor än män har eftergymnasial utbildning.',
     en: 'Women’s share with post-secondary education minus men’s, in percentage points. A positive figure means more women than men have post-secondary education.',
   },
-  unit: 'percent',
+  unit: 'percentage-points',
   priceBasis: 'none',
   scale: { kind: 'diverging', breaks: [] },
   coverage: { from: EDUCATION_YEARS[0]!, to: EDUCATION_YEARS[EDUCATION_YEARS.length - 1]! },

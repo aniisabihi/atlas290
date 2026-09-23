@@ -92,12 +92,12 @@ describe('the arc', () => {
   })
 
   it('says shrunk, not grown, for a municipality that has lost people', () => {
-    expect(sentence('2463', 'arc')?.text.sv).toMatch(/krympt 53 %/)
+    expect(sentence('2463', 'arc')?.text.sv).toMatch(/krympt 53\u00a0%/)
     expect(sentence('2463', 'arc')?.text.en).toMatch(/shrunk 53%/)
   })
 
   it('says grown for one that has gained', () => {
-    expect(sentence('0305', 'arc')?.text.sv).toMatch(/vuxit 406 %/)
+    expect(sentence('0305', 'arc')?.text.sv).toMatch(/vuxit 406\u00a0%/)
     expect(sentence('0305', 'arc')?.text.en).toMatch(/grown 406%/)
   })
 
@@ -133,14 +133,14 @@ describe('the turn', () => {
 
   it('fires with a real figure when the fall is real', () => {
     expect(sentence('1272', 'turn')?.text.sv).toMatch(/Folkmängden var som störst 2018/)
-    expect(sentence('1272', 'turn')?.text.sv).toMatch(/3 % fler än i dag/)
+    expect(sentence('1272', 'turn')?.text.sv).toMatch(/3\u00a0% fler än i dag/)
   })
 
   it('never says a fall of zero per cent', () => {
     for (const m of data.municipalities) {
       const turn = sentence(m.code, 'turn')
       if (!turn) continue
-      expect(turn.text.sv, m.name.sv).not.toMatch(/\b0 % fler/)
+      expect(turn.text.sv, m.name.sv).not.toMatch(/\b0\s% fler/)
       expect(turn.text.en, m.name.en).not.toMatch(/\b0% more/)
     }
   })

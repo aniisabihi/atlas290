@@ -71,4 +71,23 @@ describe('AboutIndicator', () => {
       expect(screen.getByRole('heading', { level: 3, name })).toBeTruthy()
     }
   })
+
+  it('marks the English-only method text as English on the Swedish page', () => {
+    // The derivation and the source notes are written once, in English, by the kitchen. On a
+    // page declared lang="sv" a screen reader otherwise reads them with Swedish pronunciation —
+    // WCAG 3.1.2, Language of Parts — and a sighted reader met English under a Swedish heading
+    // with nothing saying why.
+    draw('net-migration-rate', 'sv')
+    const derivation = screen.getByText(/never derived by subtracting in- from out-migration flows/)
+    expect(derivation.closest('[lang]')?.getAttribute('lang')).toBe('en')
+    expect(screen.getByText(/Metodbeskrivningen finns bara på engelska/)).toBeTruthy()
+    for (const item of screen.getAllByRole('listitem')) {
+      expect(item.closest('[lang]')?.getAttribute('lang')).toBe('en')
+    }
+  })
+
+  it('does not label English as English on the English page', () => {
+    draw('net-migration-rate', 'en')
+    expect(screen.queryByText(/only in English/i)).toBeNull()
+  })
 })

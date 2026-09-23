@@ -43,7 +43,9 @@ test.describe('a link is a view', () => {
     await page.getByRole('link', { name: /than in the places most like it/ }).click()
     await expect(page.getByRole('heading', { level: 2, name: 'Kävlinge' })).toBeVisible()
     await expect(page).toHaveURL(/i=tax-rate/)
-    await expect(page.getByText('29.69%')).toBeVisible()
+    // In the profile, not merely somewhere: since the editorial pass the fact itself quotes
+    // "29.69%" with its unit, so an unscoped match finds the sentence that was just clicked.
+    await expect(page.getByRole('region', { name: 'Kävlinge' }).getByText('29.69%')).toBeVisible()
   })
 })
 

@@ -23,7 +23,7 @@ const SWATCH = 18
 function PatternSwatch({ status }: { status: NoValueStatus }) {
   const fill = NO_VALUE_FILLS[status]
   return (
-    <svg width={SWATCH} height={SWATCH} aria-hidden="true" className="legend-swatch">
+    <svg width={SWATCH} height={SWATCH} aria-hidden="true" className="legend-pattern">
       <rect width={SWATCH} height={SWATCH} fill={`url(#${fill.patternId})`} stroke="#bbb" />
     </svg>
   )
@@ -72,7 +72,7 @@ export function Legend({
         {unitSuffix(indicator, lang)}
         {basis !== null && (lang === 'sv' ? `, ${basis} års penningvärde` : `, in ${basis} kronor`)}
       </p>
-      <ul aria-label={strings.legendClasses}>
+      <ul className="legend-classes" aria-label={strings.legendClasses}>
         {fills.map((fill, klass) => {
           const from = klass === 0 ? null : breaks[klass - 1]!
           const to = klass === breaks.length ? null : breaks[klass]!
@@ -86,7 +86,18 @@ export function Legend({
             <li key={fill} data-highlight={klass === highlightClass ? 'true' : undefined}>
               <span className="legend-swatch" style={{ background: fill }} aria-hidden="true" />
               {text}
-              {klass === zeroClass && <em className="legend-zero"> — {strings.legendZero}</em>}
+              {/*
+               * Its own line under the label, with a caret pointing at the swatch. Inline, at a
+               * different size from the label beside it, it pulled that one label off the line
+               * the other six sit on. The comma is for a screen reader, which reads the item as
+               * one sentence; the eye has the line break.
+               */}
+              {klass === zeroClass && (
+                <em className="legend-zero">
+                  <span className="visually-hidden">, </span>
+                  {strings.legendZero}
+                </em>
+              )}
             </li>
           )
         })}

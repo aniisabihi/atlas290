@@ -127,7 +127,8 @@ export function ProfilePanel({
             return (
               <li key={indicator.id} className="profile-row">
                 <span className="profile-name">{indicator.name[lang]}</span>
-                <span className="profile-value">
+                {/* An absence is styled as one, so a sentence never passes for a figure. */}
+                <span className={value === null ? 'profile-value is-absent' : 'profile-value'}>
                   {value === null
                     ? statusPhrase(status, lang)
                     : formatWithUnit(value, indicator, lang)}

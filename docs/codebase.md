@@ -35,33 +35,33 @@ it exists; read that before changing it.
 
 ## The site — `src/`
 
-| Path                                                  | Purpose                                                                                 |
-| ----------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `state/url.ts`                                        | The URL grammar. Parses path + query into `AppState` and back.                          |
-| `state/useAppState.ts`                                | The only place that writes history.                                                     |
-| `state/title.ts`                                      | The tab title for a given state.                                                        |
-| `state/useMorph.ts`                                   | The clock driving the map↔cartogram morph. Deliberately not in the URL.                 |
-| `state/useTween.ts`                                   | The clock that carries the bubbles to a new year's sizes or a new indicator's layout.   |
-| `state/useMediaQuery.ts`, `state/useReducedMotion.ts` | Media queries read in JS where the difference is behavioural.                           |
-| `data/pantry.ts`                                      | Loads the index, then each series as it is needed.                                      |
-| `test/pantry.ts`                                      | Test-only: the published pantry, reassembled from its files.                            |
-| `data/select.ts`                                      | The only module that knows the pantry's columnar layout.                                |
-| `data/compare.ts`                                     | Two municipalities side by side, with no verdict.                                       |
-| `data/similar.ts`                                     | Reads "places like this" from the published file; computes nothing.                     |
-| `data/nominal.ts`                                     | Recovers the figure SCB actually published from the inflation-adjusted one.             |
-| `map/geometry.ts`                                     | Projected shapes and centroids, computed once per topology.                             |
-| `map/frame.ts`                                        | Puts an indicator's bubble layout in the map's coordinate system.                       |
-| `map/morph.ts`                                        | Equal-length point lists so an outline can interpolate into whatever circle is current. |
-| `map/colour.ts`                                       | The colour scale, and what absence looks like.                                          |
-| `map/navigate.ts`                                     | Re-exports `shared/navigate.ts`, where arrow-key movement lives since Plan 21.          |
-| `facts/facts.ts`                                      | Reads the five facts from the pantry.                                                   |
-| `profile/story.ts`                                    | A municipality's story in sentences, generated from rules.                              |
-| `search/match.ts`                                     | Finding a municipality by name.                                                         |
-| `i18n/strings.ts`                                     | Every chrome string, both languages, English typed against Swedish.                     |
-| `i18n/format.ts`                                      | Numbers and units, both locales, sharing the kitchen's `UNIT_DECIMALS`.                 |
-| `notices/packages.ts`                                 | The runtime dependency tree with licences, shown on the notices page.                   |
-| `styles/tokens.css`, `styles/app.css`                 | Design tokens and layout. `tokens.test.ts` asserts real contrast ratios.                |
-| `components/`                                         | See below.                                                                              |
+| Path                                                  | Purpose                                                                                       |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `state/url.ts`                                        | The URL grammar. Parses path + query into `AppState` and back.                                |
+| `state/useAppState.ts`                                | The only place that writes history.                                                           |
+| `state/title.ts`                                      | The tab title for a given state.                                                              |
+| `state/useMorph.ts`                                   | The clock driving the map↔cartogram morph. Deliberately not in the URL.                       |
+| `state/useTween.ts`                                   | The clock that carries the bubbles to a new year's sizes or a new indicator's layout.         |
+| `state/useMediaQuery.ts`, `state/useReducedMotion.ts` | Media queries read in JS where the difference is behavioural.                                 |
+| `data/pantry.ts`                                      | Loads the index, then each series as it is needed.                                            |
+| `test/pantry.ts`                                      | Test-only: the published pantry, reassembled from its files.                                  |
+| `data/select.ts`                                      | The only module that knows the pantry's columnar layout.                                      |
+| `data/compare.ts`                                     | Two municipalities side by side, with no verdict.                                             |
+| `data/similar.ts`                                     | Reads "places like this" from the published file; computes nothing.                           |
+| `data/nominal.ts`                                     | Recovers the figure SCB actually published from the inflation-adjusted one.                   |
+| `map/geometry.ts`                                     | Projected shapes and centroids, computed once per topology.                                   |
+| `map/frame.ts`                                        | Puts an indicator's bubble layout in the map's coordinate system.                             |
+| `map/morph.ts`                                        | Equal-length point lists so an outline can interpolate into whatever circle is current.       |
+| `map/colour.ts`                                       | The colour scale, and what absence looks like.                                                |
+| `map/navigate.ts`                                     | Re-exports `shared/navigate.ts`, where arrow-key movement lives since Plan 21.                |
+| `facts/facts.ts`                                      | Reads the five facts from the pantry.                                                         |
+| `profile/story.ts`                                    | A municipality's story in sentences, generated from rules.                                    |
+| `search/match.ts`                                     | Finding a municipality by name.                                                               |
+| `i18n/strings.ts`                                     | Every chrome string, both languages, English typed against Swedish.                           |
+| `i18n/format.ts`                                      | Numbers and units, both locales, sharing the kitchen's `UNIT_DECIMALS` and `shared/units.ts`. |
+| `notices/packages.ts`                                 | The runtime dependency tree with licences, shown on the notices page.                         |
+| `styles/tokens.css`, `styles/app.css`                 | Design tokens and layout. `tokens.test.ts` asserts real contrast ratios.                      |
+| `components/`                                         | See below.                                                                                    |
 
 ### Components — `src/components/`
 
@@ -133,6 +133,7 @@ it exists; read that before changing it.
 | `slug.ts`     | The `name-code` path grammar. The code is the identifier; the slug is decoration.                                                  |
 | `bubbles.ts`  | How a value becomes a bubble: the one sizing rule the kitchen lays out with and the site draws with.                               |
 | `navigate.ts` | Arrow-key movement, and `strandedIn`, which the kitchen proves every layout with and the site navigates by.                        |
+| `units.ts`    | What each unit is called in both languages and how it joins its number — the site's labels and the facts' figures.                 |
 
 ## Tools — `tools/`
 

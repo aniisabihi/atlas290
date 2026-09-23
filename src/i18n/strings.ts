@@ -16,7 +16,9 @@ const sv = {
   // Swedish and English cannot have a name that reads as foreign in half of it, and the number
   // says the same thing in both. See docs/decisions/0006-the-name.md.
   siteName: 'Atlas 290',
-  tagline: 'Sveriges alla kommuner, mått för mått, 1968–2026. Allt från SCB.',
+  // No end year. "1968–2026" was written by hand and would have gone stale at the first
+  // refresh that added a year, and at column width it broke across lines after the dash.
+  tagline: 'Sveriges 290 kommuner, mått för mått, från 1968 till i dag. Allt från SCB.',
   skipToMap: 'Hoppa till kartan',
   skipToTable: 'Hoppa till tabellen',
 
@@ -55,7 +57,9 @@ const sv = {
   // year gets the smallest bubble rather than none at all.
   cartogramHint:
     'Varje bubblas yta följer måttets värde det här året, från årets lägsta till dess högsta. En kommun utan värde får den minsta bubblan.',
-  tableHint: 'Klicka på en kolumnrubrik för att sortera. Klicka på en kommun för att öppna den.',
+  // Not "klicka": the table is the phone's view as often as the desktop's, and a tap is not a
+  // click. The heading and the name are both buttons, so "välj" is true of every input.
+  tableHint: 'Sortera med kolumnrubrikerna. Välj en kommun för att öppna den.',
   noNeighbour: 'Ingen grannkommun åt det hållet.',
 
   indicatorLegend: 'Mått',
@@ -74,7 +78,9 @@ const sv = {
   pause: 'Pausa',
 
   searchLabel: 'Sök kommun',
-  searchPlaceholder: 'Skriv ett kommunnamn',
+  // Short, because on a phone the label is visually hidden and this is what shows — and at
+  // 320 px "Skriv ett kommunnamn" was cut to "Skriv ett kommun".
+  searchPlaceholder: 'Skriv ett namn',
   searchNoResults: 'Ingen kommun matchar.',
   searchResults: (n: number) => `${n} träffar`,
   searchOne: 'En träff',
@@ -83,6 +89,9 @@ const sv = {
   coverageHeading: 'Publiceras för',
   sourcesHeading: 'Källor hos SCB',
   derivationHeading: 'Så är värdet beräknat',
+  // Shown only where the page's language is not the method text's, which today means only on
+  // the Swedish page: the kitchen writes derivations and source notes once, in English.
+  methodInEnglish: 'Metodbeskrivningen finns bara på engelska.',
   caveatHeading: 'Att tänka på',
 
   coverage: (from: number, to: number) => `${from}–${to}`,
@@ -103,6 +112,9 @@ const sv = {
   jumpToYear: (year: number) => `Gå till ${year}`,
 
   rank: (rank: number, outOf: number) => `plats ${rank} av ${outOf}`,
+  // In the table, under a column already headed "Plats": saying "plats" again in every one of
+  // 290 cells wrapped the column onto three lines on a phone.
+  rankCell: (rank: number, outOf: number) => `${rank} av ${outOf}`,
   selectionCleared: 'Ingen kommun vald.',
   and: 'och',
   noticesHeading: 'Källor och licenser',
@@ -118,9 +130,13 @@ const sv = {
   columnRank: 'Plats',
   sortBy: (column: string) => `Sortera efter ${column}`,
   compareWith: 'Jämför med…',
-  comparePlaceholder: 'Skriv en annan kommun',
+  // The label beside it already says what the name is for; the placeholder only has to fit.
+  comparePlaceholder: 'Skriv ett namn',
   stopComparing: 'Sluta jämföra',
-  higherOn: (n: number, outOf: number) => `Högre värde i ${n} av ${outOf} jämförbara mått`,
+  // The name goes INTO the sentence rather than before a colon: "Malmö: Högre värde i …" set a
+  // capital after a colon and read as a label that had lost its sentence.
+  higherOn: (name: string, n: number, outOf: number) =>
+    `${name} har högre värde i ${n} av ${outOf} jämförbara mått`,
   notComparable: (n: number) =>
     n === 1
       ? '1 mått går inte att jämföra det här året'
@@ -137,7 +153,7 @@ const sv = {
   hideTable: 'Visa karta',
   similarHeading: 'Platser som liknar den här',
   similarMethod: (n: number, from: number, to: number) =>
-    `Närmast över ${n} mått, ${from}–${to}. Ingen inbördes ordning — skillnaden mellan den femte och den sjätte är för liten för att betyda något.`,
+    `Mest lika sett till ${n} mått, ${from}–${to}. Ingen inbördes ordning — skillnaden mellan den femte och den sjätte är för liten för att betyda något.`,
   similarNone: 'Inga jämförbara platser i den här utgåvan.',
   goTo: (name: string) => `Gå till ${name}`,
   storyHeading: 'Kort om kommunen',
@@ -153,7 +169,8 @@ export type Strings = typeof sv
 
 const en: Strings = {
   siteName: 'Atlas 290',
-  tagline: 'Every municipality in Sweden, measure by measure, 1968–2026. All from SCB.',
+  tagline:
+    'Sweden’s 290 municipalities, measure by measure, from 1968 to today. All from Statistics Sweden.',
   skipToMap: 'Skip to the map',
   skipToTable: 'Skip to the table',
 
@@ -163,7 +180,7 @@ const en: Strings = {
   viewGroup: 'View',
   tableToggle: 'Table',
   noWinner:
-    'No verdict is offered here, and none will be. Whether a lower tax rate suits you more than a higher one, or a younger population more than an older one, depends on what you are for. Both figures are shown; the judgement is yours.',
+    'No verdict is offered here, and none will be. Whether a lower tax rate suits you more than a higher one, or a younger population more than an older one, depends on what you are after. Both figures are shown; the judgement is yours.',
   bothOverTime: 'Both, over time',
 
   familyCountry: 'the whole country',
@@ -183,7 +200,7 @@ const en: Strings = {
     'Use the arrow keys to move between neighbouring municipalities. Enter selects, Escape clears.',
   cartogramHint:
     'The area of each bubble follows the measure’s value this year, from the year’s lowest to its highest. A municipality with no value gets the smallest bubble.',
-  tableHint: 'Click a column heading to sort. Click a municipality to open it.',
+  tableHint: 'Sort with the column headings. Choose a municipality to open it.',
   noNeighbour: 'No neighbouring municipality that way.',
 
   indicatorLegend: 'Measure',
@@ -201,8 +218,10 @@ const en: Strings = {
   play: 'Play',
   pause: 'Pause',
 
-  searchLabel: 'Search for a municipality',
-  searchPlaceholder: 'Type a municipality name',
+  // As short as the Swedish "Sök kommun": it is set in capitals in the bar, where the longer
+  // form took more room than the field it labelled.
+  searchLabel: 'Search municipalities',
+  searchPlaceholder: 'Type a name',
   searchNoResults: 'No municipality matches.',
   searchResults: (n: number) => `${n} matches`,
   searchOne: 'One match',
@@ -211,6 +230,7 @@ const en: Strings = {
   coverageHeading: 'Published for',
   sourcesHeading: 'Sources at Statistics Sweden',
   derivationHeading: 'How the value is calculated',
+  methodInEnglish: 'The method is described in English only.',
   caveatHeading: 'Worth knowing',
 
   coverage: (from: number, to: number) => `${from}–${to}`,
@@ -223,6 +243,7 @@ const en: Strings = {
   jumpToYear: (year: number) => `Go to ${year}`,
 
   rank: (rank: number, outOf: number) => `rank ${rank} of ${outOf}`,
+  rankCell: (rank: number, outOf: number) => `${rank} of ${outOf}`,
   selectionCleared: 'No municipality selected.',
   and: 'and',
   noticesHeading: 'Sources and licences',
@@ -238,9 +259,10 @@ const en: Strings = {
   columnRank: 'Rank',
   sortBy: (column: string) => `Sort by ${column}`,
   compareWith: 'Compare with…',
-  comparePlaceholder: 'Type another municipality',
+  comparePlaceholder: 'Type a name',
   stopComparing: 'Stop comparing',
-  higherOn: (n: number, outOf: number) => `Higher on ${n} of ${outOf} comparable measures`,
+  higherOn: (name: string, n: number, outOf: number) =>
+    `${name} is higher on ${n} of ${outOf} comparable measures`,
   notComparable: (n: number) =>
     n === 1
       ? '1 measure cannot be compared this year'
@@ -257,7 +279,7 @@ const en: Strings = {
   hideTable: 'Show map',
   similarHeading: 'Places like this one',
   similarMethod: (n: number, from: number, to: number) =>
-    `Closest across ${n} measures, ${from}–${to}. In no particular order — the gap between the fifth and the sixth is too small to mean anything.`,
+    `Most alike across ${n} measures, ${from}–${to}. In no particular order — the gap between the fifth and the sixth is too small to mean anything.`,
   similarNone: 'No comparable places in this release.',
   goTo: (name: string) => `Go to ${name}`,
   storyHeading: 'In short',

@@ -1,4 +1,4 @@
-import { memo, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { observationAt, ranksFor, type Lookup } from '../data/select'
 import { formatWithUnit, statusPhrase } from '../i18n/format'
 import { t } from '../i18n/strings'
@@ -47,6 +47,25 @@ export const DataTable = memo(function DataTable({
     column: 'name',
     descending: false,
   })
+
+  /**
+   * Arrives showing the municipality already chosen, centred in the box.
+   *
+   * Choosing Malmö and then the table used to open on Ale, Alingsås and Alvesta, with the one
+   * row the visitor cared about two hundred rows down. On arrival only: once the table is open,
+   * a row chosen in it is already where the visitor is looking, and moving the box under their
+   * pointer would be the opposite of help. The box scrolls, never the page — `scrollIntoView`
+   * would drag the whole document along with it.
+   */
+  const scroller = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const box = scroller.current
+    const row = box?.querySelector<HTMLElement>('tr[aria-current="true"]')
+    if (!box || !row) return
+    const rowBox = row.getBoundingClientRect()
+    const offset = rowBox.top - box.getBoundingClientRect().top
+    box.scrollTop += offset - box.clientHeight / 2 + rowBox.height / 2
+  }, [])
 
   const rows = lk.data.municipalities.map((municipality) => {
     const { value, status } = observationAt(lk, indicatorId, municipality.code, year)
@@ -102,6 +121,7 @@ export const DataTable = memo(function DataTable({
      * keyboard visitor on an anonymous div.
      */
     <div
+      ref={scroller}
       className="table-scroll"
       role="region"
       aria-label={strings.tableCaption(indicator.name[lang], year)}
@@ -127,12 +147,12 @@ export const DataTable = memo(function DataTable({
                   {row.municipality.name[lang]}
                 </button>
               </th>
-              <td>
+              <td className={row.value === null ? 'is-absent' : undefined}>
                 {row.value === null
                   ? statusPhrase(row.status, lang)
                   : formatWithUnit(row.value, indicator, lang)}
               </td>
-              <td>{row.rank ? strings.rank(row.rank.rank, row.rank.outOf) : ''}</td>
+              <td>{row.rank ? strings.rankCell(row.rank.rank, row.rank.outOf) : ''}</td>
             </tr>
           ))}
         </tbody>

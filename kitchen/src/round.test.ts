@@ -3,10 +3,11 @@ import type { Indicator, IndicatorSeries } from '../../shared/pantry'
 import { roundIndicatorBreaks, roundSeriesValues, roundToUnit, UNIT_DECIMALS } from './round'
 
 describe('UNIT_DECIMALS', () => {
-  it('declares exactly the eleven units Indicator.unit allows, and no more', () => {
+  it('declares exactly the twelve units Indicator.unit allows, and no more', () => {
     // A full-map equality rather than a spot check, so a unit added to the enum and forgotten
     // here — which would round it to `undefined` decimals — fails loudly. Plan 16 added two
-    // of these and plan 19 added hectares, and this is what told each of them to.
+    // of these, plan 19 added hectares and the editorial pass percentage points, and this is what
+    // told each of them to.
     expect(UNIT_DECIMALS).toEqual({
       count: 0,
       sek: 0,
@@ -19,6 +20,7 @@ describe('UNIT_DECIMALS', () => {
       'persons-per-household': 2,
       metres: 0,
       hectares: 0,
+      'percentage-points': 2,
     })
   })
 })

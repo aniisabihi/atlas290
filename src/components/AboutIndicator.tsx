@@ -19,6 +19,9 @@ import type { Lang } from '../state/url'
  * the one component that reads it. The indicator it describes is always the one on screen, which
  * is by definition the one whose file has been fetched.
  */
+/** The language the kitchen writes derivations and source notes in. */
+const METHOD_LANG: Lang = 'en'
+
 export function AboutIndicator({ indicator, lang }: { indicator: Indicator; lang: Lang }) {
   const strings = t(lang)
   const basis = priceBasisYear(indicator)
@@ -44,11 +47,17 @@ export function AboutIndicator({ indicator, lang }: { indicator: Indicator; lang
       <h3>{strings.caveatHeading}</h3>
       <p>{indicator.caveat[lang]}</p>
 
+      {/*
+       * The derivation and the source notes are the kitchen's own words and exist in English
+       * only, so they say so: `lang` for a screen reader, which would otherwise read English
+       * with Swedish pronunciation (WCAG 3.1.2), and a line for everyone else.
+       */}
       <h3>{strings.derivationHeading}</h3>
-      <p>{indicator.derivation}</p>
+      {lang !== METHOD_LANG && <p className="about-method-note">{strings.methodInEnglish}</p>}
+      <p lang={METHOD_LANG}>{indicator.derivation}</p>
 
       <h3>{strings.sourcesHeading}</h3>
-      <ul>
+      <ul lang={METHOD_LANG}>
         {indicator.sources.map((source) => (
           <li key={`${source.table}-${source.contentCode}`}>
             {source.table} · {source.contentCode} · {source.note}

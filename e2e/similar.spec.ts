@@ -39,7 +39,7 @@ test.describe('places like this', () => {
   test('states how the neighbours were found', async ({ page }) => {
     await page.goto('/en/?y=2024&m=1281')
     await expect(
-      page.getByText('Closest across 10 measures, 2015–2024', { exact: false }),
+      page.getByText('Most alike across 10 measures, 2015–2024', { exact: false }),
     ).toBeVisible()
   })
 
@@ -67,7 +67,7 @@ test.describe('the profile story', () => {
     await page.goto('/sv/?y=2024&m=2463')
     const story = page.getByRole('region', { name: 'Kort om kommunen' })
     await expect(story).toBeVisible()
-    await expect(story.getByText(/Kommunen har krympt 53 % sedan 1968/)).toBeVisible()
+    await expect(story.getByText(/Kommunen har krympt 53\u00a0% sedan 1968/)).toBeVisible()
   })
 
   test('follows the year slider rather than always showing the last year', async ({ page }) => {

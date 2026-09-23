@@ -18,7 +18,8 @@ export function ThemeToggle({ lang }: { lang: Lang }) {
     <button
       type="button"
       className="theme-toggle"
-      aria-pressed={dark}
+      // No aria-pressed: the name states the ACTION, and a pressed state beside it made a screen
+      // reader announce "Switch to the light theme, pressed" — two claims that disagree.
       aria-label={dark ? strings.switchToLight : strings.switchToDark}
       onClick={() => setTheme(dark ? 'light' : 'dark')}
     >

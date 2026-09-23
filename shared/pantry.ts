@@ -126,6 +126,7 @@ export const UNIT_DECIMALS: Record<Indicator['unit'], number> = {
   'persons-per-household': 2,
   metres: 0,
   hectares: 0,
+  'percentage-points': 2,
 }
 
 /**
@@ -163,6 +164,12 @@ const IndicatorFields = z.object({
     // Plan 19. Farmland is an area, and neither `count` ('residents') nor any per-something
     // unit describes it. Whole hectares: a decimal on 32,000 hectares would be noise.
     'hectares',
+    // The editorial pass. A difference between two shares — women's against men's, a
+    // municipality's against the country's, one election's turnout against another's — is in
+    // percentage points, and every one of the three said so in its own description while the
+    // unit said 'percent', so the site printed the 65+ gap as "−5,64 %", a relative change it is
+    // not. Same two decimals as 'percent', so no published figure moves.
+    'percentage-points',
   ]),
   /** 'fixed-latest-year' means values are inflation-adjusted to the latest year's kronor. */
   priceBasis: z.enum(['none', 'fixed-latest-year']),

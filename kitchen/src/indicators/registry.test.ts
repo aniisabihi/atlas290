@@ -11,6 +11,7 @@ import {
   type BuildContext,
   type IndicatorDefinition,
 } from './registry'
+import { DEFAULT_PANTRY_DIR, readPantryParts } from '../publish'
 
 /** Minimal fake TableMeta, mirroring population.test.ts's fakeMeta helper. */
 function fakeMeta(id: string, values: Record<string, string[]>): TableMeta {
@@ -414,5 +415,34 @@ describe('build order', () => {
     // matcher passes either way and cannot fail. Verified by mutation: with the guard
     // deleted, this expectation fails and the loose one does not.
     await expect(buildAll({}, [premature])).rejects.toThrow(/population must come first/)
+  })
+})
+
+describe('a difference between two shares is in percentage points', () => {
+  // The editorial pass found three indicators whose descriptions said "i procentenheter" /
+  // "in percentage points" while their unit said 'percent', so the site printed the gap between
+  // 65+ shares as "−5,64 %": a relative change, which it is not. The description and the unit
+  // are the same claim made twice and must agree. Read from the published pantry, because
+  // REGISTRY fills lazily inside buildAll and is empty at collection time — and what ships is the
+  // claim that matters.
+  const { indicators } = readPantryParts(DEFAULT_PANTRY_DIR)
+
+  it.each(indicators.map((i) => [i.id, i] as const))('%s', (_id, indicator) => {
+    const saysPoints = /procentenheter/.test(indicator.description.sv)
+    expect(/percentage points/.test(indicator.description.en), 'English agrees').toBe(saysPoints)
+    expect(indicator.unit === 'percentage-points').toBe(saysPoints)
+  })
+
+  it('covers exactly the three differences the pantry publishes', () => {
+    expect(
+      indicators
+        .filter((i) => i.unit === 'percentage-points')
+        .map((i) => i.id)
+        .sort(),
+    ).toEqual([
+      'post-secondary-education-gap',
+      'share-65-plus-vs-country',
+      'turnout-gap-general-municipal',
+    ])
   })
 })

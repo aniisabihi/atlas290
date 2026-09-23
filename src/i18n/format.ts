@@ -1,4 +1,5 @@
 import { UNIT_DECIMALS, type IndicatorMeta, type ObservationStatus } from '../../shared/pantry'
+import { UNIT_WORDS, withUnit } from '../../shared/units'
 import type { Lang } from '../state/url'
 import { t } from './strings'
 
@@ -33,32 +34,15 @@ export function formatValue(value: number | null, indicator: IndicatorMeta, lang
   }).format(value)
 }
 
-const UNITS: Record<IndicatorMeta['unit'], Record<Lang, string>> = {
-  count: { sv: 'invånare', en: 'residents' },
-  percent: { sv: '%', en: '%' },
-  years: { sv: 'år', en: 'years' },
-  sek: { sv: 'kr', en: 'SEK' },
-  'per-thousand': { sv: 'per 1 000 invånare', en: 'per 1,000 residents' },
-  'per-km2': { sv: 'inv/km²', en: 'people/km²' },
-  'children-per-woman': { sv: 'barn per kvinna', en: 'children per woman' },
-  'tonnes-per-resident': { sv: 'ton per invånare', en: 'tonnes per resident' },
-  'persons-per-household': { sv: 'personer per hushåll', en: 'persons per household' },
-  metres: { sv: 'm', en: 'm' },
-  hectares: { sv: 'hektar', en: 'hectares' },
-}
-
 export function unitSuffix(indicator: IndicatorMeta, lang: Lang): string {
-  return UNITS[indicator.unit][lang]
+  return UNIT_WORDS[indicator.unit][lang]
 }
-
-/** A percent sign hugs its number; a word does not. */
-const TIGHT: ReadonlySet<IndicatorMeta['unit']> = new Set(['percent'])
 
 export function formatWithUnit(value: number | null, indicator: IndicatorMeta, lang: Lang): string {
   const number = formatValue(value, indicator, lang)
   if (value === null) return number
-  const unit = unitSuffix(indicator, lang)
-  const base = TIGHT.has(indicator.unit) ? `${number}${unit}` : `${number} ${unit}`
+  // How a unit joins its number is shared with the kitchen, which writes figures into the facts.
+  const base = withUnit(number, indicator.unit, lang)
   const year = priceBasisYear(indicator)
   if (year === null) return base
   // Money is adjusted for inflation, so the figure is meaningless without saying to when.

@@ -33,7 +33,7 @@ export const SHARE_65_VS_COUNTRY: Indicator = Indicator.parse({
     sv: 'Kommunens andel invånare som fyllt 65 minus rikets andel samma år, i procentenheter. Positivt tal betyder en äldre befolkning än riket.',
     en: 'The municipality’s share of residents aged 65 and over minus the country’s share the same year, in percentage points. A positive figure means an older population than Sweden as a whole.',
   },
-  unit: 'percent',
+  unit: 'percentage-points',
   priceBasis: 'none',
   scale: { kind: 'diverging', breaks: [] },
   // share-65-plus's own range, written out rather than read from it: a module-level read of

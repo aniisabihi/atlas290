@@ -73,3 +73,27 @@ describe('searchMunicipalities', () => {
     expect(find('Malmo', 'en')).toEqual(find('Malmo', 'sv'))
   })
 })
+
+describe('what was typed, letter for letter, comes first', () => {
+  it('puts Söderhamn before Sollefteå when the visitor typed "sö"', () => {
+    // Folding makes "sö" match "so", which is right — nobody should have to find the ö key — but
+    // it also ranked Sollefteå, Sollentuna and Solna above every name that actually begins with
+    // what was typed. The folded match decides WHETHER a name is offered; the literal one decides
+    // which of the offered names come first.
+    const names = searchMunicipalities('sö', municipalities, 'sv').map((m) => m.name.sv)
+    const firstSo = names.findIndex((n) => n.startsWith('So'))
+    const lastSo = names.map((n) => n.startsWith('Sö')).lastIndexOf(true)
+    expect(names[0]).toMatch(/^Sö/)
+    expect(lastSo).toBeLessThan(firstSo)
+  })
+
+  it('still offers the folded matches, after the literal ones', () => {
+    const names = searchMunicipalities('sö', municipalities, 'sv').map((m) => m.name.sv)
+    expect(names).toContain('Solna')
+  })
+
+  it('leaves a query with no diacritic in alphabetical order, as before', () => {
+    const names = searchMunicipalities('so', municipalities, 'sv').map((m) => m.name.sv)
+    expect(names.indexOf('Solna')).toBeLessThan(names.indexOf('Söderhamn'))
+  })
+})

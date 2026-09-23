@@ -39,16 +39,19 @@ describe('every family renders', () => {
 })
 
 describe('the country sentence', () => {
-  it('makes the measure the subject and the movement a verb', () => {
+  it('names the measure as a label and states the two-year comparison it checked', () => {
     // "Alla 284 kommuner har högre eftergymnasial utbildning än 1985" reads as though a
-    // municipality possesses an education. The indicator is a share of residents, and only
-    // some of the ten are things a place can have more of.
+    // municipality possesses an education. The verb form that replaced it, "Utbildningsgap …
+    // har stigit", needs the DEFINITE noun in Swedish — "Utbildningsgapet" — which cannot be
+    // derived from a pantry name, and "has risen since" also claimed a trend where the family
+    // compares two years. A label and the comparison itself is grammatical for every name in
+    // both languages, and says exactly what was checked.
     const { text } = best('country')
     expect(text.sv).toBe(
-      'Utbildningsgap mellan kvinnor och män har stigit i alla 284 kommuner sedan 1985.',
+      'Utbildningsgap mellan kvinnor och män — högre 2025 än 1985 i alla 284 kommuner.',
     )
     expect(text.en).toBe(
-      'Education gap between women and men has risen in all 284 municipalities since 1985.',
+      'Education gap between women and men — higher in 2025 than in 1985, in all 284 municipalities.',
     )
   })
 
@@ -92,16 +95,20 @@ describe('the run sentence', () => {
 describe('the other three sentences', () => {
   it('states the reversal in both directions', () => {
     const { text } = best('reversal')
-    expect(text.sv).toBe('Sundbyberg var 11 % mindre 1981 än 1972 — och är nu 123 % större än då.')
+    expect(text.sv).toBe(
+      'Sundbyberg var 11\u00a0% mindre 1981 än 1972 — och är nu 123\u00a0% större än då.',
+    )
   })
 
-  it('states the unusual one against its twins, with both figures', () => {
+  it('states the unusual one against its twins, with both figures and their unit', () => {
     const { text } = best('unusual')
+    // "platserna som liknar den" was the one place the facts called municipalities places, and
+    // the figures had no unit, so a tax rate read as two bare numbers.
     expect(text.sv).toBe(
-      'Kommunal skattesats i Kävlinge — lägre än i platserna som liknar den: 29,69 mot 32,64.',
+      'Kommunal skattesats i Kävlinge — lägre än i kommunerna som liknar den mest: 29,69\u00a0% mot 32,64\u00a0%.',
     )
     expect(text.en).toBe(
-      'Municipal tax rate in Kävlinge — lower than in the places most like it: 29.69 against 32.64.',
+      'Municipal tax rate in Kävlinge — lower than in the places most like it: 29.69% against 32.64%.',
     )
     // The article trap this phrasing avoids: "has lower municipal tax rate" is missing an "a",
     // and adding one breaks "lower house prices", which is plural.
@@ -119,6 +126,12 @@ describe('the other three sentences', () => {
     expect(text.sv).toContain('6\u00a0529,2')
     expect(text.sv).not.toContain('6 529,2')
     expect(text.en).toContain('6,529.2')
+  })
+
+  it('gives both extremes their unit', () => {
+    const { text } = best('extreme')
+    expect(text.sv).toMatch(/: 6\u00a0529,2 inv\/km² mot 0,2 inv\/km²\.$/)
+    expect(text.en).toMatch(/: 6,529\.2 people\/km² against 0\.2 people\/km²\.$/)
   })
 
   it('shows each value at its own indicator precision, never more', () => {

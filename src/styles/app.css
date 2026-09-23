@@ -220,9 +220,34 @@ button:hover {
 
 .search-count {
   position: absolute;
-  inset: auto 0 -1.4rem 0;
-  font-size: 0.72rem;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Nothing matched: said where the list would have been, in the list's own box. */
+.search-count--shown {
+  z-index: 15;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  width: auto;
+  height: auto;
+  min-width: 16rem;
+  margin: 0;
+  padding: 0.6rem 0.9rem;
+  overflow: visible;
+  clip-path: none;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 0.95rem;
   color: var(--text-muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--plate-shadow);
 }
 
 .search ul {
@@ -343,7 +368,7 @@ button:hover {
  */
 
 main {
-  padding: 0 clamp(1rem, 3vw, 2rem) 5rem;
+  padding: 0 clamp(1rem, 3vw, 2rem) 2.5rem;
 }
 
 /*
@@ -373,7 +398,14 @@ main {
     'reading view'
     'place place'
     'against against';
-  gap: clamp(1.5rem, 4vw, 3.5rem);
+  /*
+   * No row gap, deliberately. The 'place' and 'against' rows are empty until a municipality is
+   * chosen, and a grid draws its gaps between empty tracks as faithfully as between full ones —
+   * so the front page carried two invisible 56 px gaps under the map, and the facts started
+   * 170 px below it. Each item that can fill a row brings its own top margin instead.
+   */
+  column-gap: clamp(1.5rem, 4vw, 3.5rem);
+  row-gap: 0;
   align-items: start;
   max-width: 78rem;
   margin: 0 auto;
@@ -407,7 +439,8 @@ main {
   letter-spacing: -0.015em;
   text-wrap: balance;
   color: var(--text);
-  max-width: 22ch;
+  /* 26, not 22: at 22 the English ran to four lines where the Swedish takes three. */
+  max-width: 26ch;
 }
 
 /* ───────────────────────────────────────────────────────────── the plate ──
@@ -455,11 +488,13 @@ main {
 
 /*
  * The caption: what the picture means, set like a figure caption in print — left, small, with a
- * hairline above it. Two lines' worth of room whatever it says, so a one-line hint under the map
- * and a two-line one under the bubbles leave the plate the same height.
+ * hairline above it. Three lines' worth of room whatever it says, so a one-line hint under the
+ * map and the bubbles' longer one leave the plate the same height. It was two, and the bubble
+ * caption has run to three at every desktop width since Plan 21 put the size sentence in it, so
+ * the sheet grew by a line on every switch.
  */
 .stage-hint {
-  min-height: calc(2 * 1.5em);
+  min-height: calc(3 * 1.5em);
   margin-top: 1rem;
   padding-top: 0.6rem;
   border-top: 1px solid var(--plate-rule);
@@ -616,8 +651,7 @@ main {
 
 .legend h2,
 .about-indicator summary,
-.similar h2,
-.compare h2 {
+.similar h3 {
   font-family: var(--font-mono);
   font-size: 0.72rem;
   font-weight: 500;
@@ -627,7 +661,7 @@ main {
   margin: 0 0 0.6rem;
 }
 
-.legend ul {
+.legend-classes {
   display: flex;
   gap: 2px;
   list-style: none;
@@ -639,7 +673,7 @@ main {
  * Seven class labels across one column collide at any comfortable size, so they wrap inside
  * their own cell and take a little air on each side rather than running into their neighbours.
  */
-.legend li {
+.legend-classes li {
   flex: 1;
   min-width: 0;
   padding: 0 0.15rem;
@@ -660,19 +694,85 @@ main {
   border-radius: 1px;
 }
 
-.legend li:first-child .legend-swatch {
+.legend-classes li:first-child .legend-swatch {
   box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .legend-unit,
-.legend-note,
-.legend-zero {
+.legend-note {
   font-family: var(--font-sans);
   font-size: 0.8rem;
   line-height: 1.5;
   color: var(--text-muted);
   margin: 0.8rem 0 0;
   max-width: 46ch;
+}
+
+/* Where zero falls on a diverging ramp: a caret under its class, then the words. */
+.legend .legend-zero {
+  display: block;
+  margin-top: 0.3rem;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-style: italic;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+.legend .legend-zero::before {
+  content: '';
+  display: block;
+  width: 0;
+  height: 0;
+  margin: 0 auto 0.2rem;
+  border-inline: 0.28rem solid transparent;
+  border-bottom: 0.34rem solid currentColor;
+}
+
+/*
+ * A phone: the ramp becomes a key. Seven labels across 288 px left about 40 px each, and
+ * `overflow-wrap: anywhere` then broke the break values themselves — "10 71" over "5" — so the
+ * one thing the legend is for could not be read. Two columns, filled top to bottom so the order
+ * still runs lowest to highest, each class a swatch beside its whole range.
+ */
+.legend {
+  container-type: inline-size;
+}
+
+@container (max-width: 30rem) {
+  .legend-classes {
+    display: grid;
+    grid-template-rows: repeat(4, auto);
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 0.45rem 1rem;
+  }
+
+  .legend-classes li {
+    display: grid;
+    grid-template-columns: 1.1rem minmax(0, 1fr);
+    align-items: center;
+    column-gap: 0.55rem;
+    padding: 0;
+    font-size: 0.7rem;
+    text-align: left;
+    overflow-wrap: normal;
+  }
+
+  .legend-classes .legend-swatch {
+    width: 1.1rem;
+    height: 0.8rem;
+    margin: 0;
+  }
+
+  .legend .legend-zero {
+    grid-column: 2;
+    margin-top: 0.1rem;
+  }
+
+  .legend .legend-zero::before {
+    display: none;
+  }
 }
 
 .legend-absences {
@@ -684,6 +784,17 @@ main {
   padding: 0;
   font-size: 0.78rem;
   color: var(--text-muted);
+}
+
+/*
+ * The absences are a key of their own, not more colour classes. Until the editorial pass both
+ * lists answered to `.legend li`, so an absence took a class cell's flex share, its centred tiny
+ * figure type and its full-width swatch: one pattern stretched across the column and its words
+ * wrapped under it a syllable at a time.
+ */
+.legend-pattern {
+  display: block;
+  flex: none;
 }
 
 .legend-absences li {
@@ -752,25 +863,45 @@ main {
   color: inherit;
 }
 
-.about-indicator p,
-.about-indicator dd {
+.about-indicator p {
   font-size: 0.86rem;
   line-height: 1.6;
   color: var(--text-muted);
   max-width: 50ch;
 }
 
-.about-indicator dt {
+/*
+ * The fold-out's subheadings. They are h3s, and the rule below was written for a <dt> the markup
+ * no longer has — so "Publiceras för" and "Att tänka på" rendered as the browser's own bold
+ * headings, the largest type in the reading column after the year.
+ */
+.about-indicator h3 {
   font-family: var(--font-mono);
   font-size: 0.68rem;
+  font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
-  margin-top: 0.75rem;
+  margin: 1.25rem 0 0.3rem;
 }
 
-.about-indicator dd {
-  margin: 0.15rem 0 0;
+.about-indicator h3 + p {
+  margin-top: 0;
+}
+
+.about-indicator ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+.about-indicator .about-method-note {
+  font-family: var(--font-display);
+  font-style: italic;
+  margin-bottom: 0.3rem;
 }
 
 /* ─────────────────────────────────────────── everything below the fold ──
@@ -787,8 +918,7 @@ main {
   margin: 3.5rem auto 0;
 }
 
-.facts h2,
-.compare h2 {
+.facts h2 {
   font-family: var(--font-display);
   font-size: 1.7rem;
   font-weight: 400;
@@ -888,7 +1018,7 @@ main {
 
 .layout .profile,
 .layout .compare {
-  margin: 2.5rem 0 0;
+  margin: 3.5rem 0 0;
   max-width: none;
   /*
    * Both the zeroed side margins and `min-width: 0` are load-bearing at 320 px.
@@ -905,6 +1035,50 @@ main {
 .story {
   margin-top: 1.25rem;
   container-type: inline-size;
+}
+
+/*
+ * Wide: the place reads like a feature page — the story and the places like it in a standfirst
+ * column on the left, the measures as the body beside it.
+ *
+ * ADR-0011 gave the profile the page's full width because at column width a measure's name and
+ * its figure fought for one line. The full width fixed that and overshot: at 1,250 px a name sat
+ * a thousand pixels from its own figure, across a gap the eye has to cross forty-four times. The
+ * body column is still wider than the reading column 0011 moved it out of, so the fight it ended
+ * does not come back; the standfirst is where the prose was already, at the measure it was
+ * already set to.
+ */
+@media (min-width: 64rem) {
+  .layout .profile {
+    display: grid;
+    grid-template-columns: minmax(0, 21rem) minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      'head head'
+      'story rows'
+      'similar rows';
+    column-gap: clamp(2rem, 4vw, 4rem);
+    align-items: start;
+  }
+
+  .profile > .profile-header {
+    grid-area: head;
+  }
+
+  .profile > .story {
+    grid-area: story;
+    margin: 1.75rem 0 0;
+  }
+
+  .profile > .profile-rows {
+    grid-area: rows;
+    margin-top: 1rem;
+  }
+
+  .profile > .similar {
+    grid-area: similar;
+    margin: 2.25rem 0 0;
+  }
 }
 
 .story p {
@@ -1016,73 +1190,87 @@ main {
 }
 
 /*
- * Narrow: the trend moves under the name rather than disappearing. Hiding it was the obvious
- * move and the wrong one — it is the most interesting column on the row.
+ * Narrow: the name takes the whole line, and the figure and its trend share the one under it.
  *
- * The threshold is 40rem rather than the 34rem it started at, because the profile now lives in
- * the reading column beside the map at about 37rem. At 34rem the three columns still fitted the
- * grid and the value did not fit its own cell, so "Flyttningsöverskott per 1 000 invånare" and
- * its figure were drawn over each other.
+ * Hiding the trend was the obvious move and the wrong one — it is the most interesting column on
+ * the row. Until the editorial pass the narrow row stacked name, figure, rank and trend as four
+ * lines of their own, so a phone spent about 150 px on each of forty-four measures: a profile
+ * seven screens tall, most of it a sparkline alone on its line. Figure on the left and trend on
+ * the right halves that and keeps the two things a reader compares side by side.
+ *
+ * 40rem, because the three-column row needs it: at 34rem the value did not fit its own cell and
+ * "Flyttningsöverskott per 1 000 invånare" and its figure were drawn over each other.
  */
 @container (max-width: 40rem) {
   .profile-row {
-    grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+    /* The trend gives way first: at 320 px a fixed 10.5rem left the figure 104 px, and
+       "+0.91 per 1,000 residents" took four lines. */
+    grid-template-columns: minmax(0, 1fr) minmax(0, min(10.5rem, 38%));
     grid-template-areas:
-      'name value'
-      'name nominal'
-      'name rank'
-      'trend trend';
+      'name name'
+      'value trend'
+      'nominal trend'
+      'rank trend';
+    align-items: start;
+    gap: 0.15rem 1rem;
+  }
+
+  .profile-name {
+    margin-bottom: 0.2rem;
   }
 
   /*
    * Wrapping, not nowrap. "this measure is not published for this year" is a value like any
-   * other, and at 320 px it is wider than the screen — which is how it pushed the whole
+   * other, and at 320 px it is wider than the screen — which is how it once pushed the whole
    * document sideways.
    */
   .profile-value,
   .profile-nominal,
   .profile-rank {
+    text-align: left;
     white-space: normal;
   }
 
+  .profile-value {
+    font-size: 0.94rem;
+  }
+
   .sparkline {
+    align-self: center;
     width: 100%;
     max-width: 100%;
-    margin-top: 0.5rem;
   }
 }
 
 /*
- * Narrower still: the name takes its own line.
+ * An absence, set as one.
  *
- * Side by side, "Flyttningsöverskott per 1 000 invånare" and "+0,91 per 1 000 invånare" each
- * want more than half a phone, and the two ran into each other. Above and below, both are
- * readable and the row is one measure rather than two columns fighting.
+ * "måttet publiceras inte för det här året" was set exactly like a figure — monospaced, medium,
+ * the full size of a value — so in a column of numbers it read as the loudest number there. The
+ * display face's italic, smaller and muted, is the voice this site uses for what it is TELLING
+ * you rather than showing you; the words still say which absence it is.
  */
-@container (max-width: 24rem) {
-  .profile-row {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      'name'
-      'value'
-      'nominal'
-      'rank'
-      'trend';
-    gap: 0.15rem 0;
-  }
+.profile-value.is-absent,
+.data-table td.is-absent,
+.compare-table td.is-absent {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+  white-space: normal;
+}
 
-  .profile-value,
-  .profile-nominal,
-  .profile-rank {
-    text-align: left;
-  }
-
-  .profile-value {
-    font-size: 1.05rem;
-  }
+.view-column .data-table td.is-absent {
+  color: var(--on-plate);
 }
 
 /* ────────────────────────────────────────────────────────────── neighbours ─ */
+
+.similar {
+  margin-top: 2.5rem;
+}
 
 .similar-list {
   list-style: none;
@@ -1120,6 +1308,123 @@ main {
 
 .compare-trend {
   width: 190px;
+}
+
+.compare {
+  container: compare / inline-size;
+}
+
+/* Only the phone layout shows it; see ComparePanel. */
+.compare-cell-label {
+  display: none;
+}
+
+/*
+ * A phone: each measure becomes a small block — its name, then both figures side by side, then
+ * the shared trend under them.
+ *
+ * The four-column table did not fit 375 px and scrolled, which put the second municipality —
+ * the reason the panel exists — off the right edge of the screen, and wrapped every absence into
+ * four lines. The roles in the markup keep this a table for a screen reader whatever display
+ * the stylesheet gives its rows; the header row is kept for it and hidden from the eye, and each
+ * figure carries its municipality's name, in its series colour and line, in its place.
+ */
+/* Scoped under `.compare` so these outrank the table rules further down, which they have to
+   undo: equal specificity loses to source order, and the figures stayed right-aligned. */
+@container compare (max-width: 36rem) {
+  .compare .compare-table,
+  .compare .compare-table tbody {
+    display: block;
+  }
+
+  .compare .compare-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .compare .compare-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      'name name'
+      'a b'
+      'trend trend';
+    gap: 0.35rem 1rem;
+    padding: 0.9rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .compare .compare-table tbody th,
+  .compare .compare-table td {
+    padding: 0;
+    border: 0;
+  }
+
+  .compare .compare-table tbody th {
+    grid-area: name;
+  }
+
+  .compare .compare-table td:nth-child(2),
+  .compare .compare-table td:nth-child(3) {
+    text-align: left;
+    font-size: 0.86rem;
+  }
+
+  .compare .compare-table td:nth-child(2) {
+    grid-area: a;
+  }
+
+  .compare .compare-table td:nth-child(3) {
+    grid-area: b;
+  }
+
+  .compare .compare-table .compare-trend {
+    grid-area: trend;
+    width: auto;
+  }
+
+  .compare .compare-trend .sparkline {
+    width: 100%;
+  }
+
+  .compare .compare-cell-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.15rem;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-style: normal;
+    font-weight: 500;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  /* The line each series is drawn with, beside its name: solid for the first, dashed for the
+     second, so the key never rests on hue alone. */
+  .compare .compare-cell-label::before {
+    content: '';
+    flex: none;
+    width: 1rem;
+    border-top: 2px solid currentColor;
+  }
+
+  .compare .compare-table td:nth-child(2) .compare-cell-label {
+    color: var(--series-a);
+  }
+
+  .compare .compare-table td:nth-child(3) .compare-cell-label {
+    color: var(--series-b);
+  }
+
+  .compare .compare-table td:nth-child(3) .compare-cell-label::before {
+    border-top-style: dashed;
+  }
 }
 
 .compare-table th:nth-child(2) {
@@ -1226,7 +1531,7 @@ main {
 
 .view-column .data-table tbody tr[aria-current='true'] {
   background: var(--plate-hover);
-  box-shadow: inset 3px 0 0 var(--accent);
+  box-shadow: inset 3px 0 0 var(--on-plate-accent);
 }
 
 .data-table,
@@ -1317,6 +1622,51 @@ main {
   color: var(--accent);
 }
 
+/* On the plate the accent is the plate's own, fixed; see tokens.css. */
+.view-column .data-table button:hover {
+  color: var(--on-plate-accent);
+}
+
+/*
+ * Which way the table is sorted, drawn. `aria-sort` has always told a screen reader; the eye had
+ * nothing, so after a click on "Värde" nothing on screen said the column had become the order.
+ * A triangle made of borders rather than an arrow character, because the fonts are subset to
+ * the characters the site's text contains and a glyph from a stylesheet would fall back to a
+ * system face. The unsorted columns keep the same space, so a label never shifts when clicked.
+ */
+.data-table th[aria-sort] button::after {
+  content: '';
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: 0.45em;
+  vertical-align: 0.1em;
+  border-inline: 0.3em solid transparent;
+}
+
+.data-table th[aria-sort='ascending'] button::after {
+  border-bottom: 0.38em solid currentColor;
+}
+
+.data-table th[aria-sort='descending'] button::after {
+  border-top: 0.38em solid currentColor;
+}
+
+.view-column .data-table th:is([aria-sort='ascending'], [aria-sort='descending']) button {
+  color: var(--on-plate-strong);
+}
+
+/* And it still answers the pointer: the rule above outranks the plain hover rule by one type
+   selector, so the sorted column alone had no hover colour. */
+.view-column .data-table th:is([aria-sort='ascending'], [aria-sort='descending']) button:hover {
+  color: var(--on-plate-accent);
+}
+
+/* "82 av 290" is one figure and never breaks. */
+.data-table td:nth-child(3) {
+  white-space: nowrap;
+}
+
 /* ───────────────────────────────────────────────── pointing at the map ──
  * Hover, highlight and the tooltip. None of this is in the URL and none of it
  * is in the accessibility tree: every shape already carries its whole reading
@@ -1385,11 +1735,11 @@ main {
  * The class the highlighted municipality falls in, ticked on the ramp. Not colour alone: the
  * swatch also grows a mark above it, and the value is in the tooltip and the table regardless.
  */
-.legend li[data-highlight] {
+.legend-classes li[data-highlight] {
   color: var(--text);
 }
 
-.legend li[data-highlight] .legend-swatch {
+.legend-classes li[data-highlight] .legend-swatch {
   box-shadow:
     inset 0 0 0 1px var(--focus-halo),
     0 0 0 2px var(--focus-core);
@@ -1503,8 +1853,9 @@ main {
       'against';
   }
 
+  /* The layout has no row gap (see .layout), so the column under the plate brings its own. */
   .reading-column {
-    padding-top: 0.5rem;
+    padding-top: 2rem;
   }
 
   .map-frame {
@@ -1548,9 +1899,20 @@ main {
    * On a phone the bar becomes a small grid rather than a wrapping row: flex-wrap put every
    * control on its own line and ate a quarter of the screen before the map appeared.
    */
+  /*
+   * And it scrolls away. Sticky, the three rows held 135 px of a 812 px phone — a sixth of the
+   * screen, permanently, over a profile that runs to forty-four measures. Everything in it is one
+   * swipe up. `relative` rather than `static`, so the skip link and the search list keep it as
+   * the box they are positioned against.
+   *
+   * Two equal columns, so the measure picker is never squeezed to "Folkmäng" at 320 px by a
+   * search field that only needs to show its placeholder.
+   */
   .bar {
+    position: relative;
+    top: auto;
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-areas:
       'word end'
       'measure search'
@@ -1564,6 +1926,7 @@ main {
 
   .bar-end {
     grid-area: end;
+    justify-self: end;
     margin-left: 0;
   }
 
@@ -1603,5 +1966,56 @@ main {
 
   .facts ul {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* The compare search and Close share one row under the name. Wrapping put Close alone on a
+     third line, the header a hundred pixels taller than the name it carries. */
+  .profile-actions {
+    width: 100%;
+    flex-wrap: nowrap;
+    gap: 0.6rem;
+  }
+
+  .profile-actions .search {
+    flex: 1;
+  }
+
+  .profile-actions .search input {
+    width: 100%;
+  }
+
+  .data-table td,
+  .data-table td:first-child,
+  .data-table tbody th {
+    font-size: 0.84rem;
+  }
+}
+
+/*
+ * The smallest phones: the theme chip keeps its icon and gives up its word. Its accessible name
+ * is set on the button and says the same thing, so nothing is lost to a screen reader, and the
+ * row of wordmark and two chips fits 320 px with room rather than to the pixel.
+ */
+@media (max-width: 25rem) {
+  .bar .theme-toggle span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/*
+ * A touch screen has no arrow keys to use, so the sentence about them steps aside there — and,
+ * being hidden, it leaves the SVG's description too, which is right for the same reason. Only a
+ * device with no fine pointer and no hover matches, so a tablet with a keyboard and trackpad
+ * attached keeps the sentence.
+ */
+@media (hover: none) and (pointer: coarse) {
+  .keyboard-hint {
+    display: none;
   }
 }
