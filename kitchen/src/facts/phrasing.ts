@@ -83,8 +83,8 @@ export function phrase(
       }
       return {
         text: {
-          sv: `${indicator.name.sv} — ${moved.sv} ${to} än ${from} i ${where.sv}.`,
-          en: `${indicator.name.en} — ${moved.en} in ${to} than in ${from}, in ${where.en}.`,
+          sv: `${indicator.name.sv} – ${moved.sv} ${to} än ${from} i ${where.sv}.`,
+          en: `${indicator.name.en} – ${moved.en} in ${to} than in ${from}, in ${where.en}.`,
         },
         href: `/?i=${indicator.id}&y=${to}`,
         claim: `${matching} of ${comparable} ${direction} in ${to} than ${from}`,
@@ -105,8 +105,8 @@ export function phrase(
       }
       return {
         text: {
-          sv: `${who.sv} har ${verb.sv} varje år sedan ${run.from} — ${run.years} år i rad.`,
-          en: `${who.en} ${named && municipalities.length === 1 ? 'has' : 'have'} ${verb.en} every year since ${run.from} — ${run.years} years running.`,
+          sv: `${who.sv} har ${verb.sv} varje år sedan ${run.from} – ${run.years} år i rad.`,
+          en: `${who.en} ${named && municipalities.length === 1 ? 'has' : 'have'} ${verb.en} every year since ${run.from} – ${run.years} years running.`,
         },
         href: `/?i=population&y=${run.to}${named && municipalities[0] ? `&m=${municipalities[0].code}` : ''}`,
         claim: `${direction === 1 ? 'growth' : 'decline'} ${run.years} years ${run.from}-${run.to}, ${codes.length} municipalities`,
@@ -120,8 +120,8 @@ export function phrase(
       const back = Math.round(r.recovery)
       return {
         text: {
-          sv: `${who.sv} var ${withUnit(String(fall), 'percent', 'sv')} mindre ${r.trough.year} än ${r.peak.year} — och är nu ${withUnit(String(back), 'percent', 'sv')} större än då.`,
-          en: `${who.en} was ${withUnit(String(fall), 'percent', 'en')} smaller in ${r.trough.year} than in ${r.peak.year} — and is now ${withUnit(String(back), 'percent', 'en')} larger than that low.`,
+          sv: `${who.sv} var ${withUnit(String(fall), 'percent', 'sv')} mindre ${r.trough.year} än ${r.peak.year} – och är nu ${withUnit(String(back), 'percent', 'sv')} större än då.`,
+          en: `${who.en} was ${withUnit(String(fall), 'percent', 'en')} smaller in ${r.trough.year} than in ${r.peak.year} – and is now ${withUnit(String(back), 'percent', 'en')} larger than that low.`,
         },
         href: `/?i=population&y=${r.trough.year}&m=${code}`,
         claim: `${code} peak ${r.peak.year} trough ${r.trough.year} fall ${fall}% recovery ${back}%`,
@@ -140,8 +140,8 @@ export function phrase(
       // the measure first sidesteps the article and the agreement together.
       return {
         text: {
-          sv: `${indicator.name.sv} i ${who.sv} — ${lower ? 'lägre' : 'högre'} än i kommunerna som liknar den mest: ${measure(self, indicator, 'sv')} mot ${measure(peers, indicator, 'sv')}.`,
-          en: `${indicator.name.en} in ${who.en} — ${lower ? 'lower' : 'higher'} than in the places most like it: ${measure(self, indicator, 'en')} against ${measure(peers, indicator, 'en')}.`,
+          sv: `${indicator.name.sv} i ${who.sv} – ${lower ? 'lägre' : 'högre'} än i kommunerna som liknar den mest: ${measure(self, indicator, 'sv')} mot ${measure(peers, indicator, 'sv')}.`,
+          en: `${indicator.name.en} in ${who.en} – ${lower ? 'lower' : 'higher'} than in the places most like it: ${measure(self, indicator, 'en')} against ${measure(peers, indicator, 'en')}.`,
         },
         href: `/?i=${indicator.id}&y=${year}&m=${code}`,
         claim: `${code} ${indicator.id} ${year}: ${self} vs peers ${peers}`,

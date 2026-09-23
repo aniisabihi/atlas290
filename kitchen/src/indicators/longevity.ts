@@ -26,9 +26,9 @@ const windowEndingIn = (year: number) => `${year - 4}-${year}`
 const LIFE_CONTENT_LABEL = 'Medellivslängd'
 
 const SHARED_CAVEAT_SV =
-  'Varje värde avser ett femårsfönster och redovisas här under fönstrets sista år: 2002 är alltså 1998–2002. Fönstren överlappar med fyra år, så två intilliggande värden bygger på fyra femtedelar av samma dödsfall — förändringen mellan två år säger därför nästan ingenting, och kurvan är jämnare än verkligheten. Måttet är ett syntetiskt kohortmått: det beskriver dödligheten under perioden, inte hur länge någon som föddes då faktiskt kommer att leva.'
+  'Varje värde avser ett femårsfönster och redovisas här under fönstrets sista år: 2002 är alltså 1998–2002. Fönstren överlappar med fyra år, så två intilliggande värden bygger på fyra femtedelar av samma dödsfall – förändringen mellan två år säger därför nästan ingenting, och kurvan är jämnare än verkligheten. Måttet är ett syntetiskt kohortmått: det beskriver dödligheten under perioden, inte hur länge någon som föddes då faktiskt kommer att leva.'
 const SHARED_CAVEAT_EN =
-  'Each value covers a five-year window and is published here under that window’s last year: 2002 is 1998–2002. The windows overlap by four years, so two adjacent values are built from four-fifths of the same deaths — the change between two years therefore says almost nothing, and the line is smoother than reality. It is a synthetic cohort measure: it describes mortality during the period, not how long anyone born then will actually live.'
+  'Each value covers a five-year window and is published here under that window’s last year: 2002 is 1998–2002. The windows overlap by four years, so two adjacent values are built from four-fifths of the same deaths – the change between two years therefore says almost nothing, and the line is smoother than reality. It is a synthetic cohort measure: it describes mortality during the period, not how long anyone born then will actually live.'
 
 function lifeExpectancy(id: string, sv: string, en: string, who: string, whoEn: string): Indicator {
   return Indicator.parse({

@@ -57,18 +57,18 @@ export const MIGRATION: Indicator = Indicator.parse({
     sv:
       'Flyttningsöverskottet publiceras direkt av SCB och härleds aldrig här genom att dra ' +
       'inflyttning från utflyttning. Det väljs vid åldersaggregatet (utpekat genom etikett) och ' +
-      'könstotalen: summerat över de två könen där ingen totalkod finns (TAB1211, TAB1212 — ' +
+      'könstotalen: summerat över de två könen där ingen totalkod finns (TAB1211, TAB1212 – ' +
       'säkert, eftersom könsuppdelade antal före 2025 är disjunkta och ostörda), eller valt ' +
-      'direkt där en finns (TAB6640:s ”TotSa”). Delat med samma kommuns folkmängd samma år — ' +
-      'läst ur byggkontexten i stället för att hämtas på nytt — och multiplicerat med 1 000. En ' +
+      'direkt där en finns (TAB6640:s ”TotSa”). Delat med samma kommuns folkmängd samma år – ' +
+      'läst ur byggkontexten i stället för att hämtas på nytt – och multiplicerat med 1 000. En ' +
       'saknad folkmängd ger en saknad kvot i stället för en division med noll.',
     en:
       'Net migration is published directly by SCB, never derived by subtracting in- from ' +
       'out-migration flows here. Selected at the age total (resolved by label) and the sex ' +
-      'total: summed over the two sexes where no total code exists (TAB1211, TAB1212 — safe, ' +
+      'total: summed over the two sexes where no total code exists (TAB1211, TAB1212 – safe, ' +
       'since pre-2025 sex-split counts are disjoint and unperturbed), or selected directly ' +
       'where one does (TAB6640’s "TotSa"). Divided by that same municipality’s population in ' +
-      'the same year — read from the build context rather than refetched — and multiplied by ' +
+      'the same year – read from the build context rather than refetched – and multiplied by ' +
       '1,000. A null population yields a null rate rather than a division by zero.',
   },
 })

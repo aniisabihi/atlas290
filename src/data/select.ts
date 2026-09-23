@@ -210,7 +210,7 @@ export function observationSentence(
       ? statusPhrase(status, lang)
       : status === 'present'
         ? formatWithUnit(value, indicator, lang)
-        : `${formatWithUnit(value, indicator, lang)} — ${statusPhrase(status, lang)}`
+        : `${formatWithUnit(value, indicator, lang)} – ${statusPhrase(status, lang)}`
 
   const rank = value === null ? null : rankOf(lk, indicatorId, year, code)
   const withRank = rank ? `${reading}, ${strings.rank(rank.rank, rank.outOf)}` : reading

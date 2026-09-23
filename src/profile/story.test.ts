@@ -159,7 +159,7 @@ describe('the standing', () => {
     // So the assertion is now the shape: the measure's own name, then an em dash, then the
     // standing. No measure name is ever inflected into the sentence.
     const lund = sentence('1281', 'standing')?.text.sv
-    expect(lund).toMatch(/^[A-ZÅÄÖ][^—]+ — (näst |)(högst|lägst) i landet, av 290 kommuner/)
+    expect(lund).toMatch(/^[A-ZÅÄÖ][^—]+ – (näst |)(högst|lägst) i landet, av 290 kommuner/)
     expect(lund).not.toMatch(/landets \d/)
   })
 
@@ -231,6 +231,16 @@ describe('coverage across the whole country', () => {
       const s = story(m.code)
       expect(s.length, m.name.sv).toBeGreaterThan(0)
       expect(s.length, m.name.sv).toBeLessThanOrEqual(3)
+    }
+  })
+
+  it('sets every dash as a spaced en dash that never starts a line', () => {
+    // ADR-0025 D10.
+    for (const m of data.municipalities) {
+      for (const s of story(m.code)) {
+        expect(s.text.sv, `${m.name.sv} ${s.id}`).not.toMatch(/—| – /)
+        expect(s.text.en, `${m.name.en} ${s.id}`).not.toMatch(/—| – /)
+      }
     }
   })
 

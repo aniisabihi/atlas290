@@ -482,6 +482,21 @@ describe('every published piece of indicator prose is in both languages', () => 
     expect(swedish.filter((text) => /\d \d{3}(?!\d)/.test(text))).toEqual([])
   })
 
+  it('sets every dash as a spaced en dash that never starts a line', () => {
+    // ADR-0025 D10: Swedish and British typesetting use a spaced en dash, and the space before it
+    // is non-breaking so no line of prose begins with one. An unspaced en dash is a range.
+    const prose = indicators.flatMap((i) =>
+      (['sv', 'en'] as const).flatMap((lang) => [
+        i.name[lang],
+        i.description[lang],
+        i.caveat[lang],
+        i.derivation[lang],
+        ...i.sources.map((s) => s.note[lang]),
+      ]),
+    )
+    expect(prose.filter((text) => /—| – /.test(text))).toEqual([])
+  })
+
   it('sets English apostrophes the way the rest of the site does', () => {
     // The site's own English uses the typographic apostrophe; the pantry's mixed 71 of those with
     // 32 straight ones, nearly all in derivations. A straight one between two letters is a slip.

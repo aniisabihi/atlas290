@@ -23,7 +23,7 @@ const sv = {
   skipToTable: 'Hoppa till tabellen',
 
   otherLanguage: 'English',
-  switchLanguage: 'English — byt språk till engelska',
+  switchLanguage: 'English – byt språk till engelska',
 
   // The label says what pressing it DOES, not what the page currently is.
   viewGroup: 'Vy',
@@ -150,7 +150,7 @@ const sv = {
   hideTable: 'Visa karta',
   similarHeading: 'Platser som liknar den här',
   similarMethod: (n: number, from: number, to: number) =>
-    `Mest lika sett till ${n} mått, ${from}–${to}. Ingen inbördes ordning — skillnaden mellan den femte och den sjätte är för liten för att betyda något.`,
+    `Mest lika sett till ${n} mått, ${from}–${to}. Ingen inbördes ordning – skillnaden mellan den femte och den sjätte är för liten för att betyda något.`,
   similarNone: 'Inga jämförbara platser i den här utgåvan.',
   goTo: (name: string) => `Gå till ${name}`,
   storyHeading: 'Kort om kommunen',
@@ -172,7 +172,7 @@ const en: Strings = {
   skipToTable: 'Skip to the table',
 
   otherLanguage: 'Svenska',
-  switchLanguage: 'Svenska — switch language to Swedish',
+  switchLanguage: 'Svenska – switch language to Swedish',
 
   viewGroup: 'View',
   tableToggle: 'Table',
@@ -275,7 +275,7 @@ const en: Strings = {
   hideTable: 'Show map',
   similarHeading: 'Places like this one',
   similarMethod: (n: number, from: number, to: number) =>
-    `Most alike across ${n} measures, ${from}–${to}. In no particular order — the gap between the fifth and the sixth is too small to mean anything.`,
+    `Most alike across ${n} measures, ${from}–${to}. In no particular order – the gap between the fifth and the sixth is too small to mean anything.`,
   similarNone: 'No comparable places in this release.',
   goTo: (name: string) => `Go to ${name}`,
   storyHeading: 'In short',

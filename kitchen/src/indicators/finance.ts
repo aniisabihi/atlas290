@@ -37,8 +37,8 @@ export const TAX_BASE: Indicator = Indicator.parse({
   id: 'taxable-income-per-resident',
   name: { sv: 'Skattekraft', en: 'Tax base per resident' },
   description: {
-    sv: 'Kommunens beskattningsbara förvärvsinkomst per invånare — det underlag den kommunala skattesatsen tas ut på.',
-    en: 'The municipality’s taxable earned income per resident — the base its tax rate is levied on.',
+    sv: 'Kommunens beskattningsbara förvärvsinkomst per invånare – det underlag den kommunala skattesatsen tas ut på.',
+    en: 'The municipality’s taxable earned income per resident – the base its tax rate is levied on.',
   },
   unit: 'sek',
   priceBasis: 'fixed-latest-year',
@@ -57,13 +57,13 @@ export const TAX_BASE: Indicator = Indicator.parse({
   derivation: {
     sv:
       'En SCB-cell per kommun och år: TAB3600:s innehållskod ”Skattekraft, kronor per ' +
-      'invånare”, utpekad genom sin stabila svenska etikett — samma tabell publicerar också den ' +
+      'invånare”, utpekad genom sin stabila svenska etikett – samma tabell publicerar också den ' +
       'totala beskattningsbara inkomsten och en andel av riksmedelvärdet, och att ta någon av ' +
       'dem skulle publicera en rimlig siffra för en annan fråga. Redan i kronor per invånare, ' +
       'så ingenting delas här; varje år räknas sedan om till prisindexets eget basår.',
     en:
       'One SCB cell per municipality and year: TAB3600’s "Skattekraft, kronor per invånare" ' +
-      'content code, resolved by its stable Swedish label — the same table also publishes the ' +
+      'content code, resolved by its stable Swedish label – the same table also publishes the ' +
       'total tax base and a share of the national mean, and taking either would publish a ' +
       'plausible number for a different question. Already in kronor per resident, so nothing is ' +
       'divided here; every year is then converted to the price index’s own base year.',
@@ -74,16 +74,16 @@ export const DISPOSABLE: Indicator = Indicator.parse({
   id: 'disposable-household-income',
   name: { sv: 'Disponibel hushållsinkomst', en: 'Disposable household income' },
   description: {
-    sv: 'Medianhushållets disponibla inkomst — vad hushållet har kvar efter skatter och bidrag — för samtliga hushåll med minst en person 18 år eller äldre.',
-    en: 'The median household’s disposable income — what is left after taxes and transfers — across all households with at least one person aged 18 or over.',
+    sv: 'Medianhushållets disponibla inkomst – vad hushållet har kvar efter skatter och bidrag – för samtliga hushåll med minst en person 18 år eller äldre.',
+    en: 'The median household’s disposable income – what is left after taxes and transfers – across all households with at least one person aged 18 or over.',
   },
   unit: 'sek',
   priceBasis: 'none',
   scale: { kind: 'sequential', breaks: [] },
   coverage: { from: DISPOSABLE_YEARS[0]!, to: DISPOSABLE_YEARS[DISPOSABLE_YEARS.length - 1]! },
   caveat: {
-    sv: 'SCB publicerar denna tabell i fasta priser och sätter själv basåret. Serien är alltså redan inflationsjusterad — men inte av detta projekt och inte till samma år som medianinkomst och huspriser, som räknas om till prisindexets senaste år här. Jämför därför inte kronbelopp rakt av mellan denna indikator och de två. Avser hushåll, inte personer: ett hushåll kan vara en eller sex personer, och kommuner med många stora hushåll får högre siffror utan att någon enskild har mer.',
-    en: 'SCB publishes this table in fixed prices and chooses the base year itself. The series is therefore already adjusted for inflation — but not by this project, and not to the same year as median income and house prices, which are converted here to the price index’s latest year. Do not compare kronor directly between this indicator and those two. It describes households, not people: a household may be one person or six, and a municipality with many large households shows higher figures without anyone individually having more.',
+    sv: 'SCB publicerar denna tabell i fasta priser och sätter själv basåret. Serien är alltså redan inflationsjusterad – men inte av detta projekt och inte till samma år som medianinkomst och huspriser, som räknas om till prisindexets senaste år här. Jämför därför inte kronbelopp rakt av mellan denna indikator och de två. Avser hushåll, inte personer: ett hushåll kan vara en eller sex personer, och kommuner med många stora hushåll får högre siffror utan att någon enskild har mer.',
+    en: 'SCB publishes this table in fixed prices and chooses the base year itself. The series is therefore already adjusted for inflation – but not by this project, and not to the same year as median income and house prices, which are converted here to the price index’s latest year. Do not compare kronor directly between this indicator and those two. It describes households, not people: a household may be one person or six, and a municipality with many large households shows higher figures without anyone individually having more.',
   },
   sensitivity: 'none',
   sources: [
@@ -186,13 +186,13 @@ export const PRICE_TO_INCOME: Indicator = Indicator.parse({
   derivation: {
     sv:
       'house-prices delat med median-income, cell för cell, ur den här datamängdens egna två ' +
-      'publicerade serier i stället för ur en tredje hämtning — så att kvoten kan kontrolleras ' +
+      'publicerade serier i stället för ur en tredje hämtning – så att kvoten kan kontrolleras ' +
       'mot de två siffror en läsare redan ser. Båda är justerade till samma basår innan detta ' +
       'körs, så kvoten förvrängs inte av inflationen. Åren är de som båda serierna publicerar; ' +
       'där någon av sidorna saknas saknas också kvoten.',
     en:
       'house-prices divided by median-income, cell by cell, from this pantry’s own two ' +
-      'published series rather than from a third fetch — so the ratio can be checked against ' +
+      'published series rather than from a third fetch – so the ratio can be checked against ' +
       'the two numbers a reader can already see. Both are adjusted to the same base year before ' +
       'this runs, so the quotient is not distorted by inflation. The years are the ones both ' +
       'series publish; where either side is absent, so is the ratio.',

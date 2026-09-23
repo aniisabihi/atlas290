@@ -38,8 +38,8 @@ export const RENT: Indicator = Indicator.parse({
   scale: { kind: 'sequential', breaks: [] },
   coverage: { from: RENT_YEARS[0]!, to: RENT_YEARS[RENT_YEARS.length - 1]! },
   caveat: {
-    sv: 'Per kvadratmeter och år, inte per lägenhet: en kommun med små lägenheter kan ha hög kvadratmeterhyra och låg månadshyra. Därför heter indikatorn det den mäter. Beloppen är nominella kronor och räknas INTE om till ett gemensamt prisår, till skillnad från medianinkomst och huspriser — serien är tio år kort och SCB:s egen felmarginal per kommun är betydande, särskilt i små kommuner. Avser enbart hyresrätter; bostadsrätter och äganderätter har ingen hyra att mäta.',
-    en: 'Per square metre per year, not per flat: a municipality of small flats can show a high rent per square metre and a low monthly rent. That is why the indicator is named for what it measures. The amounts are nominal kronor and are NOT converted to a common price year, unlike median income and house prices — the series is only ten years long and SCB’s own margin of error per municipality is substantial, especially in small ones. Rental flats only; owner-occupied and tenant-owned homes have no rent to measure.',
+    sv: 'Per kvadratmeter och år, inte per lägenhet: en kommun med små lägenheter kan ha hög kvadratmeterhyra och låg månadshyra. Därför heter indikatorn det den mäter. Beloppen är nominella kronor och räknas INTE om till ett gemensamt prisår, till skillnad från medianinkomst och huspriser – serien är tio år kort och SCB:s egen felmarginal per kommun är betydande, särskilt i små kommuner. Avser enbart hyresrätter; bostadsrätter och äganderätter har ingen hyra att mäta.',
+    en: 'Per square metre per year, not per flat: a municipality of small flats can show a high rent per square metre and a low monthly rent. That is why the indicator is named for what it measures. The amounts are nominal kronor and are NOT converted to a common price year, unlike median income and house prices – the series is only ten years long and SCB’s own margin of error per municipality is substantial, especially in small ones. Rental flats only; owner-occupied and tenant-owned homes have no rent to measure.',
   },
   sensitivity: 'none',
   sources: [{ table: RENT_TABLE, contentCode: '000000J4', note: neutral('2016–2025, Ah_kvm') }],
@@ -111,20 +111,20 @@ export const COMPLETED: Indicator = Indicator.parse({
   scale: { kind: 'sequential', breaks: [] },
   coverage: { from: COMPLETED_YEARS[0]!, to: COMPLETED_YEARS[COMPLETED_YEARS.length - 1]! },
   caveat: {
-    sv: 'Avser färdigställda lägenheter, alltså när bygget är klart — inte när det påbörjades eller när bygglovet gavs. Ett enda större projekt kan därför lyfta en liten kommun kraftigt ett år och lämna den på noll nästa; läs serien, inte ett enskilt år. Endast nybyggnad räknas: ombyggnad som ger nya lägenheter ingår inte. TAB2538 går tillbaka till 1938, men serien börjar 1968 eftersom talet behöver en folkmängd att delas med och folkmängdsserien här börjar då.',
-    en: 'Counts dwellings completed — when the building is finished, not when it was started or permitted. A single large project can therefore lift a small municipality sharply in one year and leave it at zero the next; read the series, not a single year. New build only: conversions that create dwellings are not included. TAB2538 reaches back to 1938, but this series starts in 1968 because the rate needs a population to divide by and the population series here starts then.',
+    sv: 'Avser färdigställda lägenheter, alltså när bygget är klart – inte när det påbörjades eller när bygglovet gavs. Ett enda större projekt kan därför lyfta en liten kommun kraftigt ett år och lämna den på noll nästa; läs serien, inte ett enskilt år. Endast nybyggnad räknas: ombyggnad som ger nya lägenheter ingår inte. TAB2538 går tillbaka till 1938, men serien börjar 1968 eftersom talet behöver en folkmängd att delas med och folkmängdsserien här börjar då.',
+    en: 'Counts dwellings completed – when the building is finished, not when it was started or permitted. A single large project can therefore lift a small municipality sharply in one year and leave it at zero the next; read the series, not a single year. New build only: conversions that create dwellings are not included. TAB2538 reaches back to 1938, but this series starts in 1968 because the rate needs a population to divide by and the population series here starts then.',
   },
   sensitivity: 'none',
   sources: [{ table: COMPLETED_TABLE, contentCode: 'BO0101A5', note: neutral('1968–2025') }],
   derivation: {
     sv:
       'Färdigställda bostäder delat med folkmängden samma år, gånger 1 000. TAB2538 delar upp ' +
-      'efter hustyp utan totalkod, så de två typerna summeras — de är disjunkta antal av samma ' +
+      'efter hustyp utan totalkod, så de två typerna summeras – de är disjunkta antal av samma ' +
       'sak, och därför är summan deklarerad som säker snarare än antagen. Nämnaren är den här ' +
       'datamängdens egen publicerade folkmängd.',
     en:
       'Completed dwellings over the population of the same year, times 1,000. TAB2538 splits by ' +
-      'house type with no total code, so the two types are summed — they are disjoint counts of ' +
+      'house type with no total code, so the two types are summed – they are disjoint counts of ' +
       'the same thing, which is why the sum is declared safe rather than assumed. The ' +
       'denominator is this pantry’s own published population.',
   },
@@ -142,8 +142,8 @@ export const STOCK: Indicator = Indicator.parse({
   scale: { kind: 'sequential', breaks: [] },
   coverage: { from: STOCK_YEARS[0]!, to: STOCK_YEARS[STOCK_YEARS.length - 1]! },
   caveat: {
-    sv: 'Räknar bostäder, inte deras storlek: en kommun med många små lägenheter får ett högt tal utan att det bor fler människor per rum. Fritidshus ingår inte, vilket märks i kommuner där en stor del av bebyggelsen är fritidsbebyggelse. Specialbostäder — student- och äldreboenden — ingår, vilket lyfter universitetsstäder.',
-    en: 'Counts homes, not their size: a municipality of many small flats shows a high figure without anyone living less densely. Holiday homes are excluded, which shows in municipalities where much of the building stock is holiday housing. Special housing — student and elderly accommodation — is included, which lifts university towns.',
+    sv: 'Räknar bostäder, inte deras storlek: en kommun med många små lägenheter får ett högt tal utan att det bor fler människor per rum. Fritidshus ingår inte, vilket märks i kommuner där en stor del av bebyggelsen är fritidsbebyggelse. Specialbostäder – student- och äldreboenden – ingår, vilket lyfter universitetsstäder.',
+    en: 'Counts homes, not their size: a municipality of many small flats shows a high figure without anyone living less densely. Holiday homes are excluded, which shows in municipalities where much of the building stock is holiday housing. Special housing – student and elderly accommodation – is included, which lifts university towns.',
   },
   sensitivity: 'none',
   sources: [{ table: STOCK_TABLE, contentCode: 'BO0104AH', note: neutral('1990–2025') }],
@@ -233,8 +233,8 @@ export const SHARE_HOUSES: Indicator = Indicator.parse({
   id: 'share-houses',
   name: { sv: 'Andel småhus', en: 'Share of homes that are houses' },
   description: {
-    sv: 'Andel av kommunens bostäder som är småhus, av samtliga bostäder — småhus, flerbostadshus, övriga hus och specialbostäder.',
-    en: 'Share of the municipality’s dwellings that are detached or semi-detached houses, out of all dwellings — houses, blocks of flats, other buildings and special housing.',
+    sv: 'Andel av kommunens bostäder som är småhus, av samtliga bostäder – småhus, flerbostadshus, övriga hus och specialbostäder.',
+    en: 'Share of the municipality’s dwellings that are detached or semi-detached houses, out of all dwellings – houses, blocks of flats, other buildings and special housing.',
   },
   unit: 'percent',
   priceBasis: 'none',
@@ -272,16 +272,16 @@ export const SHARE_RENTALS: Indicator = Indicator.parse({
   id: 'share-rentals',
   name: { sv: 'Andel hyresrätter', en: 'Share of homes that are rented' },
   description: {
-    sv: 'Andel av kommunens bostäder som är hyresrätter, av samtliga bostäder — hyresrätt, bostadsrätt, äganderätt och bostäder där upplåtelseformen saknas.',
-    en: 'Share of the municipality’s dwellings that are rented, out of all dwellings — rented, tenant-owned, owner-occupied, and those whose tenure is not recorded.',
+    sv: 'Andel av kommunens bostäder som är hyresrätter, av samtliga bostäder – hyresrätt, bostadsrätt, äganderätt och bostäder där upplåtelseformen saknas.',
+    en: 'Share of the municipality’s dwellings that are rented, out of all dwellings – rented, tenant-owned, owner-occupied, and those whose tenure is not recorded.',
   },
   unit: 'percent',
   priceBasis: 'none',
   scale: { kind: 'sequential', breaks: [] },
   coverage: { from: STOCK_YEARS[0]!, to: STOCK_YEARS[STOCK_YEARS.length - 1]! },
   caveat: {
-    sv: 'Nämnaren innehåller en fjärde kategori, "uppgift saknas", som räknas med. Att utesluta den skulle höja varje andel, och hur mycket beror på hur väl registret är ifyllt i just den kommunen — vilket inte är något läsaren kan se. Andra hand räknas som den upplåtelseform bostaden har, inte som hyresrätt.',
-    en: 'The denominator includes a fourth category, "tenure not recorded", and it is counted. Leaving it out would raise every share, by an amount that depends on how completely the register is filled in for that particular municipality — which is not something a reader can see. A sublet counts as whatever the home’s own tenure is, not as a rental.',
+    sv: 'Nämnaren innehåller en fjärde kategori, "uppgift saknas", som räknas med. Att utesluta den skulle höja varje andel, och hur mycket beror på hur väl registret är ifyllt i just den kommunen – vilket inte är något läsaren kan se. Andra hand räknas som den upplåtelseform bostaden har, inte som hyresrätt.',
+    en: 'The denominator includes a fourth category, "tenure not recorded", and it is counted. Leaving it out would raise every share, by an amount that depends on how completely the register is filled in for that particular municipality – which is not something a reader can see. A sublet counts as whatever the home’s own tenure is, not as a rental.',
   },
   sensitivity: 'none',
   sources: [
@@ -355,21 +355,21 @@ export const HOLIDAY_HOMES: Indicator = Indicator.parse({
     years: [...HOLIDAY_YEARS],
   },
   caveat: {
-    sv: 'SCB räknar bara fritidshus som ligger i ett fritidshusOMRÅDE — minst femtio hus tillsammans — så enstaka stugor saknas helt. Ungefär en tredjedel av kommunerna har inget sådant område alls och saknar därför värde: kartan visar dem som "det som mäts finns inte här", inte som noll och inte som opublicerat. Nämnaren är kommunens egna invånare, inte dess hushåll eller dess yta, så talet blir mycket stort i en liten kommun med mycket sommarstugor — det mäter hur präglad kommunen är av fritidsboende, inte hur många av invånarna som äger ett fritidshus. Två mätpunkter, 2015 och 2020.',
-    en: 'SCB counts only holiday homes inside a holiday-home AREA — at least fifty houses together — so isolated cabins are missing entirely. About a third of municipalities have no such area at all and therefore have no figure: the map shows them as "what this measures does not exist here", not as zero and not as unpublished. The denominator is the municipality’s own residents, not its households or its area, so the figure becomes very large in a small municipality full of summer houses — it measures how much the place is shaped by holiday living, not how many residents own one. Two survey points, 2015 and 2020.',
+    sv: 'SCB räknar bara fritidshus som ligger i ett fritidshusOMRÅDE – minst femtio hus tillsammans – så enstaka stugor saknas helt. Ungefär en tredjedel av kommunerna har inget sådant område alls och saknar därför värde: kartan visar dem som "det som mäts finns inte här", inte som noll och inte som opublicerat. Nämnaren är kommunens egna invånare, inte dess hushåll eller dess yta, så talet blir mycket stort i en liten kommun med mycket sommarstugor – det mäter hur präglad kommunen är av fritidsboende, inte hur många av invånarna som äger ett fritidshus. Två mätpunkter, 2015 och 2020.',
+    en: 'SCB counts only holiday homes inside a holiday-home AREA – at least fifty houses together – so isolated cabins are missing entirely. About a third of municipalities have no such area at all and therefore have no figure: the map shows them as "what this measures does not exist here", not as zero and not as unpublished. The denominator is the municipality’s own residents, not its households or its area, so the figure becomes very large in a small municipality full of summer houses – it measures how much the place is shaped by holiday living, not how many residents own one. Two survey points, 2015 and 2020.',
   },
   sensitivity: 'none',
   sources: [{ table: HOLIDAY_TABLE, contentCode: '0000000E', note: neutral('2015, 2020') }],
   derivation: {
     sv:
       'Fritidshus delat med folkmängden samma år, gånger 1 000. Nämnaren är den här ' +
-      'datamängdens egen publicerade folkmängd. Där SCB inte publicerar något — en kommun utan ' +
-      'fritidshusområde — blir cellen `nothing-to-count` i stället för `not-yet-published`: det ' +
+      'datamängdens egen publicerade folkmängd. Där SCB inte publicerar något – en kommun utan ' +
+      'fritidshusområde – blir cellen `nothing-to-count` i stället för `not-yet-published`: det ' +
       'kommer ingen siffra, eftersom det inte finns något sådant där att räkna.',
     en:
       'Holiday homes over the population of the same year, times 1,000. The denominator is this ' +
-      'pantry’s own published population. Where SCB publishes nothing — a municipality with no ' +
-      'holiday-home area — the cell is `nothing-to-count` rather than `not-yet-published`: ' +
+      'pantry’s own published population. Where SCB publishes nothing – a municipality with no ' +
+      'holiday-home area – the cell is `nothing-to-count` rather than `not-yet-published`: ' +
       'there is no figure coming, because there is nothing of this kind there to count.',
   },
 })

@@ -56,8 +56,8 @@ export const COUNCILLORS_WOMEN: Indicator = Indicator.parse({
     years: [...MANDATE_YEARS],
   },
   caveat: {
-    sv: 'Varje värde avser en hel mandatperiod och redovisas här under periodens första år, alltså det år fullmäktige tillträder: 2023 är mandatperioden 2023–2026. Måttet räknar alla förtroendevalda uppdrag i kommunen, inte bara fullmäktigeledamöter, och säger ingenting om vilka uppdrag de har — ordförandeposter är ojämnare fördelade än ledamotsplatser. Sju kommuner saknar värde för 2023–2026.',
-    en: 'Each value covers a whole mandate period and is published here under that period’s first year, the year the council takes its seats: 2023 is the 2023–2026 period. The measure counts every elected position in the municipality, not only council seats, and says nothing about which positions they are — chairs are less evenly divided than ordinary seats. Seven municipalities have no value for 2023–2026.',
+    sv: 'Varje värde avser en hel mandatperiod och redovisas här under periodens första år, alltså det år fullmäktige tillträder: 2023 är mandatperioden 2023–2026. Måttet räknar alla förtroendevalda uppdrag i kommunen, inte bara fullmäktigeledamöter, och säger ingenting om vilka uppdrag de har – ordförandeposter är ojämnare fördelade än ledamotsplatser. Sju kommuner saknar värde för 2023–2026.',
+    en: 'Each value covers a whole mandate period and is published here under that period’s first year, the year the council takes its seats: 2023 is the 2023–2026 period. The measure counts every elected position in the municipality, not only council seats, and says nothing about which positions they are – chairs are less evenly divided than ordinary seats. Seven municipalities have no value for 2023–2026.',
   },
   sensitivity: 'none',
   sources: [

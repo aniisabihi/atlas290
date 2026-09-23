@@ -122,8 +122,8 @@ export const OUT_COMMUTING: Indicator = Indicator.parse({
   scale: { kind: 'sequential', breaks: [] },
   coverage: { from: COMMUTE_YEARS[0]!, to: COMMUTE_YEARS[COMMUTE_YEARS.length - 1]! },
   caveat: {
-    sv: `Nämnaren är de förvärvsarbetande som bor i kommunen — utpendlarna plus de som både bor och arbetar där — inte hela befolkningen. Måttet säger ingenting om hur långt någon pendlar: ett byte av kommungräns i en sammanvuxen storstad räknas lika mycket som tjugo mil. ${BREAK_SV}`,
-    en: `The denominator is the employed people who live in the municipality — those who commute out plus those who both live and work there — not the whole population. The measure says nothing about how far anyone travels: crossing a boundary inside a continuous city counts the same as two hundred kilometres. ${BREAK_EN}`,
+    sv: `Nämnaren är de förvärvsarbetande som bor i kommunen – utpendlarna plus de som både bor och arbetar där – inte hela befolkningen. Måttet säger ingenting om hur långt någon pendlar: ett byte av kommungräns i en sammanvuxen storstad räknas lika mycket som tjugo mil. ${BREAK_SV}`,
+    en: `The denominator is the employed people who live in the municipality – those who commute out plus those who both live and work there – not the whole population. The measure says nothing about how far anyone travels: crossing a boundary inside a continuous city counts the same as two hundred kilometres. ${BREAK_EN}`,
   },
   sensitivity: 'none',
   sources: [
@@ -133,13 +133,13 @@ export const OUT_COMMUTING: Indicator = Indicator.parse({
   ],
   derivation: {
     sv:
-      'Utpendlare delat med utpendlare plus de som både bor och arbetar i kommunen, gånger 100 ' +
-      '— de två innehållskoderna hämtas tillsammans och delas upp efter innehållets ETIKETT, ' +
+      'Utpendlare delat med utpendlare plus de som både bor och arbetar i kommunen, gånger 100 – ' +
+      'de två innehållskoderna hämtas tillsammans och delas upp efter innehållets ETIKETT, ' +
       'eftersom de tre skarvade tabellerna använder olika koder för samma mått och bara ' +
       'etiketten är stabil mellan dem.',
     en:
       'Out-commuters over out-commuters plus those who live and work in the municipality, times ' +
-      '100 — the two content codes fetched together and partitioned by content LABEL, because ' +
+      '100 – the two content codes fetched together and partitioned by content LABEL, because ' +
       'the three stitched tables use different codes for the same measure and only the label is ' +
       'stable across them.',
   },

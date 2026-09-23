@@ -115,6 +115,21 @@ uses. A note with nothing to translate is written once with `neutral()`
 - The characters the Swedish introduces (”, ×, −) were already in the fonts' subset, which adds
   the design's own typography deliberately, so no font was rebuilt.
 
+### D10 — A dash is a spaced en dash, and never starts a line
+
+Swedish typesetting uses a spaced en dash (tankstreck, –), and so does British English; the site
+used a spaced em dash (—) in about 180 visitor-facing literals — the interface strings, the story
+and fact templates, the notices and every indicator's prose. The first pass left it as a
+house-style decision; the architect made it, and every one is now a spaced en dash in both
+languages. The space BEFORE the dash is non-breaking, the same treatment D3 gave the percent sign,
+because a line of prose must not begin with a dash. An unspaced en dash still means a range.
+
+Developer-facing text is not visitor copy and keeps its em dashes: error messages in `check.ts`,
+`pantry.ts` and the like, code comments, and the documentation. Four tests refuse an em dash or a
+dash after an ordinary space in anything a visitor reads — the string tables, the fact sentences,
+the profile's story sentences for all 290 municipalities, and every published indicator's prose.
+No figure moved: the pantry changes in prose only.
+
 ## Also fixed
 
 - **`yarn dev` could not serve a municipality page.** `vite.config.ts` read `data/indicators.json`,
@@ -170,10 +185,6 @@ suppressed years, a diverging legend, English throughout, and 320 px everywhere:
 
 ## Left as it is, deliberately
 
-- **The spaced em dash.** Swedish convention is a spaced en dash (–); the site uses a spaced em
-  dash (—) consistently in more than 150 sentences, 120 of them in the pantry's indicator prose,
-  most of that inside the published-number modules. Changing it is a house-style decision with a
-  large diff and no reader who is misled today, so it is not made here.
 - **Five facts in a three-column grid** leave one cell empty. Making one fact span two would say it
   mattered more, which ADR-0003 refuses.
 

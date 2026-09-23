@@ -93,7 +93,7 @@ export function YearSlider({
         step={1}
         value={year}
         aria-valuetext={
-          covered(year) ? String(year) : `${year} — ${notPublishedSentence(indicator, lang)}`
+          covered(year) ? String(year) : `${year} – ${notPublishedSentence(indicator, lang)}`
         }
         onChange={(event) => {
           // Taking hold of the slider stops the playback, rather than fighting it.

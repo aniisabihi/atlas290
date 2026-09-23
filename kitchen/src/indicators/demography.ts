@@ -51,12 +51,12 @@ export const FERTILITY: Indicator = Indicator.parse({
   derivation: {
     sv:
       'En SCB-cell per kommun och år: TAB4805:s enda innehållskod, utpekad genom sin stabila ' +
-      'svenska etikett, vid Kon=2 (kvinnor). Ingenting summeras — könsdimensionen väljs i ' +
+      'svenska etikett, vid Kon=2 (kvinnor). Ingenting summeras – könsdimensionen väljs i ' +
       'stället för att summeras, eftersom tabellen saknar totalkod för den och en summerad ' +
       'fruktsamhet inte vore en fruktsamhet.',
     en:
       'One SCB cell per municipality and year: TAB4805’s single content code, resolved by its ' +
-      'stable Swedish label, at Kon=2 (women). Nothing is summed — the sex dimension is ' +
+      'stable Swedish label, at Kon=2 (women). Nothing is summed – the sex dimension is ' +
       'selected, not totalled, because this table has no total code for it and a summed ' +
       'fertility rate would not be a fertility rate.',
   },
@@ -74,21 +74,21 @@ export const DEPENDENCY: Indicator = Indicator.parse({
   scale: { kind: 'sequential', breaks: [] },
   coverage: { from: DEPENDENCY_YEARS[0]!, to: DEPENDENCY_YEARS[DEPENDENCY_YEARS.length - 1]! },
   caveat: {
-    sv: 'Måttet är en kvot per 100 personer i yrkesaktiv ålder och kan därför passera 100: i Borgholm 2024 är den 123,8, i Stockholm 59,5. Det säger ingenting om vem som faktiskt arbetar eller försörjer vem — bara hur åldrarna fördelar sig. SCB beräknar kvoten själv; den härleds inte här.',
-    en: 'A ratio per 100 people of working age, so it can pass 100: Borgholm 2024 is 123.8, Stockholm 59.5. It says nothing about who actually works or supports whom — only how the ages fall. SCB computes the ratio itself; it is not derived here.',
+    sv: 'Måttet är en kvot per 100 personer i yrkesaktiv ålder och kan därför passera 100: i Borgholm 2024 är den 123,8, i Stockholm 59,5. Det säger ingenting om vem som faktiskt arbetar eller försörjer vem – bara hur åldrarna fördelar sig. SCB beräknar kvoten själv; den härleds inte här.',
+    en: 'A ratio per 100 people of working age, so it can pass 100: Borgholm 2024 is 123.8, Stockholm 59.5. It says nothing about who actually works or supports whom – only how the ages fall. SCB computes the ratio itself; it is not derived here.',
   },
   sensitivity: 'none',
   sources: [{ table: DEPENDENCY_TABLE, contentCode: '00000708', note: neutral('2000–2025') }],
   derivation: {
     sv:
       'En SCB-cell per kommun och år: TAB4642:s innehållskod ”Försörjningskvot totalt”, utpekad ' +
-      'genom sin stabila svenska etikett och aldrig efter position — samma tabell publicerar ' +
+      'genom sin stabila svenska etikett och aldrig efter position – samma tabell publicerar ' +
       'också de äldres och de ungas delar var för sig, och att ta fel kod skulle publicera en ' +
       'rimlig siffra för en annan fråga. Tabellen har ingen dimension utöver Region och Tid, så ' +
       'det finns inget att välja en total ur och inget att summera.',
     en:
       'One SCB cell per municipality and year: TAB4642’s "Försörjningskvot totalt" content ' +
-      'code, resolved by its stable Swedish label and never by position — the same table also ' +
+      'code, resolved by its stable Swedish label and never by position – the same table also ' +
       'publishes the old-age and young-age halves separately, and taking the wrong one would ' +
       'publish a plausible number for a different question. The table has no dimension beyond ' +
       'Region and Tid, so there is nothing to total and nothing to sum.',
@@ -189,8 +189,8 @@ export const NATURAL_CHANGE: Indicator = Indicator.parse({
   scale: { kind: 'diverging', breaks: [] },
   coverage: { from: NATURAL_YEARS[0]!, to: NATURAL_YEARS[NATURAL_YEARS.length - 1]! },
   caveat: {
-    sv: 'Detta är befolkningsförändringen utan flyttningar: en kommun kan ha kraftigt födelseöverskott och ändå krympa, eller tvärtom. Läs den tillsammans med flyttningsöverskottet. Nämnaren är folkmängden vid årets slut, medan födda och döda räknas under året. Från 2025 är både födda och döda hämtade ur SCB:s störningsskyddade tabeller (Cell Key Method), så talet för det året är medvetet något oskarpt — i en liten kommun kan det märkas.',
-    en: 'This is population change with migration left out: a municipality can have a strong birth surplus and still shrink, or the reverse. Read it alongside net migration. The denominator is the population at the end of the year, while births and deaths are counted during it. From 2025 both births and deaths come from SCB’s disclosure-protected tables (Cell Key Method), so that year’s figure is deliberately slightly fuzzed — in a small municipality that can show.',
+    sv: 'Detta är befolkningsförändringen utan flyttningar: en kommun kan ha kraftigt födelseöverskott och ändå krympa, eller tvärtom. Läs den tillsammans med flyttningsöverskottet. Nämnaren är folkmängden vid årets slut, medan födda och döda räknas under året. Från 2025 är både födda och döda hämtade ur SCB:s störningsskyddade tabeller (Cell Key Method), så talet för det året är medvetet något oskarpt – i en liten kommun kan det märkas.',
+    en: 'This is population change with migration left out: a municipality can have a strong birth surplus and still shrink, or the reverse. Read it alongside net migration. The denominator is the population at the end of the year, while births and deaths are counted during it. From 2025 both births and deaths come from SCB’s disclosure-protected tables (Cell Key Method), so that year’s figure is deliberately slightly fuzzed – in a small municipality that can show.',
   },
   sensitivity: 'none',
   sources: [
@@ -219,16 +219,16 @@ export const NATURAL_CHANGE: Indicator = Indicator.parse({
     sv:
       'Födda minus döda, delat med folkmängden samma år, gånger 1 000. Fyra tabeller: två för ' +
       'födda och två för döda, där varje par är en tabell för 1968–2024 som fortsätts av en ' +
-      'röjandeskyddad tabell för 2025. Ålder och kön summeras bort i varenda en — en född är en ' +
-      'född oavsett moderns ålder — så att ett antal per kommun och år återstår. De två ' +
+      'röjandeskyddad tabell för 2025. Ålder och kön summeras bort i varenda en – en född är en ' +
+      'född oavsett moderns ålder – så att ett antal per kommun och år återstår. De två ' +
       'dödstabellerna deklareras som subtraherande källor, så täljaren är redan skillnaden ' +
       'innan den delas. Nämnaren läses ur den här datamängdens egen publicerade folkmängd i ' +
       'stället för att hämtas på nytt, så de två kan aldrig vara oense om året.',
     en:
       'Births minus deaths, over the population of the same year, times 1,000. Four tables: two ' +
       'for births and two for deaths, each pair a 1968–2024 table continued by a 2025 ' +
-      'disclosure-protected one. Age and sex are totalled away in every one of them — a birth ' +
-      'is a birth whatever the mother’s age — leaving one count per municipality and year. The ' +
+      'disclosure-protected one. Age and sex are totalled away in every one of them – a birth ' +
+      'is a birth whatever the mother’s age – leaving one count per municipality and year. The ' +
       'two death tables are declared as subtracting sources, so the numerator is already the ' +
       'difference before it is divided. The denominator is read from this pantry’s own ' +
       'published population rather than refetched, so the two can never disagree about the ' +

@@ -71,18 +71,18 @@ export const INCOME: Indicator = Indicator.parse({
     sv:
       'En SCB-totalcell per kommun och år: innehållskoden för medianinkomst (”Medianinkomst, ' +
       'tkr”), utpekad genom sin stabila svenska etikett i stället för en hårdkodad kod, vid ' +
-      'åldersaggregatet ”tot16+” (16 år och äldre — det enda åldersaggregat tabellen har; ' +
+      'åldersaggregatet ”tot16+” (16 år och äldre – det enda åldersaggregat tabellen har; ' +
       'tabellen per ettårsålder, TAB3556, har inget, och medianer går inte att summera, vilket ' +
       'är skälet till att källan är TAB3554 och inte TAB3556), könstotalen ”1+2” och ' +
       'inkomstklasstotalen ”TOT” (alla inkomstklasser, även personer utan inkomst). Publicerade ' +
       'siffror är tusentals kronor (tkr); de multipliceras här med 1 000 för att lagras i hela ' +
       'kronor under projektets enhet ’sek’, och räknas sedan om från det årets kronor till det ' +
-      'senaste täckta årets kronor med konsumentprisindex för hela landet (cpi.ts) — aldrig ' +
+      'senaste täckta årets kronor med konsumentprisindex för hela landet (cpi.ts) – aldrig ' +
       'kvar som en nominell siffra som i tysthet presenteras som justerad.',
     en:
       'One SCB total cell per municipality and year: the median-income content code ' +
       '("Medianinkomst, tkr"), resolved by its stable Swedish label rather than a hardcoded ' +
-      'code, at the age total "tot16+" (16 and over — the only age total this table carries; ' +
+      'code, at the age total "tot16+" (16 and over – the only age total this table carries; ' +
       'the per-single-year-of-age table TAB3556 has none, and medians cannot be summed, which ' +
       'is why TAB3554 rather than TAB3556 is the source here), the sex total "1+2" and the ' +
       'income-class total "TOT" (every income bracket, including people with no income). ' +

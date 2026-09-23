@@ -95,6 +95,12 @@ What is covered and what is explicitly not: [accessibility.md](accessibility.md)
   the same shapes or `yarn typecheck` fails.
 - **Say what is not known.** Caveats, absence patterns and coverage gaps are shown on the page, not
   buried in the repo.
+- **Typography, in both languages.** A dash in running text is a spaced en dash (–), with a
+  non-breaking space before it so no line starts with one; an unspaced en dash is a range
+  (1968–2024). Swedish thousands and the Swedish percent sign take a non-breaking space
+  (`1 000`, `32,42 %`); English hugs the sign (`32.42%`). English apostrophes are typographic (’).
+  Tests enforce all of it: `src/i18n/strings.test.ts`, `kitchen/src/indicators/registry.test.ts`,
+  `kitchen/src/facts/phrasing.test.ts`, `src/profile/story.test.ts`. See ADR-0025.
 
 ## Generated artifacts
 

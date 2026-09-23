@@ -22,6 +22,8 @@ describe('every family renders', () => {
         expect(text[lang], lang).toMatch(/\.$/)
         expect(text[lang], lang).toMatch(/\d/)
         expect(text[lang], lang).not.toMatch(/undefined|NaN|Infinity/)
+        // A spaced en dash whose space before is non-breaking; ADR-0025 D10.
+        expect(text[lang], lang).not.toMatch(/—| – /)
       }
       expect(text.sv).not.toBe(text.en)
     },
@@ -48,10 +50,10 @@ describe('the country sentence', () => {
     // both languages, and says exactly what was checked.
     const { text } = best('country')
     expect(text.sv).toBe(
-      'Utbildningsgap mellan kvinnor och män — högre 2025 än 1985 i alla 284 kommuner.',
+      'Utbildningsgap mellan kvinnor och män – högre 2025 än 1985 i alla 284 kommuner.',
     )
     expect(text.en).toBe(
-      'Education gap between women and men — higher in 2025 than in 1985, in all 284 municipalities.',
+      'Education gap between women and men – higher in 2025 than in 1985, in all 284 municipalities.',
     )
   })
 
@@ -63,14 +65,14 @@ describe('the country sentence', () => {
 describe('the run sentence', () => {
   it('counts the municipalities rather than listing twelve names', () => {
     const { text } = best('run')
-    expect(text.sv).toBe('12 kommuner har vuxit varje år sedan 1968 — 57 år i rad.')
-    expect(text.en).toBe('12 municipalities have grown every year since 1968 — 57 years running.')
+    expect(text.sv).toBe('12 kommuner har vuxit varje år sedan 1968 – 57 år i rad.')
+    expect(text.en).toBe('12 municipalities have grown every year since 1968 – 57 years running.')
   })
 
   it('names them when there are few enough, and links to the first', () => {
     const decline = FAMILIES.run(ctx).find((c) => c.id === 'run-decline')!
     const { text, href } = phrase(decline, lookup)
-    expect(text.sv).toBe('Kramfors och Strömsund har krympt varje år sedan 1968 — 47 år i rad.')
+    expect(text.sv).toBe('Kramfors och Strömsund har krympt varje år sedan 1968 – 47 år i rad.')
     expect(text.en).toContain('Kramfors and Strömsund')
     expect(href).toContain('m=2282')
   })
@@ -96,7 +98,7 @@ describe('the other three sentences', () => {
   it('states the reversal in both directions', () => {
     const { text } = best('reversal')
     expect(text.sv).toBe(
-      'Sundbyberg var 11\u00a0% mindre 1981 än 1972 — och är nu 123\u00a0% större än då.',
+      'Sundbyberg var 11\u00a0% mindre 1981 än 1972 – och är nu 123\u00a0% större än då.',
     )
   })
 
@@ -105,10 +107,10 @@ describe('the other three sentences', () => {
     // "platserna som liknar den" was the one place the facts called municipalities places, and
     // the figures had no unit, so a tax rate read as two bare numbers.
     expect(text.sv).toBe(
-      'Kommunal skattesats i Kävlinge — lägre än i kommunerna som liknar den mest: 29,69\u00a0% mot 32,64\u00a0%.',
+      'Kommunal skattesats i Kävlinge – lägre än i kommunerna som liknar den mest: 29,69\u00a0% mot 32,64\u00a0%.',
     )
     expect(text.en).toBe(
-      'Municipal tax rate in Kävlinge — lower than in the places most like it: 29.69% against 32.64%.',
+      'Municipal tax rate in Kävlinge – lower than in the places most like it: 29.69% against 32.64%.',
     )
     // The article trap this phrasing avoids: "has lower municipal tax rate" is missing an "a",
     // and adding one breaks "lower house prices", which is plural.

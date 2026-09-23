@@ -453,7 +453,7 @@ export function MapCanvas({
           ? statusPhrase(status, lang)
           : status === 'present'
             ? formatWithUnit(value, indicator, lang)
-            : `${formatWithUnit(value, indicator, lang)} — ${statusPhrase(status, lang)}`
+            : `${formatWithUnit(value, indicator, lang)} – ${statusPhrase(status, lang)}`
       return { name, reading, value }
     },
     [lk, lang, indicatorId, year, indicator],

@@ -55,11 +55,11 @@ export const DENSITY: Indicator = Indicator.parse({
   derivation: {
     sv:
       'En SCB-totalcell per kommun och år: innehållskoden för befolkningstäthet vid könstotalen ' +
-      '”1+2”, utpekad genom etikett — vald, aldrig härledd genom att dela projektets egen ' +
+      '”1+2”, utpekad genom etikett – vald, aldrig härledd genom att dela projektets egen ' +
       'folkmängd med arean, eftersom SCB redan publicerar kvoten direkt.',
     en:
       'One SCB total cell per municipality and year: the density content code at the "1+2" sex ' +
-      'total, resolved by label — selected, never derived by dividing this project’s own ' +
+      'total, resolved by label – selected, never derived by dividing this project’s own ' +
       'population figure by area, since SCB already publishes the ratio directly.',
   },
 })

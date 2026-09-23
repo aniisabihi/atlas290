@@ -34,8 +34,8 @@ export const CARS: Indicator = Indicator.parse({
   scale: { kind: 'sequential', breaks: [] },
   coverage: { from: CARS_YEARS[0]!, to: CARS_YEARS[CARS_YEARS.length - 1]! },
   caveat: {
-    sv: 'Räknar bilar i trafik, alltså inte avställda. Bilen räknas där ägaren är registrerad, vilket lyfter kommuner med många leasing- och tjänstebilar registrerade på företag — en kommun med ett stort biluthyrningsbolag kan se bilrikare ut än den är. Talet mäter tillgång till bil, inte hur mycket den används.',
-    en: 'Counts cars in traffic, so not those taken off the road. A car is counted where its owner is registered, which lifts municipalities with many leased and company cars registered to businesses — a municipality with a large car rental firm can look more car-owning than it is. The figure measures access to a car, not how much it is driven.',
+    sv: 'Räknar bilar i trafik, alltså inte avställda. Bilen räknas där ägaren är registrerad, vilket lyfter kommuner med många leasing- och tjänstebilar registrerade på företag – en kommun med ett stort biluthyrningsbolag kan se bilrikare ut än den är. Talet mäter tillgång till bil, inte hur mycket den används.',
+    en: 'Counts cars in traffic, so not those taken off the road. A car is counted where its owner is registered, which lifts municipalities with many leased and company cars registered to businesses – a municipality with a large car rental firm can look more car-owning than it is. The figure measures access to a car, not how much it is driven.',
   },
   sensitivity: 'none',
   sources: [
@@ -49,14 +49,14 @@ export const CARS: Indicator = Indicator.parse({
     sv:
       'En SCB-cell per kommun och år: TAB3276 vid ägarkategorin med etiketten ”totalt antal ' +
       'bilar per 1 000 invånare”, som är en kvot som SCB beräknar och inte ett antal. Ingenting ' +
-      'delas här. `regions: known` tar bort tabellens 291:a fyrsiffriga kod, `1917 Heby` — den ' +
+      'delas här. `regions: known` tar bort tabellens 291:a fyrsiffriga kod, `1917 Heby` – den ' +
       'kod Heby hade innan kommunen flyttades från Västmanlands till Uppsala län 2007, där den ' +
       'är 0331.',
     en:
       'One SCB cell per municipality and year: TAB3276 at the owner category labelled "totalt ' +
       'antal bilar per 1 000 invånare", which is a rate SCB computes rather than a count. ' +
       'Nothing is divided here. `regions: known` drops the table’s 291st four-digit code, `1917 ' +
-      'Heby` — the code Heby carried before it moved from Västmanland to Uppsala county in ' +
+      'Heby` – the code Heby carried before it moved from Västmanland to Uppsala county in ' +
       '2007, where it is 0331.',
   },
 })
