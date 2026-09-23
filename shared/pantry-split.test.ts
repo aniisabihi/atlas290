@@ -39,8 +39,10 @@ function indicatorOf(id: string, extra: Record<string, unknown> = {}) {
     coverage: { from: 2024, to: 2025 },
     caveat: { sv: 'Förbehåll.', en: 'Caveat.' },
     sensitivity: 'none',
-    sources: [{ table: 'TAB638', contentCode: 'BE0101N1', note: '2024–2025' }],
-    derivation: `How ${id} was computed.`,
+    sources: [
+      { table: 'TAB638', contentCode: 'BE0101N1', note: { sv: '2024–2025', en: '2024–2025' } },
+    ],
+    derivation: { sv: `How ${id} was computed.`, en: `How ${id} was computed.` },
     ...extra,
   })
 }
@@ -77,7 +79,7 @@ function layoutOf(id: string) {
 
 function pantryOf(ids: readonly string[]) {
   return PantryData.parse({
-    schemaVersion: 1,
+    schemaVersion: 2,
     municipalities: [stockholm, goteborg],
     indicators: ids.map((id) => indicatorOf(id)),
     series: ids.map((id) => seriesOf(id)),
@@ -273,7 +275,7 @@ describe('viewOf keeps every check that only PantryView.parse was performing', (
     // PantryIndex accepts this — checkPriceBasis only pairs the two fields — so viewOf is the
     // only thing standing between a published index and the site dividing by undefined.
     const index = PantryIndex.parse({
-      schemaVersion: 1,
+      schemaVersion: 2,
       municipalities: [stockholm, goteborg],
       indicators: [
         IndicatorMeta.parse(
@@ -300,7 +302,7 @@ describe('viewOf keeps every check that only PantryView.parse was performing', (
 
   it('reports every cross-reference failure at once, not just the first', () => {
     const index = PantryIndex.parse({
-      schemaVersion: 1,
+      schemaVersion: 2,
       municipalities: [stockholm, goteborg],
       indicators: [
         IndicatorMeta.parse(

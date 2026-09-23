@@ -50,7 +50,8 @@ describe('unitSuffix', () => {
     ['mean-age', 'en', 'years'],
     ['density', 'sv', 'inv/km²'],
     ['density', 'en', 'people/km²'],
-    ['net-migration-rate', 'sv', 'per 1 000 invånare'],
+    // A non-breaking space inside the thousand, so "1" never ends a line with "000" on the next.
+    ['net-migration-rate', 'sv', `per 1${NBSP}000 invånare`],
     ['net-migration-rate', 'en', 'per 1,000 residents'],
     ['median-income', 'sv', 'kr'],
     ['median-income', 'en', 'SEK'],

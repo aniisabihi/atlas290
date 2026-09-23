@@ -216,8 +216,8 @@ const QUOTIENT: Indicator = Indicator.parse({
   scale: { kind: 'sequential', breaks: [] },
   coverage: { from: 2020, to: 2021 },
   caveat: { sv: 'x', en: 'x' },
-  derivation: 'x',
-  sources: [{ table: 'TAB1', contentCode: 'C', note: 'n' }],
+  derivation: { sv: 'x', en: 'x' },
+  sources: [{ table: 'TAB1', contentCode: 'C', note: { sv: 'n', en: 'n' } }],
   sensitivity: 'none',
 })
 

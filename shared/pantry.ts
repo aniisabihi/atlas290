@@ -261,9 +261,14 @@ const IndicatorFields = z.object({
   /** For indicators built from events (house sales): below this count the cell is 'too-few-cases'. */
   minCount: z.number().int().positive().optional(),
   sensitivity: z.enum(['none', 'sensitive']),
-  sources: z.array(z.object({ table: z.string(), contentCode: z.string(), note: z.string() })),
+  /**
+   * Both languages, like every other piece of prose here, since issue #48. The note and the
+   * derivation were single English strings, so the Swedish page showed English under a Swedish
+   * heading. A note that has nothing to translate — "1968–2024" — says so in both slots.
+   */
+  sources: z.array(z.object({ table: z.string(), contentCode: z.string(), note: Bilingual })),
   /** Plain-language statement of how the value was computed from the sources. */
-  derivation: z.string(),
+  derivation: Bilingual,
 })
 export type Indicator = z.infer<typeof Indicator>
 
@@ -545,9 +550,18 @@ export const IndicatorLayout = BubbleLayoutFields.extend({ indicator: IndicatorI
 )
 export type IndicatorLayout = z.infer<typeof IndicatorLayout>
 
+/**
+ * The pantry's contract version. 2 since issue #48 turned `derivation` and `sources[].note` from
+ * strings into `Bilingual`: a required field changed shape, which ADR-0021 bumped for and
+ * ADR-0022 explains is not compatible in either direction — an old bundle cannot read an object
+ * where it expects a string. Carried by the index, because the index is what versions the whole
+ * split pantry; the per-indicator files are read against it.
+ */
+export const PANTRY_SCHEMA_VERSION = 2
+
 export const PantryData = z
   .object({
-    schemaVersion: z.literal(1),
+    schemaVersion: z.literal(PANTRY_SCHEMA_VERSION),
     municipalities: z.array(Municipality),
     indicators: z.array(Indicator),
     series: z.array(IndicatorSeries),
@@ -571,7 +585,7 @@ export type PantryData = z.infer<typeof PantryData>
  */
 export const PantryIndex = z
   .object({
-    schemaVersion: z.literal(1),
+    schemaVersion: z.literal(PANTRY_SCHEMA_VERSION),
     municipalities: z.array(Municipality),
     indicators: z.array(IndicatorMeta),
     priceIndex: PriceIndex,
@@ -626,7 +640,7 @@ export type PantryIndicator = z.infer<typeof PantryIndicator>
  */
 export const PantryView = z
   .object({
-    schemaVersion: z.literal(1),
+    schemaVersion: z.literal(PANTRY_SCHEMA_VERSION),
     municipalities: z.array(Municipality),
     indicators: z.array(IndicatorMeta),
     series: z.array(IndicatorSeries),

@@ -898,12 +898,6 @@ main {
   color: var(--text-muted);
 }
 
-.about-indicator .about-method-note {
-  font-family: var(--font-display);
-  font-style: italic;
-  margin-bottom: 0.3rem;
-}
-
 /* ─────────────────────────────────────────── everything below the fold ──
  * Sections the page continues into. Each is led by a heavy rule, which is the
  * one piece of editorial furniture doing real work: it says "new subject".

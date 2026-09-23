@@ -3,7 +3,7 @@
 **Date:** 2026-09-23
 **Plan:** none — a review of the finished site, screen by screen, in both languages, both themes
 and at 1,440, 900, 375 and 320 px, rather than an increment with a plan of its own.
-**Status:** accepted. Refines ADR-0011 (the profile keeps its full-width row; D4 below is what it
+**Status:** accepted. Closes issue #48. Refines ADR-0011 (the profile keeps its full-width row; D4 below is what it
 does inside it) and corrects the unit of three indicators published since plans 16, 19 and 21.
 
 ## Context
@@ -85,6 +85,36 @@ in borders, since the fonts are subset to the site's own characters), writes a r
 under a column already headed "Plats", and marks the selected row and header hover with a fixed
 `--on-plate-accent` — the theme's dark-mode accent is about 2.2:1 on the white plate.
 
+### D9 — The method text and the source notes are in both languages (issue #48)
+
+`derivation` and `sources[].note` were the only prose in the contract that was not `Bilingual`,
+the one breach of "both languages or neither". Both are `Bilingual` now, and all 42 derivations
+and 54 notes have Swedish, written against the declarations rather than the published text, so
+every table code, content label, dimension value and status name stays exactly what the code
+uses. A note with nothing to translate is written once with `neutral()`
+(`kitchen/src/indicators/prose.ts`).
+
+- **`schemaVersion` goes to 2.** A required field changed shape, which is the case ADR-0021
+  bumped for and ADR-0022 did not: a bundle built for version 1 cannot read an object where it
+  expects a string, and a version-2 bundle cannot read the old string. The index carries the
+  version for the whole split pantry, so it is the one number that changes.
+- **The content is checked, not only the shape.** `registry.test.ts` refuses a published
+  derivation whose Swedish is the English, a note identical in both languages that contains a
+  word, and a straight apostrophe in any English prose. The last one is the house-style item this
+  record first left alone: the pantry's English mixed 71 typographic apostrophes with 32 straight
+  ones, and translating every derivation was the moment to make them one.
+- **No figure moved.** Every pantry file was compared with `main` with the prose fields and
+  `schemaVersion` removed: fifty files, none different. Names were compared separately, since that
+  removal would have hidden them: none changed.
+- **A Swedish thousand no longer breaks across lines.** Reading the new text on the page showed
+  "gånger 1" at the end of one line and "000" at the start of the next. It was not new: every
+  hand-written Swedish name, description and the unit "per 1 000 invånare" used an ordinary space
+  where `Intl` writes a non-breaking one. All of them are non-breaking now, except the one SCB
+  label the code matches against, and `registry.test.ts` refuses the ordinary space in any
+  published Swedish prose.
+- The characters the Swedish introduces (”, ×, −) were already in the fonts' subset, which adds
+  the design's own typography deliberately, so no font was rebuilt.
+
 ## Also fixed
 
 - **`yarn dev` could not serve a municipality page.** `vite.config.ts` read `data/indicators.json`,
@@ -119,10 +149,11 @@ suppressed years, a diverging legend, English throughout, and 320 px everywhere:
   line now, with a caret at the swatch.
 - **The fold-out's subheadings had no style.** They are `h3`s and the rule was written for a `dt`
   the markup no longer has, so "Publiceras för" was the largest type in the column after the year.
-- **The method text is English on the Swedish page**, and said nothing about it: the kitchen writes
-  `derivation` and source notes once, in English. It now carries `lang="en"` (WCAG 3.1.2) and a
-  line saying so. Translating it is [issue #48](https://github.com/aniisabihi/atlas290/issues/48) rather than done here, because it is prose
-  in the published-number modules and a contract change.
+- **The method text is English on the Swedish page**, and said nothing about it: the kitchen wrote
+  `derivation` and source notes once, in English. The pass first shipped a stopgap — `lang="en"`
+  (WCAG 3.1.2) and a line saying so — and filed
+  [issue #48](https://github.com/aniisabihi/atlas290/issues/48); D9 then closed the issue in the
+  same pull request and the stopgap is gone.
 - **Search put what was typed last.** Folding made "sö" match "so", which is right, but also
   ordered Sollefteå, Sollentuna and Solna above every name that begins "Sö". Folding still decides
   what is offered; within a tier, a literal prefix now comes first.
@@ -143,13 +174,13 @@ suppressed years, a diverging legend, English throughout, and 320 px everywhere:
   dash (—) consistently in more than 150 sentences, 120 of them in the pantry's indicator prose,
   most of that inside the published-number modules. Changing it is a house-style decision with a
   large diff and no reader who is misled today, so it is not made here.
-- **The pantry's English apostrophes** are mixed, 71 typographic and 32 straight, mostly in the
-  derivations. Same reason as the dash, and noted on #48.
 - **Five facts in a three-column grid** leave one cell empty. Making one fact span two would say it
   mattered more, which ADR-0003 refuses.
 
 ## Consequences
 
-`public/pantry/` changes in five files: `facts.json` (the wording and units of four sentences) and
-the unit field of three indicators and the index. Two publishes from the same frozen responses
-are byte-identical.
+`public/pantry/` changes in forty-five files: `facts.json` (the wording and units of four
+sentences), the index (`schemaVersion` 2 and the unit field of three indicators), and every
+indicator file (its derivation and notes in both languages, English apostrophes made typographic,
+and the unit field of three). No value, status, break or layout moved. Two publishes from the same
+frozen responses are byte-identical.

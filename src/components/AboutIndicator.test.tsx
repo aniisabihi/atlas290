@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import { AboutIndicator } from './AboutIndicator'
 import { publishedParts } from '../test/pantry'
 
@@ -72,22 +72,23 @@ describe('AboutIndicator', () => {
     }
   })
 
-  it('marks the English-only method text as English on the Swedish page', () => {
-    // The derivation and the source notes are written once, in English, by the kitchen. On a
-    // page declared lang="sv" a screen reader otherwise reads them with Swedish pronunciation —
-    // WCAG 3.1.2, Language of Parts — and a sighted reader met English under a Swedish heading
-    // with nothing saying why.
+  it('says how the value was calculated in the language of the page', () => {
+    // Issue #48: the method text and the source notes were English on the Swedish page, marked
+    // lang="en" and apologised for. Both are in both languages now, so the page speaks one.
     draw('net-migration-rate', 'sv')
-    const derivation = screen.getByText(/never derived by subtracting in- from out-migration flows/)
-    expect(derivation.closest('[lang]')?.getAttribute('lang')).toBe('en')
-    expect(screen.getByText(/Metodbeskrivningen finns bara på engelska/)).toBeTruthy()
-    for (const item of screen.getAllByRole('listitem')) {
-      expect(item.closest('[lang]')?.getAttribute('lang')).toBe('en')
-    }
+    expect(
+      screen.getByText(/härleds aldrig här genom att dra inflyttning från utflyttning/),
+    ).toBeTruthy()
+    expect(screen.queryByText(/never derived by subtracting/)).toBeNull()
+    expect(document.querySelector('.about-indicator [lang]')).toBeNull()
+    expect(screen.queryByText(/bara på engelska/)).toBeNull()
   })
 
-  it('does not label English as English on the English page', () => {
-    draw('net-migration-rate', 'en')
-    expect(screen.queryByText(/only in English/i)).toBeNull()
+  it('gives each source its note in the language of the page', () => {
+    draw('natural-change-rate', 'sv')
+    expect(screen.getByText(/födda 1968–2024/)).toBeTruthy()
+    cleanup()
+    draw('natural-change-rate', 'en')
+    expect(screen.getByText(/births 1968–2024/)).toBeTruthy()
   })
 })

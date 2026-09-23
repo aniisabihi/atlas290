@@ -59,8 +59,13 @@ describe('pantry schemas', () => {
       coverage: { from: 1968, to: 2025 },
       caveat: { sv: '', en: '' },
       sensitivity: 'none',
-      sources: [{ table: 'TAB638', contentCode: 'BE0101N1', note: '1968–2024' }],
-      derivation: 'Sum over sex and marital status of SCB table cell values.',
+      sources: [
+        { table: 'TAB638', contentCode: 'BE0101N1', note: { sv: '1968–2024', en: '1968–2024' } },
+      ],
+      derivation: {
+        sv: 'Sum over sex and marital status of SCB table cell values.',
+        en: 'Sum over sex and marital status of SCB table cell values.',
+      },
     })
     const series = IndicatorSeries.parse({
       indicator: 'population',
@@ -69,7 +74,7 @@ describe('pantry schemas', () => {
       status: [[0, 3]],
     })
     const pantry = PantryData.parse({
-      schemaVersion: 1,
+      schemaVersion: 2,
       municipalities: [stockholm],
       indicators: [indicator],
       series: [series],
@@ -114,8 +119,13 @@ describe('pantry schemas', () => {
       coverage: { from: 1968, to: 2025 },
       caveat: { sv: '', en: '' },
       sensitivity: 'none',
-      sources: [{ table: 'TAB638', contentCode: 'BE0101N1', note: '1968–2024' }],
-      derivation: 'Sum over sex and marital status of SCB table cell values.',
+      sources: [
+        { table: 'TAB638', contentCode: 'BE0101N1', note: { sv: '1968–2024', en: '1968–2024' } },
+      ],
+      derivation: {
+        sv: 'Sum over sex and marital status of SCB table cell values.',
+        en: 'Sum over sex and marital status of SCB table cell values.',
+      },
     })
     const series = IndicatorSeries.parse({
       indicator: 'missing-indicator',
@@ -125,13 +135,43 @@ describe('pantry schemas', () => {
     })
     expect(() =>
       PantryData.parse({
-        schemaVersion: 1,
+        schemaVersion: 2,
         municipalities: [stockholm],
         indicators: [indicator],
         series: [series],
         priceIndex,
       }),
     ).toThrow(/missing-indicator/)
+  })
+
+  it('carries the method text and every source note in both languages', () => {
+    // Issue #48. `derivation` and `sources[].note` were single English strings, so the Swedish
+    // page showed English under a Swedish heading — the one breach of "both languages or
+    // neither" in the contract. A bare string is now refused, so no declaration can slip back.
+    const fields = {
+      id: 'population',
+      name: { sv: 'Folkmängd', en: 'Population' },
+      description: { sv: 'Antal invånare 31 december.', en: 'Residents on 31 December.' },
+      unit: 'count',
+      priceBasis: 'none',
+      scale: { kind: 'sequential', breaks: [1000, 5000, 20000, 50000, 100000, 500000] },
+      coverage: { from: 1968, to: 2025 },
+      caveat: { sv: '', en: '' },
+      sensitivity: 'none',
+    }
+    const bilingual = {
+      ...fields,
+      sources: [{ table: 'TAB638', contentCode: 'BE0101N1', note: { sv: 'födda', en: 'births' } }],
+      derivation: { sv: 'Summa över kön.', en: 'Sum over sex.' },
+    }
+    expect(Indicator.safeParse(bilingual).success).toBe(true)
+    expect(Indicator.safeParse({ ...bilingual, derivation: 'Sum over sex.' }).success).toBe(false)
+    expect(
+      Indicator.safeParse({
+        ...bilingual,
+        sources: [{ table: 'TAB638', contentCode: 'BE0101N1', note: 'births' }],
+      }).success,
+    ).toBe(false)
   })
 })
 
@@ -264,8 +304,11 @@ describe('coverage.years', () => {
     scale: { kind: 'sequential', breaks: [1, 2, 3, 4, 5, 6] },
     caveat: { sv: '', en: '' },
     sensitivity: 'none',
-    sources: [{ table: 'TAB2707', contentCode: 'ME0104B8', note: '' }],
-    derivation: 'One SCB cell per municipality and election year.',
+    sources: [{ table: 'TAB2707', contentCode: 'ME0104B8', note: { sv: '', en: '' } }],
+    derivation: {
+      sv: 'One SCB cell per municipality and election year.',
+      en: 'One SCB cell per municipality and election year.',
+    },
   }
   const withCoverage = (coverage: unknown) => () => Indicator.parse({ ...base, coverage })
 
@@ -347,8 +390,11 @@ describe('scale', () => {
       coverage: { from: 2024, to: 2025 },
       caveat: { sv: '', en: '' },
       sensitivity: 'none',
-      sources: [{ table: 'TAB638', contentCode: 'BE0101N1', note: '' }],
-      derivation: 'Sum over sex and marital status.',
+      sources: [{ table: 'TAB638', contentCode: 'BE0101N1', note: { sv: '', en: '' } }],
+      derivation: {
+        sv: 'Sum over sex and marital status.',
+        en: 'Sum over sex and marital status.',
+      },
     }).scale
 
   it('carries a kind and breaks, and nothing else', () => {

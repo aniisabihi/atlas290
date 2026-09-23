@@ -5,6 +5,7 @@ import { type IndicatorDefinition } from './registry'
 // binding is safe despite the population<->registry cycle — the same reasoning migration.ts and
 // derived.ts each document for their own imports of these three.
 import { CKM_FROM, POPULATION } from './population'
+import { neutral } from './prose'
 
 export const FERTILITY_TABLE = 'TAB4805'
 export const DEPENDENCY_TABLE = 'TAB4642'
@@ -46,12 +47,19 @@ export const FERTILITY: Indicator = Indicator.parse({
     en: 'Women. TAB4805 publishes the rate split by sex and carries no total code; the men’s figure is a different measure of the same births and is never summed with the women’s. The rate is a synthetic cohort measure: it describes a year, not any real woman’s childbearing. In a small municipality it moves sharply between years for reasons that are pure chance.',
   },
   sensitivity: 'none',
-  sources: [{ table: FERTILITY_TABLE, contentCode: '000001J4', note: '2000–2025, Kon=2' }],
-  derivation:
-    'One SCB cell per municipality and year: TAB4805’s single content code, resolved by its ' +
-    'stable Swedish label, at Kon=2 (women). Nothing is summed — the sex dimension is selected, ' +
-    'not totalled, because this table has no total code for it and a summed fertility rate ' +
-    'would not be a fertility rate.',
+  sources: [{ table: FERTILITY_TABLE, contentCode: '000001J4', note: neutral('2000–2025, Kon=2') }],
+  derivation: {
+    sv:
+      'En SCB-cell per kommun och år: TAB4805:s enda innehållskod, utpekad genom sin stabila ' +
+      'svenska etikett, vid Kon=2 (kvinnor). Ingenting summeras — könsdimensionen väljs i ' +
+      'stället för att summeras, eftersom tabellen saknar totalkod för den och en summerad ' +
+      'fruktsamhet inte vore en fruktsamhet.',
+    en:
+      'One SCB cell per municipality and year: TAB4805’s single content code, resolved by its ' +
+      'stable Swedish label, at Kon=2 (women). Nothing is summed — the sex dimension is ' +
+      'selected, not totalled, because this table has no total code for it and a summed ' +
+      'fertility rate would not be a fertility rate.',
+  },
 })
 
 export const DEPENDENCY: Indicator = Indicator.parse({
@@ -70,13 +78,21 @@ export const DEPENDENCY: Indicator = Indicator.parse({
     en: 'A ratio per 100 people of working age, so it can pass 100: Borgholm 2024 is 123.8, Stockholm 59.5. It says nothing about who actually works or supports whom — only how the ages fall. SCB computes the ratio itself; it is not derived here.',
   },
   sensitivity: 'none',
-  sources: [{ table: DEPENDENCY_TABLE, contentCode: '00000708', note: '2000–2025' }],
-  derivation:
-    'One SCB cell per municipality and year: TAB4642’s "Försörjningskvot totalt" content code, ' +
-    'resolved by its stable Swedish label and never by position — the same table also publishes ' +
-    'the old-age and young-age halves separately, and taking the wrong one would publish a ' +
-    'plausible number for a different question. The table has no dimension beyond Region and ' +
-    'Tid, so there is nothing to total and nothing to sum.',
+  sources: [{ table: DEPENDENCY_TABLE, contentCode: '00000708', note: neutral('2000–2025') }],
+  derivation: {
+    sv:
+      'En SCB-cell per kommun och år: TAB4642:s innehållskod ”Försörjningskvot totalt”, utpekad ' +
+      'genom sin stabila svenska etikett och aldrig efter position — samma tabell publicerar ' +
+      'också de äldres och de ungas delar var för sig, och att ta fel kod skulle publicera en ' +
+      'rimlig siffra för en annan fråga. Tabellen har ingen dimension utöver Region och Tid, så ' +
+      'det finns inget att välja en total ur och inget att summera.',
+    en:
+      'One SCB cell per municipality and year: TAB4642’s "Försörjningskvot totalt" content ' +
+      'code, resolved by its stable Swedish label and never by position — the same table also ' +
+      'publishes the old-age and young-age halves separately, and taking the wrong one would ' +
+      'publish a plausible number for a different question. The table has no dimension beyond ' +
+      'Region and Tid, so there is nothing to total and nothing to sum.',
+  },
 })
 
 export function fertilityDefined(): Definition {
@@ -161,11 +177,11 @@ function eventSource(table: string, ageDim: string, years: readonly number[], su
 export const NATURAL_CHANGE: Indicator = Indicator.parse({
   id: 'natural-change-rate',
   name: {
-    sv: 'Födelseöverskott per 1 000 invånare',
+    sv: 'Födelseöverskott per 1 000 invånare',
     en: 'Natural change per 1,000 residents',
   },
   description: {
-    sv: 'Antal födda minus antal döda under året, per 1 000 invånare. Positivt tal betyder att fler föds än dör.',
+    sv: 'Antal födda minus antal döda under året, per 1 000 invånare. Positivt tal betyder att fler föds än dör.',
     en: 'Births minus deaths during the year, per 1,000 residents. A positive figure means more people are born than die.',
   },
   unit: 'per-thousand',
@@ -178,19 +194,46 @@ export const NATURAL_CHANGE: Indicator = Indicator.parse({
   },
   sensitivity: 'none',
   sources: [
-    { table: BIRTHS_TABLE_OLD, contentCode: 'BE0101E2', note: 'födda 1968–2024' },
-    { table: BIRTHS_TABLE_NEW, contentCode: '00000863', note: 'födda 2025 (CKM)' },
-    { table: DEATHS_TABLE_OLD, contentCode: 'BE0101D9', note: 'döda 1968–2024' },
-    { table: DEATHS_TABLE_NEW, contentCode: '000008FO', note: 'döda 2025 (CKM)' },
+    {
+      table: BIRTHS_TABLE_OLD,
+      contentCode: 'BE0101E2',
+      note: { sv: 'födda 1968–2024', en: 'births 1968–2024' },
+    },
+    {
+      table: BIRTHS_TABLE_NEW,
+      contentCode: '00000863',
+      note: { sv: 'födda 2025 (CKM)', en: 'births 2025 (CKM)' },
+    },
+    {
+      table: DEATHS_TABLE_OLD,
+      contentCode: 'BE0101D9',
+      note: { sv: 'döda 1968–2024', en: 'deaths 1968–2024' },
+    },
+    {
+      table: DEATHS_TABLE_NEW,
+      contentCode: '000008FO',
+      note: { sv: 'döda 2025 (CKM)', en: 'deaths 2025 (CKM)' },
+    },
   ],
-  derivation:
-    'Births minus deaths, over the population of the same year, times 1,000. Four tables: two ' +
-    'for births and two for deaths, each pair a 1968–2024 table continued by a 2025 ' +
-    'disclosure-protected one. Age and sex are totalled away in every one of them — a birth is ' +
-    'a birth whatever the mother’s age — leaving one count per municipality and year. The two ' +
-    'death tables are declared as subtracting sources, so the numerator is already the ' +
-    'difference before it is divided. The denominator is read from this pantry’s own published ' +
-    'population rather than refetched, so the two can never disagree about the year.',
+  derivation: {
+    sv:
+      'Födda minus döda, delat med folkmängden samma år, gånger 1 000. Fyra tabeller: två för ' +
+      'födda och två för döda, där varje par är en tabell för 1968–2024 som fortsätts av en ' +
+      'röjandeskyddad tabell för 2025. Ålder och kön summeras bort i varenda en — en född är en ' +
+      'född oavsett moderns ålder — så att ett antal per kommun och år återstår. De två ' +
+      'dödstabellerna deklareras som subtraherande källor, så täljaren är redan skillnaden ' +
+      'innan den delas. Nämnaren läses ur den här datamängdens egen publicerade folkmängd i ' +
+      'stället för att hämtas på nytt, så de två kan aldrig vara oense om året.',
+    en:
+      'Births minus deaths, over the population of the same year, times 1,000. Four tables: two ' +
+      'for births and two for deaths, each pair a 1968–2024 table continued by a 2025 ' +
+      'disclosure-protected one. Age and sex are totalled away in every one of them — a birth ' +
+      'is a birth whatever the mother’s age — leaving one count per municipality and year. The ' +
+      'two death tables are declared as subtracting sources, so the numerator is already the ' +
+      'difference before it is divided. The denominator is read from this pantry’s own ' +
+      'published population rather than refetched, so the two can never disagree about the ' +
+      'year.',
+  },
 })
 
 export function naturalChangeDefined(): Definition {

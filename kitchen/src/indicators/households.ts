@@ -1,6 +1,7 @@
 import { Indicator } from '../../../shared/pantry'
 import { buildDefined, type Definition } from './define'
 import { type IndicatorDefinition } from './registry'
+import { neutral } from './prose'
 
 export const HOUSEHOLD_TABLE = 'TAB4374'
 
@@ -32,11 +33,17 @@ export const HOUSEHOLD_SIZE: Indicator = Indicator.parse({
     en: 'Registered households: SCB can only form a household for people whose home can be tied to a dwelling, and coverage is not complete in every municipality. The measure is sensitive to student housing and elderly accommodation, both of which are many small households, and it says nothing about overcrowding — a large household in a large house and a large household in a two-room flat look identical here. The series starts in 2011, when the register-based household definition began.',
   },
   sensitivity: 'none',
-  sources: [{ table: HOUSEHOLD_TABLE, contentCode: '000000M5', note: '2011–2025' }],
-  derivation:
-    'One SCB cell per municipality and year: TAB4374’s "Antal personer per hushåll" content ' +
-    'code, resolved by its stable Swedish label. SCB computes the average; it is not derived ' +
-    'here from the population and household counts the same table also publishes.',
+  sources: [{ table: HOUSEHOLD_TABLE, contentCode: '000000M5', note: neutral('2011–2025') }],
+  derivation: {
+    sv:
+      'En SCB-cell per kommun och år: TAB4374:s innehållskod ”Antal personer per hushåll”, ' +
+      'utpekad genom sin stabila svenska etikett. SCB beräknar medelvärdet; det härleds inte ' +
+      'här ur de antal personer och hushåll som samma tabell också publicerar.',
+    en:
+      'One SCB cell per municipality and year: TAB4374’s "Antal personer per hushåll" content ' +
+      'code, resolved by its stable Swedish label. SCB computes the average; it is not derived ' +
+      'here from the population and household counts the same table also publishes.',
+  },
 })
 
 export function householdSizeDefined(): Definition {

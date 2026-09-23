@@ -1,6 +1,7 @@
 import { Indicator } from '../../../shared/pantry'
 import { buildDefined, type Definition } from './define'
 import { type IndicatorDefinition } from './registry'
+import { neutral } from './prose'
 
 export const FARMLAND_TABLE = 'TAB6002'
 export const LAND_USE_TABLE = 'TAB5118'
@@ -54,12 +55,22 @@ export const FARMLAND: Indicator = Indicator.parse({
   },
   sensitivity: 'none',
   sources: [
-    { table: FARMLAND_TABLE, contentCode: '000006O6', note: '1981–2020, total jordbruksmark' },
+    {
+      table: FARMLAND_TABLE,
+      contentCode: '000006O6',
+      note: { sv: '1981–2020, total jordbruksmark', en: '1981–2020, total farmland' },
+    },
   ],
-  derivation:
-    'One SCB cell per municipality and survey year: TAB6002 at the land-use class labelled ' +
-    '"total jordbruksmark", which is arable land plus pasture and which SCB totals itself. ' +
-    'Nothing is summed here.',
+  derivation: {
+    sv:
+      'En SCB-cell per kommun och undersökningsår: TAB6002 vid markanvändningsklassen med ' +
+      'etiketten ”total jordbruksmark”, som är åkermark plus betesmark och som SCB själv ' +
+      'summerar. Ingenting summeras här.',
+    en:
+      'One SCB cell per municipality and survey year: TAB6002 at the land-use class labelled ' +
+      '"total jordbruksmark", which is arable land plus pasture and which SCB totals itself. ' +
+      'Nothing is summed here.',
+  },
 })
 
 export const SHARE_BUILT: Indicator = Indicator.parse({
@@ -82,12 +93,19 @@ export const SHARE_BUILT: Indicator = Indicator.parse({
     en: 'The denominator is land area, so water is not counted. The figure is small nearly everywhere: the median is about 5 percent, the most built-up municipality reaches 36, and thirty-six of 870 points fall below one percent. It says how much of the surface is built on, not how many people live there. Three survey points across eleven years.',
   },
   sensitivity: 'none',
-  sources: [{ table: LAND_USE_TABLE, contentCode: '000002UN', note: '2010, 2015, 2020' }],
-  derivation:
-    'Built and constructed land over total land area, times 100 — ' +
-    'two land-use classes of the same table, fetched together and partitioned by class code — ' +
-    'code rather than label here, because only ContentsCode is keyed by label and because this ' +
-    'table publishes class 3 with a trailing space in its name.',
+  sources: [{ table: LAND_USE_TABLE, contentCode: '000002UN', note: neutral('2010, 2015, 2020') }],
+  derivation: {
+    sv:
+      'Bebyggd och anlagd mark delat med total landareal, gånger 100 — två ' +
+      'markanvändningsklasser i samma tabell, hämtade tillsammans och uppdelade efter klasskod ' +
+      '— här kod snarare än etikett, eftersom bara ContentsCode pekas ut genom etikett och ' +
+      'eftersom tabellen publicerar klass 3 med ett avslutande mellanslag i namnet.',
+    en:
+      'Built and constructed land over total land area, times 100 — two land-use classes of the ' +
+      'same table, fetched together and partitioned by class code — code rather than label ' +
+      'here, because only ContentsCode is keyed by label and because this table publishes class ' +
+      '3 with a trailing space in its name.',
+  },
 })
 
 export function farmlandDefined(): Definition {

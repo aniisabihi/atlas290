@@ -14,7 +14,7 @@ export const UNIT_WORDS: Record<Indicator['unit'], Bilingual> = {
   percent: { sv: '%', en: '%' },
   years: { sv: 'år', en: 'years' },
   sek: { sv: 'kr', en: 'SEK' },
-  'per-thousand': { sv: 'per 1 000 invånare', en: 'per 1,000 residents' },
+  'per-thousand': { sv: 'per 1 000 invånare', en: 'per 1,000 residents' },
   'per-km2': { sv: 'inv/km²', en: 'people/km²' },
   'children-per-woman': { sv: 'barn per kvinna', en: 'children per woman' },
   'tonnes-per-resident': { sv: 'ton per invånare', en: 'tonnes per resident' },

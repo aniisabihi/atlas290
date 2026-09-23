@@ -46,13 +46,23 @@ export const SHARE_65_VS_COUNTRY: Indicator = Indicator.parse({
   },
   sensitivity: 'none',
   sources: [],
-  derivation:
-    'share-65-plus minus the national share of the same year. The national share is computed ' +
-    'from this pantry’s own two published series and nothing else: each municipality’s ' +
-    'over-65 count is recovered as share-65-plus times population, those counts are summed ' +
-    'across all 290, and the sum is divided by the summed population. That is exact rather ' +
-    'than a re-derivation, because share-65-plus was itself computed from this same population ' +
-    'series — so numerator and denominator cannot quietly disagree. Nothing is refetched.',
+  derivation: {
+    sv:
+      'share-65-plus minus rikets andel samma år. Rikets andel beräknas ur den här datamängdens ' +
+      'egna två publicerade serier och inget annat: varje kommuns antal över 65 återskapas som ' +
+      'share-65-plus gånger folkmängd, de antalen summeras över alla 290, och summan delas med ' +
+      'den summerade folkmängden. Det är exakt snarare än en ny härledning, eftersom ' +
+      'share-65-plus i sin tur beräknades ur samma folkmängdsserie — så täljare och nämnare kan ' +
+      'inte i tysthet gå isär. Ingenting hämtas på nytt.',
+    en:
+      'share-65-plus minus the national share of the same year. The national share is computed ' +
+      'from this pantry’s own two published series and nothing else: each municipality’s ' +
+      'over-65 count is recovered as share-65-plus times population, those counts are summed ' +
+      'across all 290, and the sum is divided by the summed population. That is exact rather ' +
+      'than a re-derivation, because share-65-plus was itself computed from this same ' +
+      'population series — so numerator and denominator cannot quietly disagree. Nothing is ' +
+      'refetched.',
+  },
 })
 
 /**

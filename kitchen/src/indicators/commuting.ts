@@ -5,6 +5,7 @@ import type { Source } from './source'
 // Read only inside the definition functions' bodies, never at this module's own top level — the
 // same reasoning every other module that divides by population documents for this import.
 import { POPULATION } from './population'
+import { neutral } from './prose'
 
 export const COMMUTE_TABLE_OLD = 'TAB3267'
 export const COMMUTE_TABLE_MID = 'TAB3266'
@@ -76,9 +77,9 @@ const BREAK_EN =
 
 export const IN_COMMUTING: Indicator = Indicator.parse({
   id: 'in-commuters-per-1000',
-  name: { sv: 'Inpendlare per 1 000 invånare', en: 'In-commuters per 1,000 residents' },
+  name: { sv: 'Inpendlare per 1 000 invånare', en: 'In-commuters per 1,000 residents' },
   description: {
-    sv: 'Antal personer som arbetar i kommunen men bor i en annan, per 1 000 invånare.',
+    sv: 'Antal personer som arbetar i kommunen men bor i en annan, per 1 000 invånare.',
     en: 'People who work in the municipality but live in another, per 1,000 residents.',
   },
   unit: 'per-thousand',
@@ -87,19 +88,26 @@ export const IN_COMMUTING: Indicator = Indicator.parse({
   coverage: { from: COMMUTE_YEARS[0]!, to: COMMUTE_YEARS[COMMUTE_YEARS.length - 1]! },
   caveat: {
     sv: `Nämnaren är kommunens egna invånare, inte dess arbetsplatser, så talet kan bli stort i en liten kommun med en stor arbetsgivare. Det mäter arbetsplatser som drar folk utifrån, inte hur många som arbetar i kommunen totalt. ${BREAK_SV}`,
-    en: `The denominator is the municipality's own residents, not its workplaces, so the figure can be large in a small municipality with one big employer. It measures workplaces that draw people in, not how many work there in total. ${BREAK_EN}`,
+    en: `The denominator is the municipality’s own residents, not its workplaces, so the figure can be large in a small municipality with one big employer. It measures workplaces that draw people in, not how many work there in total. ${BREAK_EN}`,
   },
   sensitivity: 'none',
   sources: [
-    { table: COMMUTE_TABLE_OLD, contentCode: 'AM0207H8', note: '1993–2003' },
-    { table: COMMUTE_TABLE_MID, contentCode: 'AM0207C6', note: '2004–2018' },
-    { table: COMMUTE_TABLE_NEW, contentCode: '00000547', note: '2019–2021' },
+    { table: COMMUTE_TABLE_OLD, contentCode: 'AM0207H8', note: neutral('1993–2003') },
+    { table: COMMUTE_TABLE_MID, contentCode: 'AM0207C6', note: neutral('2004–2018') },
+    { table: COMMUTE_TABLE_NEW, contentCode: '00000547', note: neutral('2019–2021') },
   ],
-  derivation:
-    'In-commuters over the population of the same year, times 1,000. Three tables stitched at ' +
-    'the years SCB restarted the series, each contributing only its own years. The sex total is ' +
-    'selected by its label because these tables call it `4`. The denominator is this pantry’s ' +
-    'own published population.',
+  derivation: {
+    sv:
+      'Inpendlare delat med folkmängden samma år, gånger 1 000. Tre tabeller skarvas vid de år ' +
+      'då SCB startade om serien, och var och en bidrar bara med sina egna år. Könstotalen ' +
+      'väljs efter sin etikett, eftersom de här tabellerna kallar den `4`. Nämnaren är den här ' +
+      'datamängdens egen publicerade folkmängd.',
+    en:
+      'In-commuters over the population of the same year, times 1,000. Three tables stitched at ' +
+      'the years SCB restarted the series, each contributing only its own years. The sex total ' +
+      'is selected by its label because these tables call it `4`. The denominator is this ' +
+      'pantry’s own published population.',
+  },
 })
 
 export const OUT_COMMUTING: Indicator = Indicator.parse({
@@ -119,15 +127,22 @@ export const OUT_COMMUTING: Indicator = Indicator.parse({
   },
   sensitivity: 'none',
   sources: [
-    { table: COMMUTE_TABLE_OLD, contentCode: 'AM0207H9', note: '1993–2003' },
-    { table: COMMUTE_TABLE_MID, contentCode: 'AM0207C8', note: '2004–2018' },
-    { table: COMMUTE_TABLE_NEW, contentCode: '00000548', note: '2019–2021' },
+    { table: COMMUTE_TABLE_OLD, contentCode: 'AM0207H9', note: neutral('1993–2003') },
+    { table: COMMUTE_TABLE_MID, contentCode: 'AM0207C8', note: neutral('2004–2018') },
+    { table: COMMUTE_TABLE_NEW, contentCode: '00000548', note: neutral('2019–2021') },
   ],
-  derivation:
-    'Out-commuters over out-commuters plus those who live and work in the municipality, times ' +
-    '100 — the two content codes fetched together and partitioned by content LABEL, because the ' +
-    'three stitched tables use different codes for the same measure and only the label is ' +
-    'stable across them.',
+  derivation: {
+    sv:
+      'Utpendlare delat med utpendlare plus de som både bor och arbetar i kommunen, gånger 100 ' +
+      '— de två innehållskoderna hämtas tillsammans och delas upp efter innehållets ETIKETT, ' +
+      'eftersom de tre skarvade tabellerna använder olika koder för samma mått och bara ' +
+      'etiketten är stabil mellan dem.',
+    en:
+      'Out-commuters over out-commuters plus those who live and work in the municipality, times ' +
+      '100 — the two content codes fetched together and partitioned by content LABEL, because ' +
+      'the three stitched tables use different codes for the same measure and only the label is ' +
+      'stable across them.',
+  },
 })
 
 export function inCommutingDefined(): Definition {

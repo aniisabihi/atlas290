@@ -117,7 +117,7 @@ describe('roundIndicatorBreaks', () => {
       caveat: { sv: '', en: '' },
       sensitivity: 'none',
       sources: [],
-      derivation: '',
+      derivation: { sv: '', en: '' },
     }
     expect(roundIndicatorBreaks(indicator).scale.breaks).toEqual([670_879, 822_481])
   })

@@ -1,6 +1,7 @@
 import { Indicator } from '../../../shared/pantry'
 import { buildDefined, type Definition } from './define'
 import { type IndicatorDefinition } from './registry'
+import { neutral } from './prose'
 
 export const LIFE_TABLE = 'TAB4394'
 
@@ -46,12 +47,21 @@ function lifeExpectancy(id: string, sv: string, en: string, who: string, whoEn: 
       en: `${whoEn.charAt(0).toUpperCase()}${whoEn.slice(1)}. ${SHARED_CAVEAT_EN} In a small municipality the five-year window still rests on few deaths, and the figure moves more from chance than from health.`,
     },
     sensitivity: 'none',
-    sources: [{ table: LIFE_TABLE, contentCode: '000000NH', note: '1998-2002 … 2021-2025' }],
-    derivation:
-      'One SCB cell per municipality and five-year window, published under the window’s last ' +
-      'year. The sex is selected rather than totalled: TAB4394 has no sex total, and a men’s ' +
-      'and a women’s life expectancy can be neither summed nor averaged without a sex-split ' +
-      'population to weight by, which this pantry does not publish.',
+    sources: [
+      { table: LIFE_TABLE, contentCode: '000000NH', note: neutral('1998-2002 … 2021-2025') },
+    ],
+    derivation: {
+      sv:
+        'En SCB-cell per kommun och femårsperiod, publicerad under periodens sista år. Könet ' +
+        'väljs i stället för att summeras: TAB4394 saknar könstotal, och mäns och kvinnors ' +
+        'medellivslängd kan varken summeras eller medelvärdesbildas utan en könsuppdelad ' +
+        'befolkning att vikta med, vilket den här datamängden inte publicerar.',
+      en:
+        'One SCB cell per municipality and five-year window, published under the window’s last ' +
+        'year. The sex is selected rather than totalled: TAB4394 has no sex total, and a men’s ' +
+        'and a women’s life expectancy can be neither summed nor averaged without a sex-split ' +
+        'population to weight by, which this pantry does not publish.',
+    },
   })
 }
 
@@ -87,10 +97,17 @@ export const LIFE_GAP: Indicator = Indicator.parse({
     en: `The difference in years between the two published split series, so every figure here can be checked against them. ${SHARED_CAVEAT_EN} The gap has narrowed nationally over decades, but in a single small municipality it moves sharply for reasons that are chance.`,
   },
   sensitivity: 'none',
-  sources: [{ table: LIFE_TABLE, contentCode: '000000NH', note: '1998-2002 … 2021-2025' }],
-  derivation:
-    'life-expectancy-women minus life-expectancy-men, cell by cell, from this pantry’s own two ' +
-    'published series rather than from a third fetch. Where either side is absent, so is the gap.',
+  sources: [{ table: LIFE_TABLE, contentCode: '000000NH', note: neutral('1998-2002 … 2021-2025') }],
+  derivation: {
+    sv:
+      'life-expectancy-women minus life-expectancy-men, cell för cell, ur den här datamängdens ' +
+      'egna två publicerade serier i stället för ur en tredje hämtning. Där någon av sidorna ' +
+      'saknas saknas också skillnaden.',
+    en:
+      'life-expectancy-women minus life-expectancy-men, cell by cell, from this pantry’s own ' +
+      'two published series rather than from a third fetch. Where either side is absent, so is ' +
+      'the gap.',
+  },
 })
 
 function forSex(indicator: Indicator, kon: string): Definition {

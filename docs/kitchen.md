@@ -860,3 +860,13 @@ figures of that second kind from the day it lands.
 Why these choices:
 [docs/decisions/0014-indicators-become-definitions.md](decisions/0014-indicators-become-definitions.md)
 and [docs/decisions/0015-the-old-implementations-go.md](decisions/0015-the-old-implementations-go.md).
+
+### An indicator's prose, in both languages
+
+Every piece of prose an indicator declares — `name`, `description`, `caveat`, `derivation` and
+each source's `note` — is `Bilingual`, since issue #48 made the last two so. A note with nothing to
+translate, such as `'1968–2024'`, is written once with `neutral()` from
+`kitchen/src/indicators/prose.ts`. `kitchen/src/indicators/registry.test.ts` refuses a published
+derivation whose two languages are the same text, a note that is identical in both while
+containing a word, and a straight apostrophe in the English. See
+[docs/decisions/0025-the-editorial-pass.md](decisions/0025-the-editorial-pass.md).

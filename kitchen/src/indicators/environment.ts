@@ -4,6 +4,7 @@ import { type IndicatorDefinition } from './registry'
 // Read only inside the definition function's body, never at this module's own top level — the
 // same reasoning every other module that divides by population documents for this import.
 import { POPULATION } from './population'
+import { neutral } from './prose'
 
 export const EMISSIONS_TABLE = 'TAB4357'
 
@@ -44,14 +45,29 @@ export const EMISSIONS: Indicator = Indicator.parse({
     en: 'Territorial emissions: counted where they happen, not where they are caused. A municipality with a large industrial plant or a motorway through it carries those emissions even when the goods and the journeys belong elsewhere, and what its residents consume is counted in the country where it is made. The figure therefore says more about what sits inside the municipality than about how its people live. The series ends in 2022, three years before most others here, because the emissions inventory takes time to compile.',
   },
   sensitivity: 'none',
-  sources: [{ table: EMISSIONS_TABLE, contentCode: '000000KY', note: '2008–2022, GHG' }],
-  derivation:
-    'Kilotonnes of CO2 equivalent over the population of the same year, times 1,000 — which ' +
-    'converts kilotonnes per person into tonnes per person, so the published unit is the one a ' +
-    'reader can hold. The substance is selected by its full Swedish label rather than by the ' +
-    'code, because that label is the only place the unit is stated and this table publishes ' +
-    'sixteen substances in three different units. The denominator is this pantry’s own ' +
-    'published population.',
+  sources: [
+    {
+      table: EMISSIONS_TABLE,
+      contentCode: '000000KY',
+      note: { sv: '2008–2022, växthusgaser', en: '2008–2022, greenhouse gases' },
+    },
+  ],
+  derivation: {
+    sv:
+      'Kiloton koldioxidekvivalenter delat med folkmängden samma år, gånger 1 000 — vilket gör ' +
+      'kiloton per person till ton per person, så att den publicerade enheten är en som går att ' +
+      'föreställa sig. Ämnet väljs efter sin fullständiga svenska etikett i stället för efter ' +
+      'koden, eftersom etiketten är det enda stället där enheten anges och tabellen publicerar ' +
+      'sexton ämnen i tre olika enheter. Nämnaren är den här datamängdens egen publicerade ' +
+      'folkmängd.',
+    en:
+      'Kilotonnes of CO2 equivalent over the population of the same year, times 1,000 — which ' +
+      'converts kilotonnes per person into tonnes per person, so the published unit is the one ' +
+      'a reader can hold. The substance is selected by its full Swedish label rather than by ' +
+      'the code, because that label is the only place the unit is stated and this table ' +
+      'publishes sixteen substances in three different units. The denominator is this pantry’s ' +
+      'own published population.',
+  },
 })
 
 export function emissionsDefined(): Definition {
@@ -116,12 +132,19 @@ export const NATURE: Indicator = Indicator.parse({
     en: 'As the crow flies from the home to the boundary of a protected area, not walking distance: a kilometre across a motorway or a stretch of water counts the same. The mean is weighted over residents, so it describes where people live rather than what the municipality looks like — which is why a large, sparsely populated municipality can be FURTHER from protected nature on average than a dense city, whose residents cluster beside the one reserve there is. Protected nature is a legal category: a small reserve in the middle of a city counts, a large unprotected forest does not. SCB rounds to even hundreds of metres.',
   },
   sensitivity: 'none',
-  sources: [{ table: NATURE_TABLE, contentCode: '000000PK', note: '2013–2025' }],
-  derivation:
-    'One SCB cell per municipality and year: TAB4422’s "Medelavstånd, meter i jämna 100-tal" ' +
-    'content code, resolved by its stable Swedish label. SCB computes the mean and rounds it; ' +
-    'nothing is derived here. The five share-within-a-distance codes the same table offers were ' +
-    'tried first and are empty at municipal level.',
+  sources: [{ table: NATURE_TABLE, contentCode: '000000PK', note: neutral('2013–2025') }],
+  derivation: {
+    sv:
+      'En SCB-cell per kommun och år: TAB4422:s innehållskod ”Medelavstånd, meter i jämna ' +
+      '100-tal”, utpekad genom sin stabila svenska etikett. SCB beräknar medelvärdet och ' +
+      'avrundar det; ingenting härleds här. De fem koderna för andel inom ett visst avstånd som ' +
+      'samma tabell erbjuder prövades först och är tomma på kommunnivå.',
+    en:
+      'One SCB cell per municipality and year: TAB4422’s "Medelavstånd, meter i jämna 100-tal" ' +
+      'content code, resolved by its stable Swedish label. SCB computes the mean and rounds it; ' +
+      'nothing is derived here. The five share-within-a-distance codes the same table offers ' +
+      'were tried first and are empty at municipal level.',
+  },
 })
 
 export function natureDefined(): Definition {
@@ -184,10 +207,17 @@ export const GREEN_SPACE: Indicator = Indicator.parse({
     en: 'The measure is close to saturated: the median is 97 percent and only 46 of 580 points fall below 90, so the map separates municipalities at its lower end and hardly at all at its upper. 200 metres is the shortest distance SCB publishes — 300 and 500 also exist and separate even less. The denominator is the urban population, not the whole municipality: anyone living outside a built-up area is not counted at all, which is why the figure can be high in a municipality where most people live far apart. The distance is as the crow flies from the home. Two survey points, 2015 and 2020.',
   },
   sensitivity: 'none',
-  sources: [{ table: GREEN_SPACE_TABLE, contentCode: '0000046N', note: '2015, 2020, 200 m' }],
-  derivation:
-    'One SCB cell per municipality and survey year: TAB5591’s share of the urban population, ' +
-    'at the 200-metre distance. SCB computes the share; nothing is divided here.',
+  sources: [
+    { table: GREEN_SPACE_TABLE, contentCode: '0000046N', note: neutral('2015, 2020, 200 m') },
+  ],
+  derivation: {
+    sv:
+      'En SCB-cell per kommun och undersökningsår: TAB5591:s andel av tätortsbefolkningen, vid ' +
+      'avståndet 200 meter. SCB beräknar andelen; ingenting delas här.',
+    en:
+      'One SCB cell per municipality and survey year: TAB5591’s share of the urban population, ' +
+      'at the 200-metre distance. SCB computes the share; nothing is divided here.',
+  },
 })
 
 export function greenSpaceDefined(): Definition {

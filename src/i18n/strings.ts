@@ -89,9 +89,6 @@ const sv = {
   coverageHeading: 'Publiceras för',
   sourcesHeading: 'Källor hos SCB',
   derivationHeading: 'Så är värdet beräknat',
-  // Shown only where the page's language is not the method text's, which today means only on
-  // the Swedish page: the kitchen writes derivations and source notes once, in English.
-  methodInEnglish: 'Metodbeskrivningen finns bara på engelska.',
   caveatHeading: 'Att tänka på',
 
   coverage: (from: number, to: number) => `${from}–${to}`,
@@ -230,7 +227,6 @@ const en: Strings = {
   coverageHeading: 'Published for',
   sourcesHeading: 'Sources at Statistics Sweden',
   derivationHeading: 'How the value is calculated',
-  methodInEnglish: 'The method is described in English only.',
   caveatHeading: 'Worth knowing',
 
   coverage: (from: number, to: number) => `${from}–${to}`,

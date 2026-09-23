@@ -4,6 +4,7 @@ import { type IndicatorDefinition } from './registry'
 // Read only inside the definition functions' bodies, never at this module's own top level — the
 // same reasoning every other module that divides by population documents for this import.
 import { POPULATION } from './population'
+import { neutral } from './prose'
 
 export const RENT_TABLE = 'TAB4590'
 
@@ -41,12 +42,20 @@ export const RENT: Indicator = Indicator.parse({
     en: 'Per square metre per year, not per flat: a municipality of small flats can show a high rent per square metre and a low monthly rent. That is why the indicator is named for what it measures. The amounts are nominal kronor and are NOT converted to a common price year, unlike median income and house prices — the series is only ten years long and SCB’s own margin of error per municipality is substantial, especially in small ones. Rental flats only; owner-occupied and tenant-owned homes have no rent to measure.',
   },
   sensitivity: 'none',
-  sources: [{ table: RENT_TABLE, contentCode: '000000J4', note: '2016–2025, Ah_kvm' }],
-  derivation:
-    'One SCB cell per municipality and year: TAB4590’s "Medianhyra i hyreslägenhet" content ' +
-    'code at Hyresuppg=Ah_kvm (annual rent per square metre), both resolved by their stable ' +
-    'Swedish labels. The same table also publishes a mean and two margins of error; the median ' +
-    'is taken because a handful of very expensive flats moves a mean and not a median.',
+  sources: [{ table: RENT_TABLE, contentCode: '000000J4', note: neutral('2016–2025, Ah_kvm') }],
+  derivation: {
+    sv:
+      'En SCB-cell per kommun och år: TAB4590:s innehållskod ”Medianhyra i hyreslägenhet” vid ' +
+      'Hyresuppg=Ah_kvm (årshyra per kvadratmeter), båda utpekade genom sina stabila svenska ' +
+      'etiketter. Samma tabell publicerar också ett medelvärde och två felmarginaler; medianen ' +
+      'används eftersom en handfull mycket dyra lägenheter flyttar ett medelvärde men inte en ' +
+      'median.',
+    en:
+      'One SCB cell per municipality and year: TAB4590’s "Medianhyra i hyreslägenhet" content ' +
+      'code at Hyresuppg=Ah_kvm (annual rent per square metre), both resolved by their stable ' +
+      'Swedish labels. The same table also publishes a mean and two margins of error; the ' +
+      'median is taken because a handful of very expensive flats moves a mean and not a median.',
+  },
 })
 
 export function rentDefined(): Definition {
@@ -90,11 +99,11 @@ const STOCK_CONTENT_LABEL = 'Antal'
 export const COMPLETED: Indicator = Indicator.parse({
   id: 'dwellings-completed-rate',
   name: {
-    sv: 'Färdigställda bostäder per 1 000 invånare',
+    sv: 'Färdigställda bostäder per 1 000 invånare',
     en: 'Dwellings completed per 1,000 residents',
   },
   description: {
-    sv: 'Antal färdigställda lägenheter i nybyggda hus under året, per 1 000 invånare. Småhus och flerbostadshus tillsammans.',
+    sv: 'Antal färdigställda lägenheter i nybyggda hus under året, per 1 000 invånare. Småhus och flerbostadshus tillsammans.',
     en: 'Dwellings completed in newly built houses during the year, per 1,000 residents. Detached houses and blocks of flats together.',
   },
   unit: 'per-thousand',
@@ -106,19 +115,26 @@ export const COMPLETED: Indicator = Indicator.parse({
     en: 'Counts dwellings completed — when the building is finished, not when it was started or permitted. A single large project can therefore lift a small municipality sharply in one year and leave it at zero the next; read the series, not a single year. New build only: conversions that create dwellings are not included. TAB2538 reaches back to 1938, but this series starts in 1968 because the rate needs a population to divide by and the population series here starts then.',
   },
   sensitivity: 'none',
-  sources: [{ table: COMPLETED_TABLE, contentCode: 'BO0101A5', note: '1968–2025' }],
-  derivation:
-    'Completed dwellings over the population of the same year, times 1,000. TAB2538 splits by ' +
-    'house type with no total code, so the two types are summed — they are disjoint counts of ' +
-    'the same thing, which is why the sum is declared safe rather than assumed. The denominator ' +
-    'is this pantry’s own published population.',
+  sources: [{ table: COMPLETED_TABLE, contentCode: 'BO0101A5', note: neutral('1968–2025') }],
+  derivation: {
+    sv:
+      'Färdigställda bostäder delat med folkmängden samma år, gånger 1 000. TAB2538 delar upp ' +
+      'efter hustyp utan totalkod, så de två typerna summeras — de är disjunkta antal av samma ' +
+      'sak, och därför är summan deklarerad som säker snarare än antagen. Nämnaren är den här ' +
+      'datamängdens egen publicerade folkmängd.',
+    en:
+      'Completed dwellings over the population of the same year, times 1,000. TAB2538 splits by ' +
+      'house type with no total code, so the two types are summed — they are disjoint counts of ' +
+      'the same thing, which is why the sum is declared safe rather than assumed. The ' +
+      'denominator is this pantry’s own published population.',
+  },
 })
 
 export const STOCK: Indicator = Indicator.parse({
   id: 'dwellings-per-1000',
-  name: { sv: 'Bostäder per 1 000 invånare', en: 'Dwellings per 1,000 residents' },
+  name: { sv: 'Bostäder per 1 000 invånare', en: 'Dwellings per 1,000 residents' },
   description: {
-    sv: 'Antal lägenheter i kommunen per 1 000 invånare, inklusive specialbostäder. Med lägenhet menas varje bostad, även ett småhus.',
+    sv: 'Antal lägenheter i kommunen per 1 000 invånare, inklusive specialbostäder. Med lägenhet menas varje bostad, även ett småhus.',
     en: 'Dwellings in the municipality per 1,000 residents, including special housing. A dwelling here is any home, a detached house included.',
   },
   unit: 'per-thousand',
@@ -130,12 +146,20 @@ export const STOCK: Indicator = Indicator.parse({
     en: 'Counts homes, not their size: a municipality of many small flats shows a high figure without anyone living less densely. Holiday homes are excluded, which shows in municipalities where much of the building stock is holiday housing. Special housing — student and elderly accommodation — is included, which lifts university towns.',
   },
   sensitivity: 'none',
-  sources: [{ table: STOCK_TABLE, contentCode: 'BO0104AH', note: '1990–2025' }],
-  derivation:
-    'Every dwelling over the population of the same year, times 1,000. TAB824 splits by house ' +
-    'type and by tenure, neither with a total code, so both are summed: the four house types ' +
-    'and the four tenures each partition the same stock exactly once, so summing over both ' +
-    'counts every dwelling once. The denominator is this pantry’s own published population.',
+  sources: [{ table: STOCK_TABLE, contentCode: 'BO0104AH', note: neutral('1990–2025') }],
+  derivation: {
+    sv:
+      'Alla bostäder delat med folkmängden samma år, gånger 1 000. TAB824 delar upp efter ' +
+      'hustyp och efter upplåtelseform, ingen av dem med totalkod, så båda summeras: de fyra ' +
+      'hustyperna och de fyra upplåtelseformerna delar var för sig upp samma bestånd exakt en ' +
+      'gång, så en summa över båda räknar varje bostad en gång. Nämnaren är den här ' +
+      'datamängdens egen publicerade folkmängd.',
+    en:
+      'Every dwelling over the population of the same year, times 1,000. TAB824 splits by house ' +
+      'type and by tenure, neither with a total code, so both are summed: the four house types ' +
+      'and the four tenures each partition the same stock exactly once, so summing over both ' +
+      'counts every dwelling once. The denominator is this pantry’s own published population.',
+  },
 })
 
 export function completedDefined(): Definition {
@@ -221,13 +245,27 @@ export const SHARE_HOUSES: Indicator = Indicator.parse({
     en: 'The denominator is every dwelling, special housing (student and elderly accommodation) and other buildings included. The share counts homes, not people: a block of flats holds many homes on the same ground, so a municipality can look like a landscape of houses and still show a low share here.',
   },
   sensitivity: 'none',
-  sources: [{ table: STOCK_TABLE, contentCode: 'BO0104AH', note: '1990–2025, efter hustyp' }],
-  derivation:
-    'Dwellings of house type "småhus" over dwellings of all four house types, times 100, from ' +
-    'one fetch of TAB824 partitioned by house type. Tenure is summed away within each type, so ' +
-    'every dwelling is counted once whatever it is owned as. The denominator lists all four ' +
-    'types rather than reading whatever the table happens to publish: "every type SCB offers" ' +
-    'and "every type this share is defined over" are different claims.',
+  sources: [
+    {
+      table: STOCK_TABLE,
+      contentCode: 'BO0104AH',
+      note: { sv: '1990–2025, efter hustyp', en: '1990–2025, by house type' },
+    },
+  ],
+  derivation: {
+    sv:
+      'Bostäder av hustypen ”småhus” delat med bostäder av alla fyra hustyper, gånger 100, ur ' +
+      'en hämtning av TAB824 uppdelad efter hustyp. Upplåtelseformen summeras bort inom varje ' +
+      'typ, så varje bostad räknas en gång oavsett hur den ägs. Nämnaren räknar upp alla fyra ' +
+      'typerna i stället för att läsa vad tabellen råkar publicera: ”varje typ SCB erbjuder” ' +
+      'och ”varje typ andelen är definierad över” är olika påståenden.',
+    en:
+      'Dwellings of house type "småhus" over dwellings of all four house types, times 100, from ' +
+      'one fetch of TAB824 partitioned by house type. Tenure is summed away within each type, ' +
+      'so every dwelling is counted once whatever it is owned as. The denominator lists all ' +
+      'four types rather than reading whatever the table happens to publish: "every type SCB ' +
+      'offers" and "every type this share is defined over" are different claims.',
+  },
 })
 
 export const SHARE_RENTALS: Indicator = Indicator.parse({
@@ -247,12 +285,23 @@ export const SHARE_RENTALS: Indicator = Indicator.parse({
   },
   sensitivity: 'none',
   sources: [
-    { table: STOCK_TABLE, contentCode: 'BO0104AH', note: '1990–2025, efter upplåtelseform' },
+    {
+      table: STOCK_TABLE,
+      contentCode: 'BO0104AH',
+      note: { sv: '1990–2025, efter upplåtelseform', en: '1990–2025, by tenure' },
+    },
   ],
-  derivation:
-    'Dwellings held as "hyresrätt" over dwellings of all four tenures, times 100, from one fetch ' +
-    'of TAB824 partitioned by tenure. House type is summed away within each tenure. The ' +
-    'denominator lists all four tenures explicitly, the one meaning "not recorded" included.',
+  derivation: {
+    sv:
+      'Bostäder som upplåts som ”hyresrätt” delat med bostäder av alla fyra upplåtelseformer, ' +
+      'gånger 100, ur en hämtning av TAB824 uppdelad efter upplåtelseform. Hustypen summeras ' +
+      'bort inom varje upplåtelseform. Nämnaren räknar uttryckligen upp alla fyra ' +
+      'upplåtelseformerna, även den som betyder ”uppgift saknas”.',
+    en:
+      'Dwellings held as "hyresrätt" over dwellings of all four tenures, times 100, from one ' +
+      'fetch of TAB824 partitioned by tenure. House type is summed away within each tenure. The ' +
+      'denominator lists all four tenures explicitly, the one meaning "not recorded" included.',
+  },
 })
 
 export function shareHousesDefined(): Definition {
@@ -292,9 +341,9 @@ const HOLIDAY_CONTENT_LABEL = 'Antal fritidshus'
 
 export const HOLIDAY_HOMES: Indicator = Indicator.parse({
   id: 'holiday-homes-per-1000',
-  name: { sv: 'Fritidshus per 1 000 invånare', en: 'Holiday homes per 1,000 residents' },
+  name: { sv: 'Fritidshus per 1 000 invånare', en: 'Holiday homes per 1,000 residents' },
   description: {
-    sv: 'Antal fritidshus i fritidshusområden per 1 000 invånare.',
+    sv: 'Antal fritidshus i fritidshusområden per 1 000 invånare.',
     en: 'Holiday homes inside holiday-home areas, per 1,000 residents.',
   },
   unit: 'per-thousand',
@@ -310,12 +359,19 @@ export const HOLIDAY_HOMES: Indicator = Indicator.parse({
     en: 'SCB counts only holiday homes inside a holiday-home AREA — at least fifty houses together — so isolated cabins are missing entirely. About a third of municipalities have no such area at all and therefore have no figure: the map shows them as "what this measures does not exist here", not as zero and not as unpublished. The denominator is the municipality’s own residents, not its households or its area, so the figure becomes very large in a small municipality full of summer houses — it measures how much the place is shaped by holiday living, not how many residents own one. Two survey points, 2015 and 2020.',
   },
   sensitivity: 'none',
-  sources: [{ table: HOLIDAY_TABLE, contentCode: '0000000E', note: '2015, 2020' }],
-  derivation:
-    'Holiday homes over the population of the same year, times 1,000. The denominator is this ' +
-    'pantry’s own published population. Where SCB publishes nothing — a municipality with no ' +
-    'holiday-home area — the cell is `nothing-to-count` rather than `not-yet-published`: there ' +
-    'is no figure coming, because there is nothing of this kind there to count.',
+  sources: [{ table: HOLIDAY_TABLE, contentCode: '0000000E', note: neutral('2015, 2020') }],
+  derivation: {
+    sv:
+      'Fritidshus delat med folkmängden samma år, gånger 1 000. Nämnaren är den här ' +
+      'datamängdens egen publicerade folkmängd. Där SCB inte publicerar något — en kommun utan ' +
+      'fritidshusområde — blir cellen `nothing-to-count` i stället för `not-yet-published`: det ' +
+      'kommer ingen siffra, eftersom det inte finns något sådant där att räkna.',
+    en:
+      'Holiday homes over the population of the same year, times 1,000. The denominator is this ' +
+      'pantry’s own published population. Where SCB publishes nothing — a municipality with no ' +
+      'holiday-home area — the cell is `nothing-to-count` rather than `not-yet-published`: ' +
+      'there is no figure coming, because there is nothing of this kind there to count.',
+  },
 })
 
 export function holidayHomesDefined(): Definition {

@@ -305,7 +305,7 @@ function syntheticPantry(options: {
 }): PantryData {
   const codes = Object.keys(options.values)
   return PantryData.parse({
-    schemaVersion: 1,
+    schemaVersion: 2,
     municipalities: codes.map((code, i) => ({
       code,
       name: { sv: `M${i}`, en: `M${i}` },
@@ -323,7 +323,7 @@ function syntheticPantry(options: {
         caveat: { sv: '', en: '' },
         sensitivity: 'none',
         sources: [],
-        derivation: '',
+        derivation: { sv: '', en: '' },
       },
     ],
     series: [

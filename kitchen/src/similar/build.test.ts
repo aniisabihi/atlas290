@@ -162,12 +162,12 @@ function tinyPantry(overrides: { coverageTo?: number; coverageFrom?: number } = 
     caveat: { sv: '', en: '' },
     sensitivity: 'none',
     sources: [],
-    derivation: '',
+    derivation: { sv: '', en: '' },
   })
   const years = Array.from({ length: 25 }, (_, i) => 2000 + i)
   const codes = ['0001', '0002', '0003', '0004', '0005', '0006']
   return PantryData.parse({
-    schemaVersion: 1,
+    schemaVersion: 2,
     municipalities: codes.map((code, i) => ({
       code,
       name: { sv: `M${i}`, en: `M${i}` },
