@@ -25,6 +25,7 @@ import {
   type BuildContext,
   type IndicatorDefinition,
 } from './registry'
+import { neutral } from './prose'
 
 // Re-exported so existing callers (population.test.ts, publish.ts) keep working unchanged:
 // both now live in registry.ts as shared machinery every indicator needs, not just population.
@@ -79,13 +80,23 @@ export const POPULATION: Indicator = Indicator.parse({
   },
   sensitivity: 'none',
   sources: [
-    { table: OLD_TABLE, contentCode: 'BE0101N1', note: '1968–2024' },
-    { table: NEW_TABLE, contentCode: '000007ME', note: '2025 onwards, CKM' },
+    { table: OLD_TABLE, contentCode: 'BE0101N1', note: neutral('1968–2024') },
+    {
+      table: NEW_TABLE,
+      contentCode: '000007ME',
+      note: { sv: '2025 och framåt, CKM', en: '2025 onwards, CKM' },
+    },
   ],
-  derivation:
-    'One SCB total cell per municipality and year: the age/sex/civil-status total code where ' +
-    'the table has one, otherwise summed over the (disjoint, unperturbed) remaining values. ' +
-    'Never a sum of already-aggregated or perturbed cells.',
+  derivation: {
+    sv:
+      'En SCB-totalcell per kommun och år: totalkoden för ålder, kön och civilstånd där ' +
+      'tabellen har en, annars en summa över de återstående (disjunkta, ostörda) värdena. ' +
+      'Aldrig en summa av redan aggregerade eller störda celler.',
+    en:
+      'One SCB total cell per municipality and year: the age/sex/civil-status total code where ' +
+      'the table has one, otherwise summed over the (disjoint, unperturbed) remaining values. ' +
+      'Never a sum of already-aggregated or perturbed cells.',
+  },
 })
 
 /**

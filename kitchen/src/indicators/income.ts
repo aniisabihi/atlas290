@@ -2,6 +2,7 @@ import { Indicator, type IndicatorSeries } from '../../../shared/pantry'
 import { buildDefined, type Definition } from './define'
 import { CPI_LATEST_YEAR, fetchCpi } from './cpi'
 import { type BuildContext, type IndicatorDefinition } from './registry'
+import { neutral } from './prose'
 
 export const INCOME_TABLE = 'TAB3554'
 
@@ -49,7 +50,7 @@ export const INCOME: Indicator = Indicator.parse({
   name: { sv: 'Medianinkomst', en: 'Median income' },
   description: {
     sv: 'Medianvärdet av den sammanräknade förvärvsinkomsten för personer 16 år och äldre, folkbokförda i Sverige hela året, justerat till senaste årets penningvärde.',
-    en: "Median total earned income for people aged 16 and over, registered in Sweden's population the whole year, adjusted to the latest year's kronor.",
+    en: 'Median total earned income for people aged 16 and over, registered in Sweden’s population the whole year, adjusted to the latest year’s kronor.',
   },
   unit: 'sek',
   priceBasis: 'fixed-latest-year',
@@ -62,21 +63,34 @@ export const INCOME: Indicator = Indicator.parse({
   coverage: { from: INCOME_YEARS[0]!, to: INCOME_YEARS[INCOME_YEARS.length - 1]! },
   caveat: {
     sv: 'Avser medianinkomst (sammanräknad förvärvsinkomst) för personer 16 år och äldre som var folkbokförda i Sverige hela året, inte per den 31 december. SCB publicerar samma mått för personer folkbokförda den 31 december i en annan tabell (TAB3558), som sträcker sig åtta år längre tillbaka (från 1991), men de två populationerna skiljer sig åt och blandas aldrig här: hela-året-populationen valdes eftersom den gör små och studenttäta kommuner mindre brusiga, vilket väger tyngre i denna databas än ett längre tidsspann. Medianer summeras aldrig. Värdena är justerade till senaste årets penningvärde med SCB:s konsumentprisindex; nominella värden visas inte här.',
-    en: "Median income (total earned income) for people aged 16 and over who were registered in Sweden's population the whole year, not as of 31 December. SCB publishes the same measure for people registered on 31 December in a different table (TAB3558), reaching eight years further back (from 1991), but the two populations differ and are never mixed here: the whole-year population was chosen because it makes small and student-heavy municipalities less noisy, which matters more in this dataset than a longer time span. Medians are never summed. Values are adjusted to the latest year's kronor using SCB's consumer price index; nominal values are not shown here.",
+    en: 'Median income (total earned income) for people aged 16 and over who were registered in Sweden’s population the whole year, not as of 31 December. SCB publishes the same measure for people registered on 31 December in a different table (TAB3558), reaching eight years further back (from 1991), but the two populations differ and are never mixed here: the whole-year population was chosen because it makes small and student-heavy municipalities less noisy, which matters more in this dataset than a longer time span. Medians are never summed. Values are adjusted to the latest year’s kronor using SCB’s consumer price index; nominal values are not shown here.',
   },
   sensitivity: 'none',
-  sources: [{ table: INCOME_TABLE, contentCode: 'HE0110J8', note: '1999–2024' }],
-  derivation:
-    'One SCB total cell per municipality and year: the median-income content code ' +
-    '("Medianinkomst, tkr"), resolved by its stable Swedish label rather than a hardcoded ' +
-    'code, at the age total "tot16+" (16 and over — the only age total this table carries; ' +
-    'the per-single-year-of-age table TAB3556 has none, and medians cannot be summed, which ' +
-    'is why TAB3554 rather than TAB3556 is the source here), the sex total "1+2" and the ' +
-    'income-class total "TOT" (every income bracket, including people with no income). ' +
-    'Published figures are thousands of kronor (tkr); multiplied by 1,000 here to store true ' +
-    "kronor under this project's 'sek' unit, then converted from that year's kronor to the " +
-    "latest covered year's kronor using the national consumer price index (cpi.ts), never " +
-    'left as a nominal figure quietly presented as adjusted.',
+  sources: [{ table: INCOME_TABLE, contentCode: 'HE0110J8', note: neutral('1999–2024') }],
+  derivation: {
+    sv:
+      'En SCB-totalcell per kommun och år: innehållskoden för medianinkomst (”Medianinkomst, ' +
+      'tkr”), utpekad genom sin stabila svenska etikett i stället för en hårdkodad kod, vid ' +
+      'åldersaggregatet ”tot16+” (16 år och äldre – det enda åldersaggregat tabellen har; ' +
+      'tabellen per ettårsålder, TAB3556, har inget, och medianer går inte att summera, vilket ' +
+      'är skälet till att källan är TAB3554 och inte TAB3556), könstotalen ”1+2” och ' +
+      'inkomstklasstotalen ”TOT” (alla inkomstklasser, även personer utan inkomst). Publicerade ' +
+      'siffror är tusentals kronor (tkr); de multipliceras här med 1 000 för att lagras i hela ' +
+      'kronor under projektets enhet ’sek’, och räknas sedan om från det årets kronor till det ' +
+      'senaste täckta årets kronor med konsumentprisindex för hela landet (cpi.ts) – aldrig ' +
+      'kvar som en nominell siffra som i tysthet presenteras som justerad.',
+    en:
+      'One SCB total cell per municipality and year: the median-income content code ' +
+      '("Medianinkomst, tkr"), resolved by its stable Swedish label rather than a hardcoded ' +
+      'code, at the age total "tot16+" (16 and over – the only age total this table carries; ' +
+      'the per-single-year-of-age table TAB3556 has none, and medians cannot be summed, which ' +
+      'is why TAB3554 rather than TAB3556 is the source here), the sex total "1+2" and the ' +
+      'income-class total "TOT" (every income bracket, including people with no income). ' +
+      'Published figures are thousands of kronor (tkr); multiplied by 1,000 here to store true ' +
+      'kronor under this project’s ‘sek’ unit, then converted from that year’s kronor to the ' +
+      'latest covered year’s kronor using the national consumer price index (cpi.ts), never ' +
+      'left as a nominal figure quietly presented as adjusted.',
+  },
 })
 
 export async function buildIncome(ctx: BuildContext): Promise<IndicatorSeries> {

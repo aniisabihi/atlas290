@@ -15,6 +15,7 @@ import {
   Adjacency,
   Facts,
   Manifest,
+  PANTRY_SCHEMA_VERSION,
   PantryData,
   PantryIndex,
   PantryIndicator,
@@ -457,7 +458,7 @@ export async function publish(
     })
 
     const published = PantryData.parse({
-      schemaVersion: 1,
+      schemaVersion: PANTRY_SCHEMA_VERSION,
       municipalities,
       indicators: rounded.indicators,
       series: rounded.series,

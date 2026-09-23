@@ -1,6 +1,7 @@
 import { Indicator } from '../../../shared/pantry'
 import { buildDefined, type Definition } from './define'
 import { type IndicatorDefinition } from './registry'
+import { neutral } from './prose'
 
 export const FARMLAND_TABLE = 'TAB6002'
 export const LAND_USE_TABLE = 'TAB5118'
@@ -49,25 +50,35 @@ export const FARMLAND: Indicator = Indicator.parse({
     years: [...FARMLAND_YEARS],
   },
   caveat: {
-    sv: 'En areal, inte en andel: en stor kommun har mer jordbruksmark än en liten även om åkern upptar en mindre del av den. Mätningen görs vart femte år och SCB har bytt metod under perioden, så en förändring mellan två mätpunkter kan delvis vara en mätförändring. Tabellen når tillbaka till 1951, men den punkten visas inte här — den skulle förlänga årsaxeln med sjutton år för varje mått på sajten för att visa ett enda värde till.',
-    en: 'An area, not a share: a large municipality has more farmland than a small one even where the fields take up less of it. The survey is made every five years and SCB has changed method during the period, so a change between two points can partly be a change in measurement. The table reaches back to 1951, but that point is not shown here — it would stretch the year axis by seventeen years, for every measure on the site, to show one more value.',
+    sv: 'En areal, inte en andel: en stor kommun har mer jordbruksmark än en liten även om åkern upptar en mindre del av den. Mätningen görs vart femte år och SCB har bytt metod under perioden, så en förändring mellan två mätpunkter kan delvis vara en mätförändring. Tabellen når tillbaka till 1951, men den punkten visas inte här – den skulle förlänga årsaxeln med sjutton år för varje mått på sajten för att visa ett enda värde till.',
+    en: 'An area, not a share: a large municipality has more farmland than a small one even where the fields take up less of it. The survey is made every five years and SCB has changed method during the period, so a change between two points can partly be a change in measurement. The table reaches back to 1951, but that point is not shown here – it would stretch the year axis by seventeen years, for every measure on the site, to show one more value.',
   },
   sensitivity: 'none',
   sources: [
-    { table: FARMLAND_TABLE, contentCode: '000006O6', note: '1981–2020, total jordbruksmark' },
+    {
+      table: FARMLAND_TABLE,
+      contentCode: '000006O6',
+      note: { sv: '1981–2020, total jordbruksmark', en: '1981–2020, total farmland' },
+    },
   ],
-  derivation:
-    'One SCB cell per municipality and survey year: TAB6002 at the land-use class labelled ' +
-    '"total jordbruksmark", which is arable land plus pasture and which SCB totals itself. ' +
-    'Nothing is summed here.',
+  derivation: {
+    sv:
+      'En SCB-cell per kommun och undersökningsår: TAB6002 vid markanvändningsklassen med ' +
+      'etiketten ”total jordbruksmark”, som är åkermark plus betesmark och som SCB själv ' +
+      'summerar. Ingenting summeras här.',
+    en:
+      'One SCB cell per municipality and survey year: TAB6002 at the land-use class labelled ' +
+      '"total jordbruksmark", which is arable land plus pasture and which SCB totals itself. ' +
+      'Nothing is summed here.',
+  },
 })
 
 export const SHARE_BUILT: Indicator = Indicator.parse({
   id: 'share-land-built',
   name: { sv: 'Andel bebyggd mark', en: 'Share of land built on' },
   description: {
-    sv: 'Andel av kommunens landareal som är bebyggd och anlagd mark — bostäder, verksamheter, vägar och annan anlagd yta.',
-    en: 'Share of the municipality’s land area that is built on — housing, business, roads and other constructed surface.',
+    sv: 'Andel av kommunens landareal som är bebyggd och anlagd mark – bostäder, verksamheter, vägar och annan anlagd yta.',
+    en: 'Share of the municipality’s land area that is built on – housing, business, roads and other constructed surface.',
   },
   unit: 'percent',
   priceBasis: 'none',
@@ -82,12 +93,19 @@ export const SHARE_BUILT: Indicator = Indicator.parse({
     en: 'The denominator is land area, so water is not counted. The figure is small nearly everywhere: the median is about 5 percent, the most built-up municipality reaches 36, and thirty-six of 870 points fall below one percent. It says how much of the surface is built on, not how many people live there. Three survey points across eleven years.',
   },
   sensitivity: 'none',
-  sources: [{ table: LAND_USE_TABLE, contentCode: '000002UN', note: '2010, 2015, 2020' }],
-  derivation:
-    'Built and constructed land over total land area, times 100 — ' +
-    'two land-use classes of the same table, fetched together and partitioned by class code — ' +
-    'code rather than label here, because only ContentsCode is keyed by label and because this ' +
-    'table publishes class 3 with a trailing space in its name.',
+  sources: [{ table: LAND_USE_TABLE, contentCode: '000002UN', note: neutral('2010, 2015, 2020') }],
+  derivation: {
+    sv:
+      'Bebyggd och anlagd mark delat med total landareal, gånger 100 – två ' +
+      'markanvändningsklasser i samma tabell, hämtade tillsammans och uppdelade efter klasskod – ' +
+      'här kod snarare än etikett, eftersom bara ContentsCode pekas ut genom etikett och ' +
+      'eftersom tabellen publicerar klass 3 med ett avslutande mellanslag i namnet.',
+    en:
+      'Built and constructed land over total land area, times 100 – two land-use classes of the ' +
+      'same table, fetched together and partitioned by class code – code rather than label ' +
+      'here, because only ContentsCode is keyed by label and because this table publishes class ' +
+      '3 with a trailing space in its name.',
+  },
 })
 
 export function farmlandDefined(): Definition {

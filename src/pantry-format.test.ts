@@ -76,6 +76,8 @@ describe('published pantry: file format (regression guards, this task)', () => {
     // measured every five years by a survey whose method changed during the period, would be
     // precision the source does not have.
     hectares: 0,
+    // The editorial pass. A difference between two shares, at the precision of the shares.
+    'percentage-points': 2,
   }
 
   /** Counts the decimal digits a number's own JS string representation actually carries —

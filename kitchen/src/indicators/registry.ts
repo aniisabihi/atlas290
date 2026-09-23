@@ -162,7 +162,7 @@ export function resolveContentCode(meta: TableMeta, label: string): string {
   if (matches.length > 1) {
     throw new Error(
       `${meta.id}: ${matches.length} ContentsCode values are labelled '${label}' ` +
-        `(${matches.map((x) => x.code).join(', ')}) — ambiguous, pick one explicitly instead ` +
+        `(${matches.map((x) => x.code).join(', ')}) – ambiguous, pick one explicitly instead ` +
         `of silently taking the first`,
     )
   }
@@ -195,7 +195,7 @@ export function quantileBreaks(
   indicatorId = 'quantileBreaks',
 ): number[] {
   if (nums.length === 0) {
-    throw new Error(`${indicatorId}: cannot compute colour breaks — every value is null`)
+    throw new Error(`${indicatorId}: cannot compute colour breaks – every value is null`)
   }
   const sorted = [...nums].sort((a, b) => a - b)
   const at = (p: number) => {
@@ -470,7 +470,7 @@ export async function buildAll(
     // which is luck rather than a guarantee, so say it outright.
     if (ctx.municipalities.length === 0) {
       throw new Error(
-        `${id}: built before any definition had established the municipality list — ` +
+        `${id}: built before any definition had established the municipality list – ` +
           `population must come first in REGISTRY`,
       )
     }
@@ -478,7 +478,7 @@ export async function buildAll(
     if (series.values.length !== ctx.municipalities.length) {
       throw new Error(
         `${id}: series has ${series.values.length} rows but there are ` +
-          `${ctx.municipalities.length} municipalities — every indicator must publish exactly ` +
+          `${ctx.municipalities.length} municipalities – every indicator must publish exactly ` +
           `one row per municipality`,
       )
     }

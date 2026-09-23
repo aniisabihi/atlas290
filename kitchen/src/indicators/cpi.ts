@@ -89,7 +89,7 @@ function resolveContentCode(meta: TableMeta, label: string): string {
   if (matches.length > 1) {
     throw new Error(
       `${meta.id}: ${matches.length} ContentsCode values are labelled '${label}' ` +
-        `(${matches.map((x) => x.code).join(', ')}) — ambiguous, pick one explicitly instead ` +
+        `(${matches.map((x) => x.code).join(', ')}) – ambiguous, pick one explicitly instead ` +
         `of silently taking the first`,
     )
   }

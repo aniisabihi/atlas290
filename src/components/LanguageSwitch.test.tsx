@@ -52,7 +52,7 @@ describe('LanguageSwitch', () => {
     // reads "English" and its accessible name is only "byt språk till engelska", saying "click
     // English" does nothing. Found by Lighthouse; axe's WCAG rule set did not flag it.
     render(<LanguageSwitch state={state} meta={meta} />)
-    const link = screen.getByRole('link', { name: 'English — byt språk till engelska' })
+    const link = screen.getByRole('link', { name: 'English – byt språk till engelska' })
     expect(link.textContent).toBe('English')
     expect(link.getAttribute('aria-label')!.startsWith(link.textContent!)).toBe(true)
   })

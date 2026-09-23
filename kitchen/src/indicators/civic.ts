@@ -1,6 +1,7 @@
 import { Indicator } from '../../../shared/pantry'
 import { buildDefined, type Definition } from './define'
 import { type IndicatorDefinition } from './registry'
+import { neutral } from './prose'
 
 export const COUNCILLORS_TABLE = 'TAB708'
 
@@ -55,17 +56,27 @@ export const COUNCILLORS_WOMEN: Indicator = Indicator.parse({
     years: [...MANDATE_YEARS],
   },
   caveat: {
-    sv: 'Varje värde avser en hel mandatperiod och redovisas här under periodens första år, alltså det år fullmäktige tillträder: 2023 är mandatperioden 2023–2026. Måttet räknar alla förtroendevalda uppdrag i kommunen, inte bara fullmäktigeledamöter, och säger ingenting om vilka uppdrag de har — ordförandeposter är ojämnare fördelade än ledamotsplatser. Sju kommuner saknar värde för 2023–2026.',
-    en: 'Each value covers a whole mandate period and is published here under that period’s first year, the year the council takes its seats: 2023 is the 2023–2026 period. The measure counts every elected position in the municipality, not only council seats, and says nothing about which positions they are — chairs are less evenly divided than ordinary seats. Seven municipalities have no value for 2023–2026.',
+    sv: 'Varje värde avser en hel mandatperiod och redovisas här under periodens första år, alltså det år fullmäktige tillträder: 2023 är mandatperioden 2023–2026. Måttet räknar alla förtroendevalda uppdrag i kommunen, inte bara fullmäktigeledamöter, och säger ingenting om vilka uppdrag de har – ordförandeposter är ojämnare fördelade än ledamotsplatser. Sju kommuner saknar värde för 2023–2026.',
+    en: 'Each value covers a whole mandate period and is published here under that period’s first year, the year the council takes its seats: 2023 is the 2023–2026 period. The measure counts every elected position in the municipality, not only council seats, and says nothing about which positions they are – chairs are less evenly divided than ordinary seats. Seven municipalities have no value for 2023–2026.',
   },
   sensitivity: 'none',
-  sources: [{ table: COUNCILLORS_TABLE, contentCode: '0000009U', note: '(2007-2010)–(2023-2026)' }],
-  derivation:
-    'One SCB cell per municipality and mandate period: TAB708’s own "Könsfördelning bland ' +
-    'förtroendevalda" for women, at the background total that counts all ages. The share is ' +
-    'SCB’s, not computed here. The background total is `samald` because the table’s seven ' +
-    '"samtliga" codes do not all agree: six of the seven give the same figure and `samutb` ' +
-    'gives fewer, because education leaves some representatives unclassified.',
+  sources: [
+    { table: COUNCILLORS_TABLE, contentCode: '0000009U', note: neutral('(2007-2010)–(2023-2026)') },
+  ],
+  derivation: {
+    sv:
+      'En SCB-cell per kommun och mandatperiod: TAB708:s egen ”Könsfördelning bland ' +
+      'förtroendevalda” för kvinnor, vid bakgrundstotalen som räknar alla åldrar. Andelen är ' +
+      'SCB:s och beräknas inte här. Bakgrundstotalen är `samald`, eftersom tabellens sju ' +
+      '”samtliga”-koder inte är överens: sex av de sju ger samma siffra och `samutb` ger färre, ' +
+      'eftersom utbildning lämnar en del förtroendevalda oklassade.',
+    en:
+      'One SCB cell per municipality and mandate period: TAB708’s own "Könsfördelning bland ' +
+      'förtroendevalda" for women, at the background total that counts all ages. The share is ' +
+      'SCB’s, not computed here. The background total is `samald` because the table’s seven ' +
+      '"samtliga" codes do not all agree: six of the seven give the same figure and `samutb` ' +
+      'gives fewer, because education leaves some representatives unclassified.',
+  },
 })
 
 export function councillorsWomenDefined(): Definition {

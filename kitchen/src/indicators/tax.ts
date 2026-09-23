@@ -1,6 +1,7 @@
 import { Indicator, type IndicatorSeries } from '../../../shared/pantry'
 import { buildDefined, type Definition } from './define'
 import { type BuildContext, type IndicatorDefinition } from './registry'
+import { neutral } from './prose'
 
 export const TAX_TABLE = 'TAB2017'
 
@@ -37,11 +38,17 @@ export const TAX: Indicator = Indicator.parse({
     en: 'The rate the municipality set in December of the year before. 2026 therefore runs a year ahead of every other indicator in this dataset.',
   },
   sensitivity: 'none',
-  sources: [{ table: TAX_TABLE, contentCode: 'OE0101D1', note: '2000–2026' }],
-  derivation:
-    'One SCB cell per municipality and year: the single "total kommunal" tax-rate content ' +
-    'code, resolved by its stable Swedish label. TAB2017 has no dimension beyond Region and ' +
-    'Tid, so there is nothing to select a total from and nothing to sum.',
+  sources: [{ table: TAX_TABLE, contentCode: 'OE0101D1', note: neutral('2000–2026') }],
+  derivation: {
+    sv:
+      'En SCB-cell per kommun och år: den enda innehållskoden för skattesats, ”total kommunal”, ' +
+      'utpekad genom sin stabila svenska etikett. TAB2017 har ingen dimension utöver Region och ' +
+      'Tid, så det finns ingen total att välja ur och inget att summera.',
+    en:
+      'One SCB cell per municipality and year: the single "total kommunal" tax-rate content ' +
+      'code, resolved by its stable Swedish label. TAB2017 has no dimension beyond Region and ' +
+      'Tid, so there is nothing to select a total from and nothing to sum.',
+  },
 })
 
 export async function buildTax(ctx: BuildContext): Promise<IndicatorSeries> {

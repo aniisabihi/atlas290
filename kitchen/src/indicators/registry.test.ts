@@ -11,6 +11,7 @@ import {
   type BuildContext,
   type IndicatorDefinition,
 } from './registry'
+import { DEFAULT_PANTRY_DIR, readPantryParts } from '../publish'
 
 /** Minimal fake TableMeta, mirroring population.test.ts's fakeMeta helper. */
 function fakeMeta(id: string, values: Record<string, string[]>): TableMeta {
@@ -340,7 +341,7 @@ describe('buildAll (fake registries: integrity guards)', () => {
       caveat: { sv: '', en: '' },
       sensitivity: 'none',
       sources: [],
-      derivation: '',
+      derivation: { sv: '', en: '' },
     }
   }
 
@@ -414,5 +415,99 @@ describe('build order', () => {
     // matcher passes either way and cannot fail. Verified by mutation: with the guard
     // deleted, this expectation fails and the loose one does not.
     await expect(buildAll({}, [premature])).rejects.toThrow(/population must come first/)
+  })
+})
+
+describe('a difference between two shares is in percentage points', () => {
+  // The editorial pass found three indicators whose descriptions said "i procentenheter" /
+  // "in percentage points" while their unit said 'percent', so the site printed the gap between
+  // 65+ shares as "−5,64 %": a relative change, which it is not. The description and the unit
+  // are the same claim made twice and must agree. Read from the published pantry, because
+  // REGISTRY fills lazily inside buildAll and is empty at collection time — and what ships is the
+  // claim that matters.
+  const { indicators } = readPantryParts(DEFAULT_PANTRY_DIR)
+
+  it.each(indicators.map((i) => [i.id, i] as const))('%s', (_id, indicator) => {
+    const saysPoints = /procentenheter/.test(indicator.description.sv)
+    expect(/percentage points/.test(indicator.description.en), 'English agrees').toBe(saysPoints)
+    expect(indicator.unit === 'percentage-points').toBe(saysPoints)
+  })
+
+  it('covers exactly the three differences the pantry publishes', () => {
+    expect(
+      indicators
+        .filter((i) => i.unit === 'percentage-points')
+        .map((i) => i.id)
+        .sort(),
+    ).toEqual([
+      'post-secondary-education-gap',
+      'share-65-plus-vs-country',
+      'turnout-gap-general-municipal',
+    ])
+  })
+})
+
+describe('every published piece of indicator prose is in both languages', () => {
+  // Issue #48. "Both languages or neither" was the house rule and the contract let two fields
+  // break it. The shape is enforced by the schema now; this checks the CONTENT, which a schema
+  // cannot: a Swedish slot holding the English text would pass any shape check.
+  const { indicators } = readPantryParts(DEFAULT_PANTRY_DIR)
+  /** Four lowercase letters in a row is a word someone would have had to translate. */
+  const hasWords = (text: string) => /\p{Ll}{4,}/u.test(text)
+
+  it.each(indicators.map((i) => [i.id, i] as const))('%s', (_id, indicator) => {
+    const d = indicator.derivation
+    expect(d.sv.length, 'Swedish derivation').toBeGreaterThan(0)
+    expect(d.en.length, 'English derivation').toBeGreaterThan(0)
+    expect(d.sv, 'the Swedish derivation is not the English one').not.toBe(d.en)
+    for (const { note } of indicator.sources) {
+      // A note may read the same in both languages only when it has nothing to translate —
+      // "1968–2024", "2015, 2020, 200 m", "Kon=2".
+      if (note.sv === note.en)
+        expect(hasWords(note.sv), `untranslated note '${note.sv}'`).toBe(false)
+    }
+  })
+
+  it('never lets a Swedish thousand break across two lines', () => {
+    // "gånger 1 000" wrapped as "1" at the end of one line and "000" at the start of the next,
+    // because the group separator was an ordinary space. Intl writes a non-breaking one; the
+    // hand-written prose now does too.
+    const swedish = indicators.flatMap((i) => [
+      i.name.sv,
+      i.description.sv,
+      i.caveat.sv,
+      i.derivation.sv,
+      ...i.sources.map((s) => s.note.sv),
+    ])
+    expect(swedish.filter((text) => /\d \d{3}(?!\d)/.test(text))).toEqual([])
+  })
+
+  it('sets every dash as a spaced en dash that never starts a line', () => {
+    // ADR-0025 D10: Swedish and British typesetting use a spaced en dash, and the space before it
+    // is non-breaking so no line of prose begins with one. An unspaced en dash is a range.
+    const prose = indicators.flatMap((i) =>
+      (['sv', 'en'] as const).flatMap((lang) => [
+        i.name[lang],
+        i.description[lang],
+        i.caveat[lang],
+        i.derivation[lang],
+        ...i.sources.map((s) => s.note[lang]),
+      ]),
+    )
+    expect(prose.filter((text) => /—| – /.test(text))).toEqual([])
+  })
+
+  it('sets English apostrophes the way the rest of the site does', () => {
+    // The site's own English uses the typographic apostrophe; the pantry's mixed 71 of those with
+    // 32 straight ones, nearly all in derivations. A straight one between two letters is a slip.
+    const english = indicators.flatMap((i) => [
+      i.name.en,
+      i.description.en,
+      i.caveat.en,
+      i.derivation.en,
+      ...i.sources.map((s) => s.note.en),
+    ])
+    const straight = english.filter((text) => /\p{L}'\p{L}|s' /u.test(text))
+    expect(straight).toEqual([])
   })
 })

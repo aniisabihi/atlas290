@@ -52,15 +52,27 @@ export const EMPLOYMENT: Indicator = Indicator.parse({
   scale: { kind: 'sequential', breaks: [] },
   coverage: { from: LABOUR_YEARS[0]!, to: LABOUR_YEARS[LABOUR_YEARS.length - 1]! },
   caveat: {
-    sv: 'Avser åldern 20–64 år, båda könen och samtliga födelseregioner. TAB3200 saknar totalkod för ålder och erbjuder tjugo överlappande band; 20–64 är Sveriges eget mått och används här för både sysselsättning och arbetslöshet så att de beskriver samma människor. Serien är kort — den börjar 2020 — eftersom registret inte publiceras längre bakåt på kommunnivå. Statistiken är registerbaserad och mäter bostadskommun, inte arbetsplats: en pendlare räknas där hen bor.',
-    en: 'Ages 20–64, both sexes, all regions of birth. TAB3200 has no total code for age and offers twenty overlapping bands; 20–64 is Sweden’s own measure, used here for both employment and unemployment so that the two describe the same people. The series is short — it begins in 2020 — because the register is not published further back at municipal level. It is register-based and counts where a person lives, not where they work: a commuter is counted at home.',
+    sv: 'Avser åldern 20–64 år, båda könen och samtliga födelseregioner. TAB3200 saknar totalkod för ålder och erbjuder tjugo överlappande band; 20–64 är Sveriges eget mått och används här för både sysselsättning och arbetslöshet så att de beskriver samma människor. Serien är kort – den börjar 2020 – eftersom registret inte publiceras längre bakåt på kommunnivå. Statistiken är registerbaserad och mäter bostadskommun, inte arbetsplats: en pendlare räknas där hen bor.',
+    en: 'Ages 20–64, both sexes, all regions of birth. TAB3200 has no total code for age and offers twenty overlapping bands; 20–64 is Sweden’s own measure, used here for both employment and unemployment so that the two describe the same people. The series is short – it begins in 2020 – because the register is not published further back at municipal level. It is register-based and counts where a person lives, not where they work: a commuter is counted at home.',
   },
   sensitivity: 'none',
-  sources: [{ table: LABOUR_TABLE, contentCode: '000002NS', note: '2020–2024, ages 20–64' }],
-  derivation:
-    'One SCB cell per municipality and year: TAB3200’s "sysselsättningsgrad" content code, ' +
-    'resolved by its stable Swedish label, at Alder=20-64 with the sex total (1+2) and the ' +
-    'birth-region total. SCB computes the rate; it is not derived here from counts.',
+  sources: [
+    {
+      table: LABOUR_TABLE,
+      contentCode: '000002NS',
+      note: { sv: '2020–2024, åldrarna 20–64', en: '2020–2024, ages 20–64' },
+    },
+  ],
+  derivation: {
+    sv:
+      'En SCB-cell per kommun och år: TAB3200:s innehållskod ”sysselsättningsgrad”, utpekad ' +
+      'genom sin stabila svenska etikett, vid Alder=20-64 med könstotalen (1+2) och totalen för ' +
+      'födelseregion. SCB beräknar andelen; den härleds inte här ur antal.',
+    en:
+      'One SCB cell per municipality and year: TAB3200’s "sysselsättningsgrad" content code, ' +
+      'resolved by its stable Swedish label, at Alder=20-64 with the sex total (1+2) and the ' +
+      'birth-region total. SCB computes the rate; it is not derived here from counts.',
+  },
 })
 
 export const UNEMPLOYMENT: Indicator = Indicator.parse({
@@ -75,15 +87,27 @@ export const UNEMPLOYMENT: Indicator = Indicator.parse({
   scale: { kind: 'sequential', breaks: [] },
   coverage: { from: LABOUR_YEARS[0]!, to: LABOUR_YEARS[LABOUR_YEARS.length - 1]! },
   caveat: {
-    sv: 'Nämnaren är arbetskraften — sysselsatta plus arbetslösa — inte hela befolkningen, så detta tal och sysselsättningsgraden summerar inte till 100. Samma åldersband (20–64), samma register och samma korta serie från 2020 som sysselsättningsgraden.',
-    en: 'The denominator is the labour force — those employed plus those unemployed — not the whole population, so this figure and the employment rate do not sum to 100. Same age band (20–64), same register and the same short series from 2020 as the employment rate.',
+    sv: 'Nämnaren är arbetskraften – sysselsatta plus arbetslösa – inte hela befolkningen, så detta tal och sysselsättningsgraden summerar inte till 100. Samma åldersband (20–64), samma register och samma korta serie från 2020 som sysselsättningsgraden.',
+    en: 'The denominator is the labour force – those employed plus those unemployed – not the whole population, so this figure and the employment rate do not sum to 100. Same age band (20–64), same register and the same short series from 2020 as the employment rate.',
   },
   sensitivity: 'none',
-  sources: [{ table: LABOUR_TABLE, contentCode: '000002NN', note: '2020–2024, ages 20–64' }],
-  derivation:
-    'One SCB cell per municipality and year: TAB3200’s "arbetslöshet" content code, resolved by ' +
-    'its stable Swedish label, at Alder=20-64 with the sex and birth-region totals. SCB ' +
-    'computes the rate against the labour force; it is not derived here.',
+  sources: [
+    {
+      table: LABOUR_TABLE,
+      contentCode: '000002NN',
+      note: { sv: '2020–2024, åldrarna 20–64', en: '2020–2024, ages 20–64' },
+    },
+  ],
+  derivation: {
+    sv:
+      'En SCB-cell per kommun och år: TAB3200:s innehållskod ”arbetslöshet”, utpekad genom sin ' +
+      'stabila svenska etikett, vid Alder=20-64 med totalerna för kön och födelseregion. SCB ' +
+      'beräknar andelen av arbetskraften; den härleds inte här.',
+    en:
+      'One SCB cell per municipality and year: TAB3200’s "arbetslöshet" content code, resolved ' +
+      'by its stable Swedish label, at Alder=20-64 with the sex and birth-region totals. SCB ' +
+      'computes the rate against the labour force; it is not derived here.',
+  },
 })
 
 export function employmentDefined(): Definition {

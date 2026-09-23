@@ -361,12 +361,20 @@ export function App({ loaded: opened }: { loaded: LoadedPantry }) {
                * measure" is a claim a visitor should not have to infer; the table gets its own
                * line, which is also what keeps the plate the same height in every view.
                */}
+              {/*
+               * The arrow-key sentence is wrapped so a touch screen can set it aside: on a phone
+               * it was two of the caption's five lines, describing keys the visitor does not
+               * have. A device with a fine pointer keeps it; see `.keyboard-hint`.
+               */}
               <figcaption id="map-hint" className="stage-hint">
-                {state.table
-                  ? strings.tableHint
-                  : view === 'cartogram'
-                    ? `${strings.cartogramHint} ${strings.mapHint}`
-                    : strings.mapHint}
+                {state.table ? (
+                  strings.tableHint
+                ) : (
+                  <>
+                    {view === 'cartogram' && `${strings.cartogramHint} `}
+                    <span className="keyboard-hint">{strings.mapHint}</span>
+                  </>
+                )}
               </figcaption>
             </figure>
           </div>

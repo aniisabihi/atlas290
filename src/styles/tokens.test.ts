@@ -131,6 +131,15 @@ describe('the token palette', () => {
     expect(contrast(light['on-plate']!, light['map-ground']!)).toBeGreaterThanOrEqual(4.5)
   })
 
+  it('gives the plate its own accent, which the theme cannot move', () => {
+    // The table's selected-row mark and its header hover used the theme accent, which in the
+    // dark theme is a pale blue — about 2.2:1 on the white plate. 3:1 is the floor for a
+    // non-text mark (WCAG 1.4.11) and 4.5 for the hover text; this clears both.
+    expect(darkSystem['on-plate-accent']).toBeUndefined()
+    expect(darkChosen['on-plate-accent']).toBeUndefined()
+    expect(contrast(light['on-plate-accent']!, light['map-ground']!)).toBeGreaterThanOrEqual(4.5)
+  })
+
   it('names the three faces, each with a real fallback stack', () => {
     for (const name of ['font-display', 'font-sans', 'font-mono']) {
       expect(light[name], name).toBeDefined()

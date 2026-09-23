@@ -203,7 +203,7 @@ describe('buildIndicatorSources (Task 13)', () => {
         {
           ...POPULATION,
           id: 'tax-rate',
-          sources: [{ table: 'TAB2017', contentCode: 'OE0101D1', note: '' }],
+          sources: [{ table: 'TAB2017', contentCode: 'OE0101D1', note: { sv: '', en: '' } }],
         },
       ],
       { 'tax-rate': [taxChunk] },
@@ -233,7 +233,7 @@ describe('buildIndicatorSources (Task 13)', () => {
         {
           ...POPULATION,
           id: 'house-prices',
-          sources: [{ table: 'TAB1169', contentCode: 'BO0501C2', note: '' }],
+          sources: [{ table: 'TAB1169', contentCode: 'BO0501C2', note: { sv: '', en: '' } }],
         },
       ],
       { 'house-prices': [chunkA, chunkB] },
@@ -252,7 +252,7 @@ describe('buildIndicatorSources (Task 13)', () => {
     // against each indicator's OWN per-definition slice (`sourcesByIndicator`) must.
     const populationChunk = chunk('TAB638', 'BE0101N1', '2024')
     const share65Chunk = chunk('TAB638', 'BE0101N1', '2025')
-    const sharedSource = { table: 'TAB638', contentCode: 'BE0101N1', note: '' }
+    const sharedSource = { table: 'TAB638', contentCode: 'BE0101N1', note: { sv: '', en: '' } }
     const result = buildIndicatorSources(
       [
         { ...POPULATION, id: 'population', sources: [sharedSource] },

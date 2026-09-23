@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import { AboutIndicator } from './AboutIndicator'
 import { publishedParts } from '../test/pantry'
 
@@ -70,5 +70,25 @@ describe('AboutIndicator', () => {
     for (const name of ['Published for', 'Worth knowing']) {
       expect(screen.getByRole('heading', { level: 3, name })).toBeTruthy()
     }
+  })
+
+  it('says how the value was calculated in the language of the page', () => {
+    // Issue #48: the method text and the source notes were English on the Swedish page, marked
+    // lang="en" and apologised for. Both are in both languages now, so the page speaks one.
+    draw('net-migration-rate', 'sv')
+    expect(
+      screen.getByText(/härleds aldrig här genom att dra inflyttning från utflyttning/),
+    ).toBeTruthy()
+    expect(screen.queryByText(/never derived by subtracting/)).toBeNull()
+    expect(document.querySelector('.about-indicator [lang]')).toBeNull()
+    expect(screen.queryByText(/bara på engelska/)).toBeNull()
+  })
+
+  it('gives each source its note in the language of the page', () => {
+    draw('natural-change-rate', 'sv')
+    expect(screen.getByText(/födda 1968–2024/)).toBeTruthy()
+    cleanup()
+    draw('natural-change-rate', 'en')
+    expect(screen.getByText(/births 1968–2024/)).toBeTruthy()
   })
 })

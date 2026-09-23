@@ -2,6 +2,7 @@ import { Indicator, type IndicatorSeries } from '../../../shared/pantry'
 import { buildDefined, type Definition } from './define'
 import { type TableMeta } from '../scb/client'
 import { type BuildContext, type IndicatorDefinition } from './registry'
+import { neutral } from './prose'
 
 export const EDUCATION_TABLE = 'TAB3981'
 
@@ -82,7 +83,7 @@ function validateLevels(meta: TableMeta): void {
   const extra = [...byCode.keys()].filter((c) => !ALL_LEVELS.includes(c))
   if (missing.length > 0 || extra.length > 0) {
     throw new Error(
-      `${meta.id}: UtbildningsNiva does not carry the expected eight levels — ` +
+      `${meta.id}: UtbildningsNiva does not carry the expected eight levels – ` +
         `missing: ${missing.join(', ') || 'none'}; unexpected: ${extra.join(', ') || 'none'}`,
     )
   }
@@ -91,7 +92,7 @@ function validateLevels(meta: TableMeta): void {
     if (actual !== expectedLabel) {
       throw new Error(
         `${meta.id}: UtbildningsNiva '${code}' is labelled '${actual}', expected ` +
-          `'${expectedLabel}' — this indicator's post-secondary/unknown definition depends on ` +
+          `'${expectedLabel}' – this indicator’s post-secondary/unknown definition depends on ` +
           'what each code means; refusing to silently compute a share against a redefined level',
       )
     }
@@ -105,13 +106,13 @@ export const EDUCATION: Indicator = Indicator.parse({
     sv:
       'Andel av befolkningen 16–74 år med eftergymnasial utbildning (utbildningsnivå 5, 6 eller ' +
       '7: eftergymnasial kortare än 3 år, eftergymnasial 3 år eller mer, eller forskarutbildning). ' +
-      'Nämnaren är HELA befolkningen 16–74 år, inklusive de vars utbildningsnivå är okänd (US) — ' +
+      'Nämnaren är HELA befolkningen 16–74 år, inklusive de vars utbildningsnivå är okänd (US) – ' +
       'inte enbart de med registrerad utbildning.',
     en:
       'Share of the population aged 16–74 with post-secondary education (education level 5, 6 ' +
       'or 7: post-secondary under 3 years, post-secondary 3 years or more, or postgraduate ' +
       'research). The denominator is the WHOLE population aged 16–74, including those whose ' +
-      'education level is unknown (US) — not only those with a recorded education.',
+      'education level is unknown (US) – not only those with a recorded education.',
   },
   unit: 'percent',
   priceBasis: 'none',
@@ -119,14 +120,14 @@ export const EDUCATION: Indicator = Indicator.parse({
   coverage: { from: EDUCATION_YEARS[0]!, to: EDUCATION_YEARS[EDUCATION_YEARS.length - 1]! },
   caveat: {
     sv:
-      'TAB3981 publicerar antal, inte en andel — andelen beräknas här. Täljaren är summan av ' +
+      'TAB3981 publicerar antal, inte en andel – andelen beräknas här. Täljaren är summan av ' +
       'utbildningsnivå 5, 6 och 7 (eftergymnasial utbildning kortare än 3 år, eftergymnasial ' +
       'utbildning 3 år eller mer, samt forskarutbildning). Nämnaren är summan av SAMTLIGA åtta ' +
-      'nivåer, inklusive "uppgift om utbildningsnivå saknas" (US) — andelen avser alltså hela ' +
+      'nivåer, inklusive "uppgift om utbildningsnivå saknas" (US) – andelen avser alltså hela ' +
       'befolkningen 16–74 år, inte enbart dem med registrerad utbildningsnivå. Den som jämför ' +
       'denna siffra med SCB:s egen publicerade andel bör känna till denna definition, eftersom ' +
       'SCB ibland redovisar andelen med okänd nivå exkluderad ur nämnaren. Båda könen summeras, ' +
-      'eftersom Kon på denna tabell saknar en totalkod (endast "1" och "2" finns) — säkert ' +
+      'eftersom Kon på denna tabell saknar en totalkod (endast "1" och "2" finns) – säkert ' +
       'eftersom TAB3981 inte har någon CKM-störningsnot, så summeringen är exakt aritmetik, inte ' +
       'en approximation över störda celler. SCB noterar även två tidsseriebrott: registrets ' +
       'kvalitet höjdes väsentligt 1990 (siffror för 1985–1989 bör om möjligt undvikas eller ' +
@@ -134,15 +135,15 @@ export const EDUCATION: Indicator = Indicator.parse({
       'ISCED-anpassade SUN2000), vilket höjde den redovisade utbildningsnivån i riket och gör ' +
       'jämförelser bakåt före 2000 mindre tillförlitliga.',
     en:
-      'TAB3981 publishes counts, not a share — the share is derived here. The numerator is the ' +
+      'TAB3981 publishes counts, not a share – the share is derived here. The numerator is the ' +
       'sum of education levels 5, 6 and 7 (post-secondary education under 3 years, ' +
       'post-secondary education 3 years or more, and postgraduate research). The denominator is ' +
-      'the sum of ALL EIGHT levels, including "education level not recorded" (US) — the share ' +
+      'the sum of ALL EIGHT levels, including "education level not recorded" (US) – the share ' +
       'is therefore of the whole population aged 16–74, not only those with a recorded ' +
-      "education level. Anyone comparing this figure to SCB's own published share should know " +
+      'education level. Anyone comparing this figure to SCB’s own published share should know ' +
       'this convention, since SCB sometimes reports the share with unknown excluded from the ' +
-      "denominator instead. Both sexes are summed, because this table's Kon dimension has no " +
-      'total code (only "1" and "2" exist) — safe because TAB3981 carries no CKM perturbation ' +
+      'denominator instead. Both sexes are summed, because this table’s Kon dimension has no ' +
+      'total code (only "1" and "2" exist) – safe because TAB3981 carries no CKM perturbation ' +
       'note, so the summation is exact arithmetic, not an approximation over perturbed cells. ' +
       'SCB also notes two time-series breaks: register quality rose substantially in 1990 ' +
       '(figures for 1985–1989 should be avoided where possible, or read with real caution) and ' +
@@ -155,19 +156,34 @@ export const EDUCATION: Indicator = Indicator.parse({
     {
       table: EDUCATION_TABLE,
       contentCode: 'UF0506A1',
-      note: '1985–2025, tot16-74, both sexes summed, all eight UtbildningsNiva levels',
+      note: {
+        sv: '1985–2025, tot16-74, båda könen summerade, alla åtta nivåer av UtbildningsNiva',
+        en: '1985–2025, tot16-74, both sexes summed, all eight UtbildningsNiva levels',
+      },
     },
   ],
-  derivation:
-    'Eight SCB cells per municipality and year (one per UtbildningsNiva level 1-7 and "US"), ' +
-    'each summed over both sexes (Kon has no total code on this table — TOTAL_CODES does not ' +
-    'recognise one, and TAB3981.Kon is declared safe to sum in SUM_SAFE, because this table ' +
-    "carries no CKM perturbation note, so the two sexes' counts are exact, unperturbed and " +
-    'disjoint) at the "tot16-74" age total. The share is (levels 5+6+7) divided by the sum of ' +
-    'all eight levels, times 100 — a deliberate choice: the denominator is the whole 16-74 ' +
-    'population, including the "unknown" level, not only those with a recorded education. Any ' +
-    'single missing level nulls the whole cell rather than publishing a share built on a ' +
-    'partial sum.',
+  derivation: {
+    sv:
+      'Åtta SCB-celler per kommun och år (en per UtbildningsNiva, nivå 1–7 och ”US”), var och ' +
+      'en summerad över båda könen (Kon saknar totalkod i den här tabellen – TOTAL_CODES känner ' +
+      'inte igen någon, och TAB3981.Kon är deklarerad som säker att summera i SUM_SAFE eftersom ' +
+      'tabellen inte har någon anmärkning om CKM-störning, så de två könens antal är exakta, ' +
+      'ostörda och disjunkta) vid åldersaggregatet ”tot16-74”. Andelen är (nivå 5+6+7) delat ' +
+      'med summan av alla åtta nivåer, gånger 100 – ett medvetet val: nämnaren är hela ' +
+      'befolkningen 16–74 år, inklusive nivån ”okänd”, inte bara de med registrerad utbildning. ' +
+      'Saknas en enda nivå blir hela cellen null i stället för att en andel byggd på en ' +
+      'ofullständig summa publiceras.',
+    en:
+      'Eight SCB cells per municipality and year (one per UtbildningsNiva level 1-7 and "US"), ' +
+      'each summed over both sexes (Kon has no total code on this table – TOTAL_CODES does not ' +
+      'recognise one, and TAB3981.Kon is declared safe to sum in SUM_SAFE, because this table ' +
+      'carries no CKM perturbation note, so the two sexes’ counts are exact, unperturbed and ' +
+      'disjoint) at the "tot16-74" age total. The share is (levels 5+6+7) divided by the sum of ' +
+      'all eight levels, times 100 – a deliberate choice: the denominator is the whole 16-74 ' +
+      'population, including the "unknown" level, not only those with a recorded education. Any ' +
+      'single missing level nulls the whole cell rather than publishing a share built on a ' +
+      'partial sum.',
+  },
 })
 
 export async function buildEducation(ctx: BuildContext): Promise<IndicatorSeries> {
@@ -251,14 +267,20 @@ function educationSplit(id: string, sv: string, en: string, who: string, whoEn: 
     coverage: { from: EDUCATION_YEARS[0]!, to: EDUCATION_YEARS[EDUCATION_YEARS.length - 1]! },
     caveat: {
       sv: `Samma definition och samma nämnarval som den sammanslagna indikatorn: nivå 5, 6 och 7 av samtliga åtta nivåer, inklusive "uppgift saknas". Skillnaden är att endast ${who} räknas, i både täljare och nämnare. SCB:s två tidsseriebrott gäller även här: registrets kvalitet höjdes 1990 och klassificeringen byttes 2000.`,
-      en: `The same definition and the same denominator choice as the combined indicator: levels 5, 6 and 7 out of all eight, "not recorded" included. The difference is that only ${whoEn} are counted, in both the numerator and the denominator. SCB's two series breaks apply here too: register quality rose in 1990 and the classification changed in 2000.`,
+      en: `The same definition and the same denominator choice as the combined indicator: levels 5, 6 and 7 out of all eight, "not recorded" included. The difference is that only ${whoEn} are counted, in both the numerator and the denominator. SCB’s two series breaks apply here too: register quality rose in 1990 and the classification changed in 2000.`,
     },
     sensitivity: 'none',
-    sources: [{ table: EDUCATION_TABLE, contentCode: 'UF0506A1', note: '1985–2025' }],
-    derivation:
-      'Levels 5, 6 and 7 over all eight levels, times 100, from one fetch of TAB3981 at a ' +
-      'single Kon value. Identical to post-secondary-education except that the sex dimension ' +
-      'is selected rather than totalled.',
+    sources: [{ table: EDUCATION_TABLE, contentCode: 'UF0506A1', note: neutral('1985–2025') }],
+    derivation: {
+      sv:
+        'Nivå 5, 6 och 7 delat med alla åtta nivåer, gånger 100, ur en hämtning av TAB3981 vid ' +
+        'ett enda värde för Kon. Samma som post-secondary-education, förutom att könsdimensionen ' +
+        'väljs i stället för att summeras.',
+      en:
+        'Levels 5, 6 and 7 over all eight levels, times 100, from one fetch of TAB3981 at a ' +
+        'single Kon value. Identical to post-secondary-education except that the sex dimension is ' +
+        'selected rather than totalled.',
+    },
   })
 }
 
@@ -288,21 +310,28 @@ export const EDUCATION_GAP: Indicator = Indicator.parse({
     sv: 'Kvinnors andel med eftergymnasial utbildning minus mäns, i procentenheter. Positivt tal betyder att fler kvinnor än män har eftergymnasial utbildning.',
     en: 'Women’s share with post-secondary education minus men’s, in percentage points. A positive figure means more women than men have post-secondary education.',
   },
-  unit: 'percent',
+  unit: 'percentage-points',
   priceBasis: 'none',
   scale: { kind: 'diverging', breaks: [] },
   coverage: { from: EDUCATION_YEARS[0]!, to: EDUCATION_YEARS[EDUCATION_YEARS.length - 1]! },
   caveat: {
-    sv: 'Procentenheter, inte procent: ett gap på 10 betyder att andelen kvinnor är tio enheter högre än andelen män, inte tio procent högre. Gapet säger ingenting om nivån — två kommuner med samma gap kan ha helt olika utbildningsnivå. Räknas ur de två publicerade delserierna, så varje tal här går att kontrollera mot dem.',
-    en: 'Percentage points, not percent: a gap of 10 means women’s share is ten points above men’s, not ten percent higher. The gap says nothing about the level — two municipalities with the same gap can have entirely different education levels. Computed from the two published split series, so every figure here can be checked against them.',
+    sv: 'Procentenheter, inte procent: ett gap på 10 betyder att andelen kvinnor är tio enheter högre än andelen män, inte tio procent högre. Gapet säger ingenting om nivån – två kommuner med samma gap kan ha helt olika utbildningsnivå. Räknas ur de två publicerade delserierna, så varje tal här går att kontrollera mot dem.',
+    en: 'Percentage points, not percent: a gap of 10 means women’s share is ten points above men’s, not ten percent higher. The gap says nothing about the level – two municipalities with the same gap can have entirely different education levels. Computed from the two published split series, so every figure here can be checked against them.',
   },
   sensitivity: 'none',
-  sources: [{ table: EDUCATION_TABLE, contentCode: 'UF0506A1', note: '1985–2025' }],
-  derivation:
-    'post-secondary-education-women minus post-secondary-education-men, cell by cell, from this ' +
-    'pantry’s own published series rather than from a third fetch. Where either side is absent ' +
-    'the gap is absent: a difference between a known share and an unknown one is not the known ' +
-    'one.',
+  sources: [{ table: EDUCATION_TABLE, contentCode: 'UF0506A1', note: neutral('1985–2025') }],
+  derivation: {
+    sv:
+      'post-secondary-education-women minus post-secondary-education-men, cell för cell, ur den ' +
+      'här datamängdens egna publicerade serier i stället för ur en tredje hämtning. Där någon ' +
+      'av sidorna saknas saknas också skillnaden: en skillnad mellan en känd andel och en okänd ' +
+      'är inte den kända.',
+    en:
+      'post-secondary-education-women minus post-secondary-education-men, cell by cell, from ' +
+      'this pantry’s own published series rather than from a third fetch. Where either side is ' +
+      'absent the gap is absent: a difference between a known share and an unknown one is not ' +
+      'the known one.',
+  },
 })
 
 export function educationWomenDefined(): Definition {

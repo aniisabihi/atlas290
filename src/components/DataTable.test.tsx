@@ -144,4 +144,43 @@ describe('DataTable, as a view rather than a page', () => {
     const head = container.querySelector('thead')!
     expect(head.querySelectorAll('button').length).toBeGreaterThan(0)
   })
+
+  it('opens scrolled to the selected municipality, not to the top of the alphabet', () => {
+    // Choosing Malmö and then the table used to show Ale, Alingsås and Alvesta, with the row
+    // the visitor had chosen 200 rows further down. jsdom lays nothing out, so the geometry is
+    // stated: the box is 400 px tall and Malmö's row starts 5,000 px below its top.
+    const box = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: HTMLElement) {
+        const top = this.getAttribute('aria-current') === 'true' ? 5000 : 0
+        return { top, bottom: top + 40, left: 0, right: 0, width: 0, height: 40 } as DOMRect
+      })
+    const height = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(400)
+    try {
+      render(
+        <DataTable
+          lk={lk}
+          indicatorId="population"
+          year={2024}
+          selected="1280"
+          lang="en"
+          onSelect={vi.fn()}
+        />,
+      )
+      // Centred: the row's top, less half the box, plus half the row (40 px tall).
+      expect(screen.getByRole('region').scrollTop).toBe(5000 - 200 + 20)
+    } finally {
+      box.mockRestore()
+      height.mockRestore()
+    }
+  })
+
+  it('shows a rank without repeating the column heading in every cell', () => {
+    draw()
+    const stockholm = bodyRows().find(
+      (r) => within(r).getByRole('rowheader').textContent === 'Stockholm',
+    )!
+    expect(stockholm.textContent).toMatch(/1 of 290$/)
+    expect(stockholm.textContent).not.toMatch(/rank/i)
+  })
 })

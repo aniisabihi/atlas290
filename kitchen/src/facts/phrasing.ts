@@ -4,6 +4,7 @@ import {
   type Indicator,
   type Municipality,
 } from '../../../shared/pantry'
+import { withUnit } from '../../../shared/units'
 import type { Candidate } from './families'
 
 /**
@@ -29,9 +30,12 @@ function number(value: number, decimals: number, lang: 'sv' | 'en'): string {
   }).format(value)
 }
 
-/** A value in its indicator's own precision — the same table the kitchen rounds the pantry to. */
+/**
+ * A value in its indicator's own precision — the same table the kitchen rounds the pantry to —
+ * with its unit, from the same table the site labels every figure with.
+ */
 function measure(value: number, indicator: Indicator, lang: 'sv' | 'en'): string {
-  return number(value, UNIT_DECIMALS[indicator.unit], lang)
+  return withUnit(number(value, UNIT_DECIMALS[indicator.unit], lang), indicator.unit, lang)
 }
 
 /**
@@ -59,15 +63,17 @@ export function phrase(
     case 'country': {
       const { indicator, matching, comparable, from, to, direction } = candidate
       const all = matching === comparable
-      // The measure is the SUBJECT and the movement is a verb — "X has risen in N
-      // municipalities" — rather than the measure being an object of "have higher…". The
-      // obvious phrasing produced "Alla 284 kommuner har högre eftergymnasial utbildning än
-      // 1985", which reads as though municipalities possess an education; the indicator is a
-      // share of residents, and only some of the ten are things a place can have more of. A
-      // verb form is grammatical for all ten in both languages without knowing which is which.
+      // The measure is a LABEL, followed by the comparison the family actually made: `to`
+      // against `from`, one year against another. Two earlier forms were wrong in different
+      // ways. "Alla 284 kommuner har högre eftergymnasial utbildning än 1985" read as though a
+      // municipality possesses an education. "Utbildningsgap … har stigit i alla 284 kommuner
+      // sedan 1985" fixed that and broke Swedish instead — a subject wants the definite form,
+      // "Utbildningsgapet", and a pantry name cannot be inflected from outside — and "has risen
+      // since" claimed a trend where the family only compares two years. A label is
+      // grammatical for every name in both languages, which is why the unusual family uses one.
       const moved = {
-        sv: direction === 'higher' ? 'stigit' : 'sjunkit',
-        en: direction === 'higher' ? 'risen' : 'fallen',
+        sv: direction === 'higher' ? 'högre' : 'lägre',
+        en: direction === 'higher' ? 'higher' : 'lower',
       }
       const where = {
         sv: all ? `alla ${comparable} kommuner` : `${matching} av ${comparable} kommuner`,
@@ -77,8 +83,8 @@ export function phrase(
       }
       return {
         text: {
-          sv: `${indicator.name.sv} har ${moved.sv} i ${where.sv} sedan ${from}.`,
-          en: `${indicator.name.en} has ${moved.en} in ${where.en} since ${from}.`,
+          sv: `${indicator.name.sv} – ${moved.sv} ${to} än ${from} i ${where.sv}.`,
+          en: `${indicator.name.en} – ${moved.en} in ${to} than in ${from}, in ${where.en}.`,
         },
         href: `/?i=${indicator.id}&y=${to}`,
         claim: `${matching} of ${comparable} ${direction} in ${to} than ${from}`,
@@ -99,8 +105,8 @@ export function phrase(
       }
       return {
         text: {
-          sv: `${who.sv} har ${verb.sv} varje år sedan ${run.from} — ${run.years} år i rad.`,
-          en: `${who.en} ${named && municipalities.length === 1 ? 'has' : 'have'} ${verb.en} every year since ${run.from} — ${run.years} years running.`,
+          sv: `${who.sv} har ${verb.sv} varje år sedan ${run.from} – ${run.years} år i rad.`,
+          en: `${who.en} ${named && municipalities.length === 1 ? 'has' : 'have'} ${verb.en} every year since ${run.from} – ${run.years} years running.`,
         },
         href: `/?i=population&y=${run.to}${named && municipalities[0] ? `&m=${municipalities[0].code}` : ''}`,
         claim: `${direction === 1 ? 'growth' : 'decline'} ${run.years} years ${run.from}-${run.to}, ${codes.length} municipalities`,
@@ -114,8 +120,8 @@ export function phrase(
       const back = Math.round(r.recovery)
       return {
         text: {
-          sv: `${who.sv} var ${fall} % mindre ${r.trough.year} än ${r.peak.year} — och är nu ${back} % större än då.`,
-          en: `${who.en} was ${fall}% smaller in ${r.trough.year} than in ${r.peak.year} — and is now ${back}% larger than that low.`,
+          sv: `${who.sv} var ${withUnit(String(fall), 'percent', 'sv')} mindre ${r.trough.year} än ${r.peak.year} – och är nu ${withUnit(String(back), 'percent', 'sv')} större än då.`,
+          en: `${who.en} was ${withUnit(String(fall), 'percent', 'en')} smaller in ${r.trough.year} than in ${r.peak.year} – and is now ${withUnit(String(back), 'percent', 'en')} larger than that low.`,
         },
         href: `/?i=population&y=${r.trough.year}&m=${code}`,
         claim: `${code} peak ${r.peak.year} trough ${r.trough.year} fall ${fall}% recovery ${back}%`,
@@ -134,8 +140,8 @@ export function phrase(
       // the measure first sidesteps the article and the agreement together.
       return {
         text: {
-          sv: `${indicator.name.sv} i ${who.sv} — ${lower ? 'lägre' : 'högre'} än i platserna som liknar den: ${measure(self, indicator, 'sv')} mot ${measure(peers, indicator, 'sv')}.`,
-          en: `${indicator.name.en} in ${who.en} — ${lower ? 'lower' : 'higher'} than in the places most like it: ${measure(self, indicator, 'en')} against ${measure(peers, indicator, 'en')}.`,
+          sv: `${indicator.name.sv} i ${who.sv} – ${lower ? 'lägre' : 'högre'} än i kommunerna som liknar den mest: ${measure(self, indicator, 'sv')} mot ${measure(peers, indicator, 'sv')}.`,
+          en: `${indicator.name.en} in ${who.en} – ${lower ? 'lower' : 'higher'} than in the places most like it: ${measure(self, indicator, 'en')} against ${measure(peers, indicator, 'en')}.`,
         },
         href: `/?i=${indicator.id}&y=${year}&m=${code}`,
         claim: `${code} ${indicator.id} ${year}: ${self} vs peers ${peers}`,

@@ -84,7 +84,7 @@ describe('ComparePanel with a partner', () => {
 
   it('states how many measures are higher, and out of how many were comparable', () => {
     draw('1280')
-    expect(screen.getByText(/Higher on \d+ of \d+ comparable measures/)).toBeTruthy()
+    expect(screen.getByText(/is higher on \d+ of \d+ comparable measures/)).toBeTruthy()
   })
 
   it('says how many could not be compared, rather than quietly counting them as ties', () => {

@@ -94,7 +94,7 @@ describe('SimilarPlaces', () => {
   it('names the places and the method in English too', () => {
     show({}, 'en')
     expect(screen.getByRole('heading', { name: 'Places like this one' })).toBeTruthy()
-    expect(screen.getByText(/Closest across 10 measures, 2015–2024/)).toBeTruthy()
+    expect(screen.getByText(/Most alike across 10 measures, 2015–2024/)).toBeTruthy()
   })
 })
 

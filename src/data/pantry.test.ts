@@ -18,15 +18,15 @@ const indicator = {
   coverage: { from: 2024, to: 2025 },
   caveat: { sv: '', en: '' },
   sensitivity: 'none',
-  sources: [{ table: 'TAB638', contentCode: 'BE0101N1', note: '' }],
-  derivation: 'Sum over sex and marital status.',
+  sources: [{ table: 'TAB638', contentCode: 'BE0101N1', note: { sv: '', en: '' } }],
+  derivation: { sv: 'Sum over sex and marital status.', en: 'Sum over sex and marital status.' },
 }
 
 const second = { ...indicator, id: 'tax-rate', unit: 'percent' }
 
 /** Smallest index the schema accepts: no municipalities, so every series has no rows. */
 const validIndex = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   municipalities: [],
   indicators: [indicator, second],
   priceIndex: { base: 2025, values: { '2025': 100 } },

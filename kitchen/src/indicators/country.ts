@@ -33,7 +33,7 @@ export const SHARE_65_VS_COUNTRY: Indicator = Indicator.parse({
     sv: 'Kommunens andel invånare som fyllt 65 minus rikets andel samma år, i procentenheter. Positivt tal betyder en äldre befolkning än riket.',
     en: 'The municipality’s share of residents aged 65 and over minus the country’s share the same year, in percentage points. A positive figure means an older population than Sweden as a whole.',
   },
-  unit: 'percent',
+  unit: 'percentage-points',
   priceBasis: 'none',
   scale: { kind: 'diverging', breaks: [] },
   // share-65-plus's own range, written out rather than read from it: a module-level read of
@@ -41,18 +41,28 @@ export const SHARE_65_VS_COUNTRY: Indicator = Indicator.parse({
   // 16 hit with `NATURAL_YEARS = YEARS`). check.ts rule 7 would catch a drift between the two.
   coverage: { from: 1968, to: 2025 },
   caveat: {
-    sv: 'Måttet svarar på om kommunen är ÄLDRE än riket, inte på om den åldras snabbare — det är en nivå, inte en förändringstakt, och en kommun kan ligga högt och samtidigt bli yngre. Rikets andel är befolkningsviktad: alla 65-plussare i landet delat med alla invånare, inte medelvärdet av 290 kommunandelar, som hade låtit Bjurholm väga lika tungt som Stockholm. Skillnaden anges i procentenheter, inte procent. Från 2025 är underlaget stördat av SCB:s Cell Key Method, precis som andel 65+ självt.',
-    en: 'This answers whether the municipality is OLDER than the country, not whether it is ageing faster — it is a level, not a rate of change, and a place can sit high while getting younger. The national share is population-weighted: every resident aged 65 and over in Sweden over every resident, not the mean of 290 municipal shares, which would let Bjurholm weigh as much as Stockholm. The difference is in percentage points, not percent. From 2025 the underlying figures carry SCB’s Cell Key Method noise, exactly as share-65-plus does.',
+    sv: 'Måttet svarar på om kommunen är ÄLDRE än riket, inte på om den åldras snabbare – det är en nivå, inte en förändringstakt, och en kommun kan ligga högt och samtidigt bli yngre. Rikets andel är befolkningsviktad: alla 65-plussare i landet delat med alla invånare, inte medelvärdet av 290 kommunandelar, som hade låtit Bjurholm väga lika tungt som Stockholm. Skillnaden anges i procentenheter, inte procent. Från 2025 är underlaget stördat av SCB:s Cell Key Method, precis som andel 65+ självt.',
+    en: 'This answers whether the municipality is OLDER than the country, not whether it is ageing faster – it is a level, not a rate of change, and a place can sit high while getting younger. The national share is population-weighted: every resident aged 65 and over in Sweden over every resident, not the mean of 290 municipal shares, which would let Bjurholm weigh as much as Stockholm. The difference is in percentage points, not percent. From 2025 the underlying figures carry SCB’s Cell Key Method noise, exactly as share-65-plus does.',
   },
   sensitivity: 'none',
   sources: [],
-  derivation:
-    'share-65-plus minus the national share of the same year. The national share is computed ' +
-    'from this pantry’s own two published series and nothing else: each municipality’s ' +
-    'over-65 count is recovered as share-65-plus times population, those counts are summed ' +
-    'across all 290, and the sum is divided by the summed population. That is exact rather ' +
-    'than a re-derivation, because share-65-plus was itself computed from this same population ' +
-    'series — so numerator and denominator cannot quietly disagree. Nothing is refetched.',
+  derivation: {
+    sv:
+      'share-65-plus minus rikets andel samma år. Rikets andel beräknas ur den här datamängdens ' +
+      'egna två publicerade serier och inget annat: varje kommuns antal över 65 återskapas som ' +
+      'share-65-plus gånger folkmängd, de antalen summeras över alla 290, och summan delas med ' +
+      'den summerade folkmängden. Det är exakt snarare än en ny härledning, eftersom ' +
+      'share-65-plus i sin tur beräknades ur samma folkmängdsserie – så täljare och nämnare kan ' +
+      'inte i tysthet gå isär. Ingenting hämtas på nytt.',
+    en:
+      'share-65-plus minus the national share of the same year. The national share is computed ' +
+      'from this pantry’s own two published series and nothing else: each municipality’s ' +
+      'over-65 count is recovered as share-65-plus times population, those counts are summed ' +
+      'across all 290, and the sum is divided by the summed population. That is exact rather ' +
+      'than a re-derivation, because share-65-plus was itself computed from this same ' +
+      'population series – so numerator and denominator cannot quietly disagree. Nothing is ' +
+      'refetched.',
+  },
 })
 
 /**
@@ -136,7 +146,7 @@ export async function buildShare65VsCountry(ctx: BuildContext): Promise<Indicato
   if (!share || !population) {
     throw new Error(
       `${SHARE_65_VS_COUNTRY.id}: needs both ${SHARE_65_PLUS.id} and ${POPULATION.id} already ` +
-        'built — both must come before it in REGISTRY, since the national share is computed ' +
+        'built – both must come before it in REGISTRY, since the national share is computed ' +
         'from the two of them',
     )
   }

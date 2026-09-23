@@ -92,12 +92,12 @@ describe('the arc', () => {
   })
 
   it('says shrunk, not grown, for a municipality that has lost people', () => {
-    expect(sentence('2463', 'arc')?.text.sv).toMatch(/krympt 53 %/)
+    expect(sentence('2463', 'arc')?.text.sv).toMatch(/krympt 53\u00a0%/)
     expect(sentence('2463', 'arc')?.text.en).toMatch(/shrunk 53%/)
   })
 
   it('says grown for one that has gained', () => {
-    expect(sentence('0305', 'arc')?.text.sv).toMatch(/vuxit 406 %/)
+    expect(sentence('0305', 'arc')?.text.sv).toMatch(/vuxit 406\u00a0%/)
     expect(sentence('0305', 'arc')?.text.en).toMatch(/grown 406%/)
   })
 
@@ -133,14 +133,14 @@ describe('the turn', () => {
 
   it('fires with a real figure when the fall is real', () => {
     expect(sentence('1272', 'turn')?.text.sv).toMatch(/Folkmängden var som störst 2018/)
-    expect(sentence('1272', 'turn')?.text.sv).toMatch(/3 % fler än i dag/)
+    expect(sentence('1272', 'turn')?.text.sv).toMatch(/3\u00a0% fler än i dag/)
   })
 
   it('never says a fall of zero per cent', () => {
     for (const m of data.municipalities) {
       const turn = sentence(m.code, 'turn')
       if (!turn) continue
-      expect(turn.text.sv, m.name.sv).not.toMatch(/\b0 % fler/)
+      expect(turn.text.sv, m.name.sv).not.toMatch(/\b0\s% fler/)
       expect(turn.text.en, m.name.en).not.toMatch(/\b0% more/)
     }
   })
@@ -159,7 +159,7 @@ describe('the standing', () => {
     // So the assertion is now the shape: the measure's own name, then an em dash, then the
     // standing. No measure name is ever inflected into the sentence.
     const lund = sentence('1281', 'standing')?.text.sv
-    expect(lund).toMatch(/^[A-ZÅÄÖ][^—]+ — (näst |)(högst|lägst) i landet, av 290 kommuner/)
+    expect(lund).toMatch(/^[A-ZÅÄÖ][^—]+ – (näst |)(högst|lägst) i landet, av 290 kommuner/)
     expect(lund).not.toMatch(/landets \d/)
   })
 
@@ -231,6 +231,16 @@ describe('coverage across the whole country', () => {
       const s = story(m.code)
       expect(s.length, m.name.sv).toBeGreaterThan(0)
       expect(s.length, m.name.sv).toBeLessThanOrEqual(3)
+    }
+  })
+
+  it('sets every dash as a spaced en dash that never starts a line', () => {
+    // ADR-0025 D10.
+    for (const m of data.municipalities) {
+      for (const s of story(m.code)) {
+        expect(s.text.sv, `${m.name.sv} ${s.id}`).not.toMatch(/—| – /)
+        expect(s.text.en, `${m.name.en} ${s.id}`).not.toMatch(/—| – /)
+      }
     }
   })
 

@@ -3,6 +3,7 @@ import { CPI_LATEST_YEAR, fetchCpi } from './cpi'
 import { buildDefined, type Definition } from './define'
 import { type BuildContext, type IndicatorDefinition } from './registry'
 import type { IndicatorSeries } from '../../../shared/pantry'
+import { neutral } from './prose'
 
 export const TAX_BASE_TABLE = 'TAB3600'
 export const DISPOSABLE_TABLE = 'TAB1492'
@@ -36,8 +37,8 @@ export const TAX_BASE: Indicator = Indicator.parse({
   id: 'taxable-income-per-resident',
   name: { sv: 'Skattekraft', en: 'Tax base per resident' },
   description: {
-    sv: 'Kommunens beskattningsbara förvärvsinkomst per invånare — det underlag den kommunala skattesatsen tas ut på.',
-    en: 'The municipality’s taxable earned income per resident — the base its tax rate is levied on.',
+    sv: 'Kommunens beskattningsbara förvärvsinkomst per invånare – det underlag den kommunala skattesatsen tas ut på.',
+    en: 'The municipality’s taxable earned income per resident – the base its tax rate is levied on.',
   },
   unit: 'sek',
   priceBasis: 'fixed-latest-year',
@@ -52,39 +53,59 @@ export const TAX_BASE: Indicator = Indicator.parse({
     en: 'Expressed in the latest year’s kronor using the consumer price index, so years can be compared with years. TAB3600 also publishes 2026, but the price index only reaches 2025; the nominal 2026 figure is left out rather than placed at the end of an otherwise adjusted series with nothing on the page to distinguish it. The tax base measures what is taxable, not what the municipality receives: the equalisation system moves large sums between municipalities after this is computed.',
   },
   sensitivity: 'none',
-  sources: [{ table: TAX_BASE_TABLE, contentCode: 'OE0101A0', note: '1995–2025' }],
-  derivation:
-    'One SCB cell per municipality and year: TAB3600’s "Skattekraft, kronor per invånare" ' +
-    'content code, resolved by its stable Swedish label — the same table also publishes the ' +
-    'total tax base and a share of the national mean, and taking either would publish a ' +
-    'plausible number for a different question. Already in kronor per resident, so nothing is ' +
-    'divided here; every year is then converted to the price index’s own base year.',
+  sources: [{ table: TAX_BASE_TABLE, contentCode: 'OE0101A0', note: neutral('1995–2025') }],
+  derivation: {
+    sv:
+      'En SCB-cell per kommun och år: TAB3600:s innehållskod ”Skattekraft, kronor per ' +
+      'invånare”, utpekad genom sin stabila svenska etikett – samma tabell publicerar också den ' +
+      'totala beskattningsbara inkomsten och en andel av riksmedelvärdet, och att ta någon av ' +
+      'dem skulle publicera en rimlig siffra för en annan fråga. Redan i kronor per invånare, ' +
+      'så ingenting delas här; varje år räknas sedan om till prisindexets eget basår.',
+    en:
+      'One SCB cell per municipality and year: TAB3600’s "Skattekraft, kronor per invånare" ' +
+      'content code, resolved by its stable Swedish label – the same table also publishes the ' +
+      'total tax base and a share of the national mean, and taking either would publish a ' +
+      'plausible number for a different question. Already in kronor per resident, so nothing is ' +
+      'divided here; every year is then converted to the price index’s own base year.',
+  },
 })
 
 export const DISPOSABLE: Indicator = Indicator.parse({
   id: 'disposable-household-income',
   name: { sv: 'Disponibel hushållsinkomst', en: 'Disposable household income' },
   description: {
-    sv: 'Medianhushållets disponibla inkomst — vad hushållet har kvar efter skatter och bidrag — för samtliga hushåll med minst en person 18 år eller äldre.',
-    en: 'The median household’s disposable income — what is left after taxes and transfers — across all households with at least one person aged 18 or over.',
+    sv: 'Medianhushållets disponibla inkomst – vad hushållet har kvar efter skatter och bidrag – för samtliga hushåll med minst en person 18 år eller äldre.',
+    en: 'The median household’s disposable income – what is left after taxes and transfers – across all households with at least one person aged 18 or over.',
   },
   unit: 'sek',
   priceBasis: 'none',
   scale: { kind: 'sequential', breaks: [] },
   coverage: { from: DISPOSABLE_YEARS[0]!, to: DISPOSABLE_YEARS[DISPOSABLE_YEARS.length - 1]! },
   caveat: {
-    sv: 'SCB publicerar denna tabell i fasta priser och sätter själv basåret. Serien är alltså redan inflationsjusterad — men inte av detta projekt och inte till samma år som medianinkomst och huspriser, som räknas om till prisindexets senaste år här. Jämför därför inte kronbelopp rakt av mellan denna indikator och de två. Avser hushåll, inte personer: ett hushåll kan vara en eller sex personer, och kommuner med många stora hushåll får högre siffror utan att någon enskild har mer.',
-    en: 'SCB publishes this table in fixed prices and chooses the base year itself. The series is therefore already adjusted for inflation — but not by this project, and not to the same year as median income and house prices, which are converted here to the price index’s latest year. Do not compare kronor directly between this indicator and those two. It describes households, not people: a household may be one person or six, and a municipality with many large households shows higher figures without anyone individually having more.',
+    sv: 'SCB publicerar denna tabell i fasta priser och sätter själv basåret. Serien är alltså redan inflationsjusterad – men inte av detta projekt och inte till samma år som medianinkomst och huspriser, som räknas om till prisindexets senaste år här. Jämför därför inte kronbelopp rakt av mellan denna indikator och de två. Avser hushåll, inte personer: ett hushåll kan vara en eller sex personer, och kommuner med många stora hushåll får högre siffror utan att någon enskild har mer.',
+    en: 'SCB publishes this table in fixed prices and chooses the base year itself. The series is therefore already adjusted for inflation – but not by this project, and not to the same year as median income and house prices, which are converted here to the price index’s latest year. Do not compare kronor directly between this indicator and those two. It describes households, not people: a household may be one person or six, and a municipality with many large households shows higher figures without anyone individually having more.',
   },
   sensitivity: 'none',
-  sources: [{ table: DISPOSABLE_TABLE, contentCode: '000006SY', note: '2011–2024, E90, 18+' }],
-  derivation:
-    'One SCB cell per municipality and year: TAB1492’s "Medianvärde, tkr" content code at ' +
-    'household type E90 (all households) and age 18+, each resolved explicitly because this ' +
-    'table offers fifteen household types and eight overlapping age bands and no total for ' +
-    'either. Published in thousands of kronor, multiplied by 1,000 here to store true kronor. ' +
-    'No inflation adjustment is applied: SCB has already expressed the series in fixed prices, ' +
-    'and adjusting it again would deflate an already-deflated figure.',
+  sources: [
+    { table: DISPOSABLE_TABLE, contentCode: '000006SY', note: neutral('2011–2024, E90, 18+') },
+  ],
+  derivation: {
+    sv:
+      'En SCB-cell per kommun och år: TAB1492:s innehållskod ”Medianvärde, tkr” vid ' +
+      'hushållstypen E90 (samtliga hushåll) och åldern 18+, var och en utpekad uttryckligen ' +
+      'eftersom tabellen erbjuder femton hushållstyper och åtta överlappande åldersgrupper och ' +
+      'ingen total för någon av dem. Publiceras i tusentals kronor och multipliceras här med 1 000 ' +
+      'för att lagras i hela kronor. Ingen inflationsjustering görs: SCB har redan uttryckt ' +
+      'serien i fasta priser, och att justera den igen skulle deflatera en redan deflaterad ' +
+      'siffra.',
+    en:
+      'One SCB cell per municipality and year: TAB1492’s "Medianvärde, tkr" content code at ' +
+      'household type E90 (all households) and age 18+, each resolved explicitly because this ' +
+      'table offers fifteen household types and eight overlapping age bands and no total for ' +
+      'either. Published in thousands of kronor, multiplied by 1,000 here to store true kronor. ' +
+      'No inflation adjustment is applied: SCB has already expressed the series in fixed ' +
+      'prices, and adjusting it again would deflate an already-deflated figure.',
+  },
 })
 
 export function taxBaseDefined(): Definition {
@@ -151,15 +172,31 @@ export const PRICE_TO_INCOME: Indicator = Indicator.parse({
   },
   sensitivity: 'none',
   sources: [
-    { table: 'TAB1169', contentCode: 'BO0501C2', note: 'via house-prices' },
-    { table: 'TAB3554', contentCode: 'HE0110J8', note: 'via median-income' },
+    {
+      table: 'TAB1169',
+      contentCode: 'BO0501C2',
+      note: { sv: 'från house-prices', en: 'via house-prices' },
+    },
+    {
+      table: 'TAB3554',
+      contentCode: 'HE0110J8',
+      note: { sv: 'från median-income', en: 'via median-income' },
+    },
   ],
-  derivation:
-    'house-prices divided by median-income, cell by cell, from this pantry’s own two published ' +
-    'series rather than from a third fetch — so the ratio can be checked against the two ' +
-    'numbers a reader can already see. Both are adjusted to the same base year before this ' +
-    'runs, so the quotient is not distorted by inflation. The years are the ones both series ' +
-    'publish; where either side is absent, so is the ratio.',
+  derivation: {
+    sv:
+      'house-prices delat med median-income, cell för cell, ur den här datamängdens egna två ' +
+      'publicerade serier i stället för ur en tredje hämtning – så att kvoten kan kontrolleras ' +
+      'mot de två siffror en läsare redan ser. Båda är justerade till samma basår innan detta ' +
+      'körs, så kvoten förvrängs inte av inflationen. Åren är de som båda serierna publicerar; ' +
+      'där någon av sidorna saknas saknas också kvoten.',
+    en:
+      'house-prices divided by median-income, cell by cell, from this pantry’s own two ' +
+      'published series rather than from a third fetch – so the ratio can be checked against ' +
+      'the two numbers a reader can already see. Both are adjusted to the same base year before ' +
+      'this runs, so the quotient is not distorted by inflation. The years are the ones both ' +
+      'series publish; where either side is absent, so is the ratio.',
+  },
 })
 
 export function priceToIncomeDefined(): Definition {

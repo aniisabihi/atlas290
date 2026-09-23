@@ -97,12 +97,12 @@ function arc(lk: Lookup, code: string, year: number, lang: Lang): Sentence | nul
   const text: Record<Lang, string> =
     change > 0
       ? {
-          sv: `Kommunen har vuxit ${size} % sedan ${first.year}, från ${from} till ${to} invånare.`,
+          sv: `Kommunen har vuxit ${size}\u00a0% sedan ${first.year}, från ${from} till ${to} invånare.`,
           en: `It has grown ${size}% since ${first.year}, from ${from} to ${to} residents.`,
         }
       : change < 0
         ? {
-            sv: `Kommunen har krympt ${size} % sedan ${first.year}, från ${from} till ${to} invånare.`,
+            sv: `Kommunen har krympt ${size}\u00a0% sedan ${first.year}, från ${from} till ${to} invånare.`,
             en: `It has shrunk ${size}% since ${first.year}, from ${from} to ${to} residents.`,
           }
         : {
@@ -153,8 +153,8 @@ function turn(lk: Lookup, code: string, year: number, lang: Lang): Sentence | nu
   return {
     id: 'turn',
     text: {
-      sv: `Folkmängden var som störst ${peak.year}, ${at} — ${fall} % fler än i dag.`,
-      en: `Its population peaked in ${peak.year}, at ${at} — ${fall}% more than today.`,
+      sv: `Folkmängden var som störst ${peak.year}, ${at} – ${fall}\u00a0% fler än i dag.`,
+      en: `Its population peaked in ${peak.year}, at ${at} – ${fall}% more than today.`,
     },
     claim: `peak ${peak.year} ${peak.value}`,
   }
@@ -213,8 +213,8 @@ function standing(lk: Lookup, code: string, year: number, lang: Lang): Sentence 
   return {
     id: 'standing',
     text: {
-      sv: `${name} — ${sv} i landet, av ${outOf} kommuner med siffror för ${year}.`,
-      en: `${name} — ${en} in the country, of ${outOf} municipalities with figures for ${year}.`,
+      sv: `${name} – ${sv} i landet, av ${outOf} kommuner med siffror för ${year}.`,
+      en: `${name} – ${en} in the country, of ${outOf} municipalities with figures for ${year}.`,
     },
     claim: `${indicator.id} ${rank} of ${outOf}`,
   }

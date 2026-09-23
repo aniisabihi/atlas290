@@ -19,7 +19,7 @@ const box = () => screen.getByRole('combobox')
 describe('SearchBox', () => {
   it('has a real label, not just a placeholder', () => {
     draw()
-    expect(screen.getByRole('combobox', { name: /search for a municipality/i })).toBeTruthy()
+    expect(screen.getByRole('combobox', { name: /search municipalities/i })).toBeTruthy()
   })
 
   it('starts collapsed and lists nothing', () => {

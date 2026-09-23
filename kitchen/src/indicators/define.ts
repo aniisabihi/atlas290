@@ -127,7 +127,7 @@ export type Modifiers = {
 function targetKronorYear(cpi: Map<number, number>, indicatorId: string): number {
   if (cpi.size === 0) {
     throw new Error(
-      `${indicatorId}: CPI index has no entries at all — cannot determine the latest year to ` +
+      `${indicatorId}: CPI index has no entries at all – cannot determine the latest year to ` +
         'adjust every value to',
     )
   }
@@ -253,7 +253,7 @@ function seriesOf(ctx: BuildContext, of: string, id: string, role: string): Indi
   const series = ctx.series.get(of)
   if (!series) {
     throw new Error(
-      `${id}: needs ${of}'s series as its ${role}, but ${of} has not been built yet — ` +
+      `${id}: needs ${of}'s series as its ${role}, but ${of} has not been built yet – ` +
         `it must come first in REGISTRY`,
     )
   }

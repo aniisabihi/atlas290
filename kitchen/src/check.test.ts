@@ -45,7 +45,7 @@ function makeIndicator(
     caveat: { sv: '', en: '' },
     sensitivity: 'none',
     sources: [],
-    derivation: '',
+    derivation: { sv: '', en: '' },
   }
 }
 

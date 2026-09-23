@@ -50,7 +50,8 @@ describe('unitSuffix', () => {
     ['mean-age', 'en', 'years'],
     ['density', 'sv', 'inv/km²'],
     ['density', 'en', 'people/km²'],
-    ['net-migration-rate', 'sv', 'per 1 000 invånare'],
+    // A non-breaking space inside the thousand, so "1" never ends a line with "000" on the next.
+    ['net-migration-rate', 'sv', `per 1${NBSP}000 invånare`],
     ['net-migration-rate', 'en', 'per 1,000 residents'],
     ['median-income', 'sv', 'kr'],
     ['median-income', 'en', 'SEK'],
@@ -95,6 +96,13 @@ describe('formatWithUnit', () => {
   it('states no price basis for anything that is not money', () => {
     expect(formatWithUnit(32.38, byId('tax-rate'), 'en')).toBe('32.38%')
     expect(formatWithUnit(984_748, byId('population'), 'en')).toBe('984,748 residents')
+  })
+
+  it('spaces the percent sign in Swedish and hugs it in English', () => {
+    // Språkrådet's rule, and the one the published facts already followed: the profile said
+    // "32,38%" beside a fact saying "11 %". Non-breaking, so the sign never starts a line.
+    expect(formatWithUnit(32.38, byId('tax-rate'), 'sv')).toBe(`32,38${NBSP}%`)
+    expect(formatWithUnit(32.38, byId('tax-rate'), 'en')).toBe('32.38%')
   })
 })
 

@@ -23,6 +23,21 @@ describe('the string tables', () => {
     }
   })
 
+  it.each(LANGS)('sets a dash as a spaced en dash that never starts a line, in %s', (lang) => {
+    // Swedish and British typesetting both use a spaced en dash (–), and a dash must not begin a
+    // line, so the space before it is non-breaking. The site used a spaced em dash (—) until the
+    // editorial pass; ADR-0025 D10.
+    for (const key of keys) {
+      const value = t(lang)[key]
+      const rendered =
+        typeof value === 'function'
+          ? (value as (...a: never[]) => string)(...(['Folkmängd', 2024, 3] as never[]))
+          : value
+      expect(rendered, `${lang}.${String(key)}`).not.toMatch(/—/)
+      expect(rendered, `${lang}.${String(key)}`).not.toMatch(/ – /)
+    }
+  })
+
   it('actually translates, rather than copying Swedish into the English table', () => {
     // `coverage` is deliberately identical — "1968–2026" is the same in both languages — so it
     // is named here rather than allowed through by a loose rule that would also let a genuinely

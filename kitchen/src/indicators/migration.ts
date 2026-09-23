@@ -7,6 +7,7 @@ import { type BuildContext, type IndicatorDefinition } from './registry'
 // bodies below, never at this module's own top level, so the binding is safe to import despite
 // the population<->registry<->migration load cycle.
 import { CKM_FROM, POPULATION } from './population'
+import { neutral } from './prose'
 
 export const MIGRATION_TABLE_OLD = 'TAB1211' // 1968-1996
 export const MIGRATION_TABLE_MID = 'TAB1212' // 1997-2024
@@ -30,10 +31,10 @@ const MIGRATION_CONTENT_LABEL = 'Flyttningsöverskott'
 
 export const MIGRATION: Indicator = Indicator.parse({
   id: 'net-migration-rate',
-  name: { sv: 'Flyttningsöverskott per 1 000 invånare', en: 'Net migration per 1,000 residents' },
+  name: { sv: 'Flyttningsöverskott per 1 000 invånare', en: 'Net migration per 1,000 residents' },
   description: {
     sv: 'Flyttningsöverskott (in- minus utflyttning, oavsett ursprung) satt i relation till samma års folkmängd.',
-    en: "Net migration (in-migration minus out-migration, regardless of origin) set against that year's population.",
+    en: 'Net migration (in-migration minus out-migration, regardless of origin) set against that year’s population.',
   },
   unit: 'per-thousand',
   priceBasis: 'none',
@@ -43,23 +44,33 @@ export const MIGRATION: Indicator = Indicator.parse({
   scale: { kind: 'diverging', breaks: [] },
   coverage: { from: MIGRATION_YEARS[0]!, to: MIGRATION_YEARS[MIGRATION_YEARS.length - 1]! },
   caveat: {
-    sv: 'Publicerat som en kvot (flyttningsöverskott per 1 000 invånare), inte en summa, eftersom den absoluta summan i stort sett bara återger folkmängden. Byggd av tre tabeller (1968–1996, 1997–2024, 2025). 50 av dagens kommuner saknar underlag för 1968–1996: den äldsta tabellen publicerar dem under de kommunkoder som gällde då, och dessa matchar inte dagens 290 koder. 47 av dem omnumrerades vid länssammanslagningarna 1998 (13 i Skåne, 34 i Västra Götaland); de tre övriga är Mullsjö och Habo, som bytte län 1998, och Heby, som bytte län 2007. Från 2025 är värdena CKM-störda, liksom befolkningen.',
-    en: "Published as a rate (net migration per 1,000 residents), not a count, because the raw count would largely just reproduce the population map. Built from three tables (1968–1996, 1997–2024, 2025). 50 of today's municipalities have no data for 1968–1996: the oldest table publishes them under the codes in force at the time, which do not match today's 290. 47 were renumbered by the 1998 county mergers (13 in Skåne, 34 in Västra Götaland); the other three are Mullsjö and Habo, which changed county in 1998, and Heby, which changed county in 2007. From 2025 the values are CKM-perturbed, like population.",
+    sv: 'Publicerat som en kvot (flyttningsöverskott per 1 000 invånare), inte en summa, eftersom den absoluta summan i stort sett bara återger folkmängden. Byggd av tre tabeller (1968–1996, 1997–2024, 2025). 50 av dagens kommuner saknar underlag för 1968–1996: den äldsta tabellen publicerar dem under de kommunkoder som gällde då, och dessa matchar inte dagens 290 koder. 47 av dem omnumrerades vid länssammanslagningarna 1998 (13 i Skåne, 34 i Västra Götaland); de tre övriga är Mullsjö och Habo, som bytte län 1998, och Heby, som bytte län 2007. Från 2025 är värdena CKM-störda, liksom befolkningen.',
+    en: 'Published as a rate (net migration per 1,000 residents), not a count, because the raw count would largely just reproduce the population map. Built from three tables (1968–1996, 1997–2024, 2025). 50 of today’s municipalities have no data for 1968–1996: the oldest table publishes them under the codes in force at the time, which do not match today’s 290. 47 were renumbered by the 1998 county mergers (13 in Skåne, 34 in Västra Götaland); the other three are Mullsjö and Habo, which changed county in 1998, and Heby, which changed county in 2007. From 2025 the values are CKM-perturbed, like population.',
   },
   sensitivity: 'none',
   sources: [
-    { table: MIGRATION_TABLE_OLD, contentCode: 'BE0101C5', note: '1968–1996' },
-    { table: MIGRATION_TABLE_MID, contentCode: 'BE0101AZ', note: '1997–2024' },
-    { table: MIGRATION_TABLE_NEW, contentCode: '00000868', note: '2025, CKM' },
+    { table: MIGRATION_TABLE_OLD, contentCode: 'BE0101C5', note: neutral('1968–1996') },
+    { table: MIGRATION_TABLE_MID, contentCode: 'BE0101AZ', note: neutral('1997–2024') },
+    { table: MIGRATION_TABLE_NEW, contentCode: '00000868', note: neutral('2025, CKM') },
   ],
-  derivation:
-    'Net migration is published directly by SCB, never derived by subtracting in- from ' +
-    'out-migration flows here. Selected at the age total (resolved by label) and the sex ' +
-    'total: summed over the two sexes where no total code exists (TAB1211, TAB1212 — safe, ' +
-    'since pre-2025 sex-split counts are disjoint and unperturbed), or selected directly where ' +
-    'one does (TAB6640\'s "TotSa"). Divided by that same municipality\'s population in the same ' +
-    'year — read from the build context rather than refetched — and multiplied by 1,000. A ' +
-    'null population yields a null rate rather than a division by zero.',
+  derivation: {
+    sv:
+      'Flyttningsöverskottet publiceras direkt av SCB och härleds aldrig här genom att dra ' +
+      'inflyttning från utflyttning. Det väljs vid åldersaggregatet (utpekat genom etikett) och ' +
+      'könstotalen: summerat över de två könen där ingen totalkod finns (TAB1211, TAB1212 – ' +
+      'säkert, eftersom könsuppdelade antal före 2025 är disjunkta och ostörda), eller valt ' +
+      'direkt där en finns (TAB6640:s ”TotSa”). Delat med samma kommuns folkmängd samma år – ' +
+      'läst ur byggkontexten i stället för att hämtas på nytt – och multiplicerat med 1 000. En ' +
+      'saknad folkmängd ger en saknad kvot i stället för en division med noll.',
+    en:
+      'Net migration is published directly by SCB, never derived by subtracting in- from ' +
+      'out-migration flows here. Selected at the age total (resolved by label) and the sex ' +
+      'total: summed over the two sexes where no total code exists (TAB1211, TAB1212 – safe, ' +
+      'since pre-2025 sex-split counts are disjoint and unperturbed), or selected directly ' +
+      'where one does (TAB6640’s "TotSa"). Divided by that same municipality’s population in ' +
+      'the same year – read from the build context rather than refetched – and multiplied by ' +
+      '1,000. A null population yields a null rate rather than a division by zero.',
+  },
 })
 
 export async function buildMigration(ctx: BuildContext): Promise<IndicatorSeries> {

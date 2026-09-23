@@ -16,9 +16,14 @@ import { parseSegment } from './shared/slug.ts'
  * The code is checked against the pantry so an unknown one 404s here exactly as it will in
  * production, rather than silently rendering the front page and looking like a bug in the app.
  */
-function knownCodes(): Set<string> {
+/*
+ * The index, not `indicators.json`: Plan 13 split that file into `data/index.json` plus one file
+ * per indicator, and this went on reading the file that no longer exists — so every municipality
+ * page threw ENOENT under `yarn dev` while the built site served them perfectly.
+ */
+export function knownCodes(): Set<string> {
   const data = JSON.parse(
-    readFileSync(resolve(import.meta.dirname, 'public/pantry/data/indicators.json'), 'utf8'),
+    readFileSync(resolve(import.meta.dirname, 'public/pantry/data/index.json'), 'utf8'),
   ) as { municipalities: Array<{ code: string }> }
   return new Set(data.municipalities.map((m) => m.code))
 }

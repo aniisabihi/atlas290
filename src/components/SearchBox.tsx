@@ -94,7 +94,19 @@ export function SearchBox({
           }
         }}
       />
-      <div role="status" className="search-count">
+      {/*
+       * Always spoken, shown only when there is nothing else to see. With results the list is
+       * the answer and the count sat half-hidden behind it, under the label and across the bar's
+       * rule; with none, it is the only thing saying the search worked.
+       */}
+      <div
+        role="status"
+        className={
+          query.trim() !== '' && results.length === 0
+            ? 'search-count search-count--shown'
+            : 'search-count'
+        }
+      >
         {query.trim() === ''
           ? ''
           : results.length === 0

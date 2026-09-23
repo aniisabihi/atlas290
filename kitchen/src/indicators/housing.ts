@@ -82,7 +82,7 @@ export const HOUSING: Indicator = Indicator.parse({
   name: { sv: 'Småhuspriser', en: 'House prices' },
   description: {
     sv: 'Medelvärdet av köpeskillingen för sålda småhus för permanentboende (Fastighetstyp 220, ej fritidshus), justerat till senaste årets penningvärde.',
-    en: "Mean sale price of sold single-family homes for permanent residence (property type 220, excluding holiday homes), adjusted to the latest year's kronor.",
+    en: 'Mean sale price of sold single-family homes for permanent residence (property type 220, excluding holiday homes), adjusted to the latest year’s kronor.',
   },
   unit: 'sek',
   priceBasis: 'fixed-latest-year',
@@ -101,8 +101,8 @@ export const HOUSING: Indicator = Indicator.parse({
       'medelpriset och cellen märks "för få fall" i stället för att publicera ett medelvärde ' +
       'byggt på en handfull hus. Tröskeln 20 valdes genom att räkna den verkliga fördelningen av ' +
       'antal försäljningar (1981-2025, alla 290 kommuner): median 125, men så lågt som 2 i ' +
-      'enstaka kommun-år. Vid tröskeln 20 döljs 227 av 12 950 publicerade kommun-år (1,75 ' +
-      'procent), i 22 av 290 kommuner (7,6 procent) — främst glesbygdskommuner i Västerbottens ' +
+      'enstaka kommun-år. Vid tröskeln 20 döljs 227 av 12 950 publicerade kommun-år (1,75 ' +
+      'procent), i 22 av 290 kommuner (7,6 procent) – främst glesbygdskommuner i Västerbottens ' +
       'och Norrbottens inland (Dorotea, Bjurholm, Sorsele, Malå, Överkalix, Arjeplog, Åsele, ' +
       'Övertorneå, Pajala, Norsjö) samt Solna, vars bostadsbestånd domineras av flerbostadshus ' +
       'snarare än småhus. Värdena är justerade till senaste årets penningvärde med SCB:s ' +
@@ -111,15 +111,15 @@ export const HOUSING: Indicator = Indicator.parse({
       'Covers permanent homes (property type 220), not holiday homes (221), because holiday ' +
       'homes would badly distort coastal and mountain municipalities where a large share of ' +
       'sales are summer houses. Where the number of sales in a municipality-year falls below ' +
-      "20, the mean price is hidden and the cell marked 'too few cases' rather than publishing " +
+      '20, the mean price is hidden and the cell marked ‘too few cases’ rather than publishing ' +
       'a mean built on a handful of houses. The threshold of 20 was chosen by counting the ' +
       'real distribution of sale counts (1981-2025, all 290 municipalities): median 125, but as ' +
       'low as 2 in individual municipality-years. At the threshold of 20, 227 of 12,950 ' +
       'published municipality-years are hidden (1.75 percent), across 22 of 290 municipalities ' +
-      '(7.6 percent) — mostly sparsely populated inland municipalities of Västerbotten and ' +
+      '(7.6 percent) – mostly sparsely populated inland municipalities of Västerbotten and ' +
       'Norrbotten (Dorotea, Bjurholm, Sorsele, Malå, Överkalix, Arjeplog, Åsele, Övertorneå, ' +
       'Pajala, Norsjö) plus Solna, whose housing stock is dominated by flats rather than ' +
-      "single-family homes. Values are adjusted to the latest year's kronor using SCB's " +
+      'single-family homes. Values are adjusted to the latest year’s kronor using SCB’s ' +
       'consumer price index; nominal values are not shown here.',
   },
   sensitivity: 'none',
@@ -127,25 +127,44 @@ export const HOUSING: Indicator = Indicator.parse({
     {
       table: HOUSING_TABLE,
       contentCode: 'BO0501C2',
-      note: '1981–2025, Fastighetstyp 220 (permanent homes); mean sale price',
+      note: {
+        sv: '1981–2025, Fastighetstyp 220 (permanentbostäder); medelpris',
+        en: '1981–2025, Fastighetstyp 220 (permanent homes); mean sale price',
+      },
     },
     {
       table: HOUSING_TABLE,
       contentCode: 'BO0501C1',
-      note: '1981–2025, Fastighetstyp 220 (permanent homes); sale count, used for the minimum-count rule',
+      note: {
+        sv: '1981–2025, Fastighetstyp 220 (permanentbostäder); antal försäljningar, för regeln om minsta antal',
+        en: '1981–2025, Fastighetstyp 220 (permanent homes); sale count, used for the minimum-count rule',
+      },
     },
   ],
-  derivation:
-    'One SCB cell per municipality and year, at Fastighetstyp "220" (permanentbostad, ej ' +
-    'tomträtt — resolved by its stable Swedish label, never the holiday-home code "221"): the ' +
-    'mean-price content code ("Köpeskilling, medelvärde i tkr") and the sale-count content code ' +
-    '("Antal"), both resolved by label rather than hardcoded. Where the sale count is below ' +
-    "this indicator's minCount (20), the price is discarded and the cell marked " +
-    "'too-few-cases' rather than published. Published prices are thousands of kronor (tkr); " +
-    "multiplied by 1,000 here to store true kronor under this project's 'sek' unit, then " +
-    "converted from that year's kronor to the latest covered year's kronor using the national " +
-    'consumer price index (cpi.ts), never left as a nominal figure quietly presented as ' +
-    'adjusted.',
+  derivation: {
+    sv:
+      'En SCB-cell per kommun och år, vid Fastighetstyp ”220” (permanentbostad, ej tomträtt – ' +
+      'utpekad genom sin stabila svenska etikett, aldrig fritidshuskoden ”221”): innehållskoden ' +
+      'för medelpris (”Köpeskilling, medelvärde i tkr”) och innehållskoden för antal ' +
+      'försäljningar (”Antal”), båda utpekade genom etikett i stället för hårdkodade. Där ' +
+      'antalet försäljningar understiger måttets minCount (20) kastas priset och cellen ' +
+      'markeras ’too-few-cases’ i stället för att publiceras. Publicerade priser är tusentals ' +
+      'kronor (tkr); de multipliceras här med 1 000 för att lagras i hela kronor under ' +
+      'projektets enhet ’sek’, och räknas sedan om från det årets kronor till det senaste ' +
+      'täckta årets kronor med konsumentprisindex för hela landet (cpi.ts) – aldrig kvar som en ' +
+      'nominell siffra som i tysthet presenteras som justerad.',
+    en:
+      'One SCB cell per municipality and year, at Fastighetstyp "220" (permanentbostad, ej ' +
+      'tomträtt – resolved by its stable Swedish label, never the holiday-home code "221"): the ' +
+      'mean-price content code ("Köpeskilling, medelvärde i tkr") and the sale-count content ' +
+      'code ("Antal"), both resolved by label rather than hardcoded. Where the sale count is ' +
+      'below this indicator’s minCount (20), the price is discarded and the cell marked ' +
+      '‘too-few-cases’ rather than published. Published prices are thousands of kronor (tkr); ' +
+      'multiplied by 1,000 here to store true kronor under this project’s ‘sek’ unit, then ' +
+      'converted from that year’s kronor to the latest covered year’s kronor using the national ' +
+      'consumer price index (cpi.ts), never left as a nominal figure quietly presented as ' +
+      'adjusted.',
+  },
 })
 
 export async function buildHousing(ctx: BuildContext): Promise<IndicatorSeries> {

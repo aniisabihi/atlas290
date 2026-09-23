@@ -16,6 +16,7 @@ import {
 // still being linked.
 import { CKM_FROM } from './population'
 import { buildDefined, type Definition } from './define'
+import { neutral } from './prose'
 
 export const DENSITY_TABLE = 'TAB628'
 
@@ -50,11 +51,17 @@ export const DENSITY: Indicator = Indicator.parse({
     en: 'Population on 31 December is set against the land area on 1 January the following year. From 2025 the values carry a small random perturbation added by SCB, because the measure is based on population.',
   },
   sensitivity: 'none',
-  sources: [{ table: DENSITY_TABLE, contentCode: 'BE0101U1', note: '1991–2025' }],
-  derivation:
-    'One SCB total cell per municipality and year: the density content code at the "1+2" sex ' +
-    "total, resolved by label — selected, never derived by dividing this project's own " +
-    'population figure by area, since SCB already publishes the ratio directly.',
+  sources: [{ table: DENSITY_TABLE, contentCode: 'BE0101U1', note: neutral('1991–2025') }],
+  derivation: {
+    sv:
+      'En SCB-totalcell per kommun och år: innehållskoden för befolkningstäthet vid könstotalen ' +
+      '”1+2”, utpekad genom etikett – vald, aldrig härledd genom att dela projektets egen ' +
+      'folkmängd med arean, eftersom SCB redan publicerar kvoten direkt.',
+    en:
+      'One SCB total cell per municipality and year: the density content code at the "1+2" sex ' +
+      'total, resolved by label – selected, never derived by dividing this project’s own ' +
+      'population figure by area, since SCB already publishes the ratio directly.',
+  },
 })
 
 /**

@@ -18,6 +18,7 @@ import { buildRows, type BuildContext, type IndicatorDefinition } from './regist
 // SHARE_65_YEARS comment below, it is still only ever READ inside a function body here
 // (share65PlusDefined), never used to compute anything at this module's own top level.
 import { CKM_FROM, NEW_TABLE, OLD_TABLE, POPULATION, YEARS } from './population'
+import { neutral } from './prose'
 
 /**
  * Population change is the first indicator with NO fetch at all (Task 10 of
@@ -51,24 +52,41 @@ export const POPULATION_CHANGE: Indicator = Indicator.parse({
   // evaluation — see registry.ts's module comment for the full chain), not merely a style choice.
   coverage: { from: 1968, to: 2025 },
   caveat: {
-    sv: 'Det år en kommun bildas genom en avknoppning visas förälderns cell som null (structural-break) i stället för en skenbar kollaps: nedgången beror på att en gräns ritades om, inte på att invånare flyttat — se t.ex. Uppsala 2002, då Knivsta knoppades av. Samma statusregler som folkmängd i övrigt gäller: en kommun som ännu inte fanns är did-not-exist (inklusive dess eget första år, som saknar ett föregående år att jämföra med), och seriens allra första år saknar ett föregående år oavsett kommun.',
-    en: "In the year a municipality is formed by a split, the parent's cell is null with status structural-break instead of a false collapse: the drop is a redrawn boundary, not people leaving — see Uppsala in 2002, the year Knivsta split off. Otherwise the same status rules as population apply: a municipality that did not yet exist is did-not-exist (including its own first year, which has no previous year to compare against), and the series' very first year has no previous year regardless of municipality.",
+    sv: 'Det år en kommun bildas genom en avknoppning visas förälderns cell som null (structural-break) i stället för en skenbar kollaps: nedgången beror på att en gräns ritades om, inte på att invånare flyttat – se t.ex. Uppsala 2002, då Knivsta knoppades av. Samma statusregler som folkmängd i övrigt gäller: en kommun som ännu inte fanns är did-not-exist (inklusive dess eget första år, som saknar ett föregående år att jämföra med), och seriens allra första år saknar ett föregående år oavsett kommun.',
+    en: 'In the year a municipality is formed by a split, the parent’s cell is null with status structural-break instead of a false collapse: the drop is a redrawn boundary, not people leaving – see Uppsala in 2002, the year Knivsta split off. Otherwise the same status rules as population apply: a municipality that did not yet exist is did-not-exist (including its own first year, which has no previous year to compare against), and the series’ very first year has no previous year regardless of municipality.',
   },
   sensitivity: 'none',
   sources: [],
-  derivation:
-    'No fetch: computed entirely from the population series already built in ctx.series ' +
-    '(read, never refetched). For each municipality and year, ((population[y] - population[y-1]) ' +
-    '/ population[y-1]) * 100 — but only once existence and publication are both established: ' +
-    'the current year not having happened yet for that municipality wins over everything else ' +
-    '(did-not-exist); a first year of overall coverage has no year-1 column to read at all ' +
-    "(not-yet-published); a municipality's own first year has a did-not-exist previous cell, " +
-    "which is also not-yet-published's cousin but kept as did-not-exist since that IS the reason " +
-    "no rate exists, not an ordinary publication gap; either year's population being null for " +
-    "any other reason is not-yet-published; and a parent municipality's flagged structural-break " +
-    'year (kitchen/src/breaks.ts, snapshot convention — population change moves in step with ' +
-    "population, not one calendar year behind it, exactly like population's own year-Y-reflects-" +
-    '1-January-Y+1 division) is null with status structural-break rather than a nonsense percentage.',
+  derivation: {
+    sv:
+      'Ingen hämtning: beräknas helt ur folkmängdsserien som redan finns i ctx.series (läses, ' +
+      'hämtas aldrig på nytt). För varje kommun och år ((folkmängd[y] − folkmängd[y−1]) / ' +
+      'folkmängd[y−1]) × 100 – men först när både existens och publicering är fastställda: att ' +
+      'det aktuella året ännu inte har inträffat för kommunen går före allt annat ' +
+      '(did-not-exist); täckningens första år har ingen kolumn för år−1 att läsa alls ' +
+      '(not-yet-published); en kommuns eget första år har en föregående cell med did-not-exist, ' +
+      'som är släkt med not-yet-published men behålls som did-not-exist eftersom det ÄR skälet ' +
+      'till att ingen förändring finns, inte en vanlig publiceringslucka; att folkmängden något ' +
+      'av åren saknas av något annat skäl ger not-yet-published; och en moderkommuns flaggade ' +
+      'år med strukturellt brott (kitchen/src/breaks.ts, ögonblicksbildskonventionen – ' +
+      'befolkningsförändringen följer folkmängden och ligger inte ett kalenderår efter, precis ' +
+      'som folkmängdens egen uppdelning där år Y speglar den 1 januari Y+1) blir null med ' +
+      'statusen structural-break i stället för en meningslös procentsats.',
+    en:
+      'No fetch: computed entirely from the population series already built in ctx.series ' +
+      '(read, never refetched). For each municipality and year, ((population[y] - ' +
+      'population[y-1]) / population[y-1]) * 100 – but only once existence and publication are ' +
+      'both established: the current year not having happened yet for that municipality wins ' +
+      'over everything else (did-not-exist); a first year of overall coverage has no year-1 ' +
+      'column to read at all (not-yet-published); a municipality’s own first year has a ' +
+      'did-not-exist previous cell, which is also not-yet-published’s cousin but kept as ' +
+      'did-not-exist since that IS the reason no rate exists, not an ordinary publication gap; ' +
+      'either year’s population being null for any other reason is not-yet-published; and a ' +
+      'parent municipality’s flagged structural-break year (kitchen/src/breaks.ts, snapshot ' +
+      'convention – population change moves in step with population, not one calendar year ' +
+      'behind it, exactly like population’s own year-Y-reflects-1-January-Y+1 division) is null ' +
+      'with status structural-break rather than a nonsense percentage.',
+  },
 })
 
 /**
@@ -186,7 +204,7 @@ export async function buildPopulationChange(ctx: BuildContext): Promise<Indicato
   const population = ctx.series.get(POPULATION.id)
   if (!population) {
     throw new Error(
-      `${POPULATION_CHANGE.id}: population series not yet built — population must come ` +
+      `${POPULATION_CHANGE.id}: population series not yet built – population must come ` +
         'before population-change in REGISTRY, since the change is computed against it',
     )
   }
@@ -249,22 +267,28 @@ export const MEAN_AGE: Indicator = Indicator.parse({
   name: { sv: 'Medelålder', en: 'Mean age' },
   description: {
     sv: 'Genomsnittlig ålder bland kommunens invånare.',
-    en: "Average age among the municipality's residents.",
+    en: 'Average age among the municipality’s residents.',
   },
   unit: 'years',
   priceBasis: 'none',
   scale: { kind: 'sequential', breaks: [] },
   coverage: { from: MEAN_AGE_YEARS[0]!, to: MEAN_AGE_YEARS[MEAN_AGE_YEARS.length - 1]! },
   caveat: {
-    sv: 'SCB publicerar ingen medianålder per kommun — endast per län och riket. Detta är därför medelåldern, hämtad direkt från SCB, inte en härledd eller interpolerad medianålder. Täcker 1998 och framåt; SCB:s motsvarande tabell för tidigare år saknas.',
-    en: 'SCB does not publish a median age per municipality — only per county and nationally. This is therefore the mean age, fetched directly from SCB, not a derived or interpolated median. Coverage starts in 1998; SCB has no equivalent table for earlier years.',
+    sv: 'SCB publicerar ingen medianålder per kommun – endast per län och riket. Detta är därför medelåldern, hämtad direkt från SCB, inte en härledd eller interpolerad medianålder. Täcker 1998 och framåt; SCB:s motsvarande tabell för tidigare år saknas.',
+    en: 'SCB does not publish a median age per municipality – only per county and nationally. This is therefore the mean age, fetched directly from SCB, not a derived or interpolated median. Coverage starts in 1998; SCB has no equivalent table for earlier years.',
   },
   sensitivity: 'none',
-  sources: [{ table: MEAN_AGE_TABLE, contentCode: 'BE0101G9', note: '1998–2025' }],
-  derivation:
-    'One SCB total cell per municipality and year: the mean-age content code at the "1+2" sex ' +
-    'total, resolved by label — selected directly, never derived from an age distribution, ' +
-    'since SCB already publishes the mean per municipality.',
+  sources: [{ table: MEAN_AGE_TABLE, contentCode: 'BE0101G9', note: neutral('1998–2025') }],
+  derivation: {
+    sv:
+      'En SCB-totalcell per kommun och år: innehållskoden för medelålder vid könstotalen ”1+2”, ' +
+      'utpekad genom etikett – vald direkt, aldrig härledd ur en åldersfördelning, eftersom SCB ' +
+      'redan publicerar medelvärdet per kommun.',
+    en:
+      'One SCB total cell per municipality and year: the mean-age content code at the "1+2" sex ' +
+      'total, resolved by label – selected directly, never derived from an age distribution, ' +
+      'since SCB already publishes the mean per municipality.',
+  },
 })
 
 export async function buildMeanAge(ctx: BuildContext): Promise<IndicatorSeries> {
@@ -342,7 +366,7 @@ export const SHARE_65_PLUS: Indicator = Indicator.parse({
   name: { sv: 'Andel 65 år och äldre', en: 'Share aged 65 and over' },
   description: {
     sv: 'Andel av kommunens invånare som är 65 år eller äldre, av samma års totala folkmängd.',
-    en: "Share of the municipality's residents aged 65 or over, of that year's total population.",
+    en: 'Share of the municipality’s residents aged 65 or over, of that year’s total population.',
   },
   unit: 'percent',
   priceBasis: 'none',
@@ -352,32 +376,50 @@ export const SHARE_65_PLUS: Indicator = Indicator.parse({
   scale: { kind: 'sequential', breaks: [] },
   coverage: { from: SHARE_65_YEARS[0]!, to: SHARE_65_YEARS[SHARE_65_YEARS.length - 1]! },
   caveat: {
-    sv: 'Täljaren (invånare 65 år och äldre) hämtas separat från nämnaren (kommunens totala folkmängd, redan byggd i denna databas) för samma år, aldrig genom att på nytt summera och riskera att de två svarar mot olika totaler. Fram till och med 2024 (TAB638) föregår detta Cell Key Method-metoden, så summeringen över kön och civilstånd (som saknar totalkoder i den tabellen) är exakt aritmetik över riktiga, ostörda celler — inte en approximation. Från 2025 (TAB5557) hämtas i stället de färdiga totalkoderna "TotSa" och "SC" direkt, och värdena är CKM-störda liksom folkmängden.',
-    en: 'The numerator (residents aged 65 and over) is fetched separately from the denominator (the municipality\'s total population, already built elsewhere in this dataset) for the same year, never by re-summing both and risking the two disagreeing. Through 2024 (TAB638) this predates the Cell Key Method, so summing over sex and marital status (neither of which has a total code in that table) is exact arithmetic over real, unperturbed cells — not an approximation. From 2025 (TAB5557) the ready-made totals "TotSa" and "SC" are selected directly instead, and the values are CKM-perturbed, like population.',
+    sv: 'Täljaren (invånare 65 år och äldre) hämtas separat från nämnaren (kommunens totala folkmängd, redan byggd i denna databas) för samma år, aldrig genom att på nytt summera och riskera att de två svarar mot olika totaler. Fram till och med 2024 (TAB638) föregår detta Cell Key Method-metoden, så summeringen över kön och civilstånd (som saknar totalkoder i den tabellen) är exakt aritmetik över riktiga, ostörda celler – inte en approximation. Från 2025 (TAB5557) hämtas i stället de färdiga totalkoderna "TotSa" och "SC" direkt, och värdena är CKM-störda liksom folkmängden.',
+    en: 'The numerator (residents aged 65 and over) is fetched separately from the denominator (the municipality’s total population, already built elsewhere in this dataset) for the same year, never by re-summing both and risking the two disagreeing. Through 2024 (TAB638) this predates the Cell Key Method, so summing over sex and marital status (neither of which has a total code in that table) is exact arithmetic over real, unperturbed cells – not an approximation. From 2025 (TAB5557) the ready-made totals "TotSa" and "SC" are selected directly instead, and the values are CKM-perturbed, like population.',
   },
   sensitivity: 'none',
   sources: [
     {
       table: SHARE_65_TABLE_OLD,
       contentCode: 'BE0101N1',
-      note: '1968–2024, ages 65+ summed over sex and marital status (no total code for either)',
+      note: {
+        sv: '1968–2024, åldrarna 65+ summerade över kön och civilstånd (ingen totalkod för något av dem)',
+        en: '1968–2024, ages 65+ summed over sex and marital status (no total code for either)',
+      },
     },
     {
       table: SHARE_65_TABLE_NEW,
       contentCode: '000007ME',
-      note: '2025 onwards, CKM, single-year ages 65–99 plus the single-year 100+ code, sex/marital totals selected directly',
+      note: {
+        sv: '2025 och framåt, CKM, ettårsåldrarna 65–99 plus ettårskoden för 100+, totalerna för kön och civilstånd valda direkt',
+        en: '2025 onwards, CKM, single-year ages 65–99 plus the single-year 100+ code, sex/marital totals selected directly',
+      },
     },
   ],
-  derivation:
-    'Numerator: single-year ages 65 and over (65-99 plus the single-year 100+ code on both ' +
-    'tables), at the population content code resolved by label. TAB638 (1968-2024) has no ' +
-    'total code for Kon or Civilstand, so both are summed over their full value sets — ' +
-    'declared safe in SUM_SAFE because TAB638 predates the Cell Key Method, making the sum ' +
-    'exact arithmetic over disjoint, unperturbed cells, never an approximation. TAB5557 (2025 ' +
-    "onwards) carries ready-made totals for both ('TotSa', 'SC'), selected directly rather " +
-    "than summed. Denominator: that same municipality's total population for the same year, " +
-    'read from the already-built population series in the build context, never refetched or ' +
-    'independently re-summed. Share = numerator / denominator * 100.',
+  derivation: {
+    sv:
+      'Täljare: ettårsåldrarna 65 och äldre (65–99 plus ettårskoden för 100+ i båda ' +
+      'tabellerna), vid folkmängdens innehållskod utpekad genom etikett. TAB638 (1968–2024) ' +
+      'saknar totalkod för Kon och Civilstand, så båda summeras över sina fullständiga ' +
+      'värdemängder – deklarerat säkert i SUM_SAFE eftersom TAB638 är äldre än Cell ' +
+      'Key-metoden, vilket gör summan till exakt aritmetik över disjunkta, ostörda celler och ' +
+      'aldrig en approximation. TAB5557 (2025 och framåt) har färdiga totaler för båda ' +
+      '(’TotSa’, ’SC’), som väljs direkt i stället för att summeras. Nämnare: samma kommuns ' +
+      'totala folkmängd samma år, läst ur den redan byggda folkmängdsserien i byggkontexten, ' +
+      'aldrig hämtad på nytt eller summerad fristående. Andel = täljare / nämnare × 100.',
+    en:
+      'Numerator: single-year ages 65 and over (65-99 plus the single-year 100+ code on both ' +
+      'tables), at the population content code resolved by label. TAB638 (1968-2024) has no ' +
+      'total code for Kon or Civilstand, so both are summed over their full value sets – ' +
+      'declared safe in SUM_SAFE because TAB638 predates the Cell Key Method, making the sum ' +
+      'exact arithmetic over disjoint, unperturbed cells, never an approximation. TAB5557 (2025 ' +
+      'onwards) carries ready-made totals for both (‘TotSa’, ‘SC’), selected directly rather ' +
+      'than summed. Denominator: that same municipality’s total population for the same year, ' +
+      'read from the already-built population series in the build context, never refetched or ' +
+      'independently re-summed. Share = numerator / denominator * 100.',
+  },
 })
 
 /**

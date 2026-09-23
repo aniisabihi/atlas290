@@ -41,17 +41,25 @@ export function searchMunicipalities(
   }
 
   const needle = fold(trimmed)
-  const matches: Match[] = []
+  // What was typed, letter for letter. Folding decides WHETHER a name is offered — nobody should
+  // have to find the ö key — but it used to decide the order too, so "sö" put Sollefteå,
+  // Sollentuna and Solna above every name that actually begins "Sö". Within a tier, a name that
+  // starts with the literal query now comes first.
+  const literal = trimmed.toLocaleLowerCase('sv')
+  const matches: Array<Match & { exact: boolean }> = []
   for (const municipality of municipalities) {
     const name = fold(municipality.name[lang])
     const tier = name === needle ? 0 : name.startsWith(needle) ? 1 : name.includes(needle) ? 2 : -1
-    if (tier >= 0) matches.push({ municipality, tier })
+    const exact = municipality.name[lang].toLocaleLowerCase('sv').startsWith(literal)
+    if (tier >= 0) matches.push({ municipality, tier, exact })
   }
 
   return matches
     .sort(
       (a, b) =>
-        a.tier - b.tier || a.municipality.name[lang].localeCompare(b.municipality.name[lang], 'sv'),
+        a.tier - b.tier ||
+        Number(b.exact) - Number(a.exact) ||
+        a.municipality.name[lang].localeCompare(b.municipality.name[lang], 'sv'),
     )
     .map((m) => m.municipality)
 }

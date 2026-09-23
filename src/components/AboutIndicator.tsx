@@ -45,13 +45,13 @@ export function AboutIndicator({ indicator, lang }: { indicator: Indicator; lang
       <p>{indicator.caveat[lang]}</p>
 
       <h3>{strings.derivationHeading}</h3>
-      <p>{indicator.derivation}</p>
+      <p>{indicator.derivation[lang]}</p>
 
       <h3>{strings.sourcesHeading}</h3>
       <ul>
         {indicator.sources.map((source) => (
           <li key={`${source.table}-${source.contentCode}`}>
-            {source.table} · {source.contentCode} · {source.note}
+            {source.table} · {source.contentCode} · {source.note[lang]}
           </li>
         ))}
       </ul>

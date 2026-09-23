@@ -55,11 +55,23 @@ export const TURNOUT: Indicator = Indicator.parse({
     en: `${SHARED_CAVEAT_EN} The figure counts a voter where they are registered as resident, not where the vote was cast.`,
   },
   sensitivity: 'none',
-  sources: [{ table: TURNOUT_TABLE, contentCode: 'ME0104B8', note: '1973–2022, election years' }],
-  derivation:
-    'One SCB cell per municipality and election year. `regions: known` drops the table’s 291st ' +
-    'four-digit code, `1229 Bara`, which was merged into Svedala in 1977 — this table starts in ' +
-    '1973, so the code is real history rather than an error.',
+  sources: [
+    {
+      table: TURNOUT_TABLE,
+      contentCode: 'ME0104B8',
+      note: { sv: '1973–2022, valår', en: '1973–2022, election years' },
+    },
+  ],
+  derivation: {
+    sv:
+      'En SCB-cell per kommun och valår. `regions: known` tar bort tabellens 291:a fyrsiffriga ' +
+      'kod, `1229 Bara`, som gick upp i Svedala 1977 – tabellen börjar 1973, så koden är ' +
+      'verklig historia och inget fel.',
+    en:
+      'One SCB cell per municipality and election year. `regions: known` drops the table’s ' +
+      '291st four-digit code, `1229 Bara`, which was merged into Svedala in 1977 – this table ' +
+      'starts in 1973, so the code is real history rather than an error.',
+  },
 })
 
 export const TURNOUT_MUNICIPAL: Indicator = Indicator.parse({
@@ -78,14 +90,26 @@ export const TURNOUT_MUNICIPAL: Indicator = Indicator.parse({
     years: [...ELECTION_YEARS],
   },
   caveat: {
-    sv: `${SHARED_CAVEAT_SV} Den här väljarkåren är större än riksdagsvalets, eftersom även utländska medborgare med tre års folkbokföring får rösta — så ett lägre deltagande här behöver inte betyda att färre personer röstade.`,
-    en: `${SHARED_CAVEAT_EN} This electorate is larger than the general election's, because foreign citizens registered for three years may also vote — so a lower turnout here does not necessarily mean fewer people voted.`,
+    sv: `${SHARED_CAVEAT_SV} Den här väljarkåren är större än riksdagsvalets, eftersom även utländska medborgare med tre års folkbokföring får rösta – så ett lägre deltagande här behöver inte betyda att färre personer röstade.`,
+    en: `${SHARED_CAVEAT_EN} This electorate is larger than the general election’s, because foreign citizens registered for three years may also vote – so a lower turnout here does not necessarily mean fewer people voted.`,
   },
   sensitivity: 'none',
-  sources: [{ table: TURNOUT_TABLE, contentCode: 'ME0104C6', note: '1973–2022, election years' }],
-  derivation:
-    'One SCB cell per municipality and election year, from the same table as the general ' +
-    'election. Published in its own right so the gap below can be checked against both halves.',
+  sources: [
+    {
+      table: TURNOUT_TABLE,
+      contentCode: 'ME0104C6',
+      note: { sv: '1973–2022, valår', en: '1973–2022, election years' },
+    },
+  ],
+  derivation: {
+    sv:
+      'En SCB-cell per kommun och valår, ur samma tabell som riksdagsvalet. Publiceras i egen ' +
+      'rätt så att skillnaden nedan kan kontrolleras mot båda halvorna.',
+    en:
+      'One SCB cell per municipality and election year, from the same table as the general ' +
+      'election. Published in its own right so the gap below can be checked against both ' +
+      'halves.',
+  },
 })
 
 export const TURNOUT_GAP: Indicator = Indicator.parse({
@@ -98,7 +122,7 @@ export const TURNOUT_GAP: Indicator = Indicator.parse({
     sv: 'Valdeltagandet i riksdagsvalet minus valdeltagandet i kommunfullmäktigvalet, i procentenheter. Positivt tal betyder att fler röstade till riksdagen.',
     en: 'Turnout in the general election minus turnout in the municipal election, in percentage points. A positive figure means more people voted for the parliament.',
   },
-  unit: 'percent',
+  unit: 'percentage-points',
   priceBasis: 'none',
   scale: { kind: 'diverging', breaks: [] },
   coverage: {
@@ -107,18 +131,32 @@ export const TURNOUT_GAP: Indicator = Indicator.parse({
     years: [...ELECTION_YEARS],
   },
   caveat: {
-    sv: `Skillnaden är i procentenheter, inte procent. Den är nästan alltid positiv — i fyra av 4 288 mätpunkter är den negativ, och alla fyra ligger inom en tiondels procentenhet från noll — och en stor del av den är inte ointresse för kommunen: valen hålls samma dag och på samma ställe, men de röstberättigade är inte samma personer. ${SHARED_CAVEAT_SV}`,
-    en: `The difference is in percentage points, not percent. It is almost always positive — four of 4,288 points are negative, and all four sit within a tenth of a point of zero — and much of it is not indifference to the municipality: the elections are held on the same day in the same place, but the two electorates are not the same people. ${SHARED_CAVEAT_EN}`,
+    sv: `Skillnaden är i procentenheter, inte procent. Den är nästan alltid positiv – i fyra av 4 288 mätpunkter är den negativ, och alla fyra ligger inom en tiondels procentenhet från noll – och en stor del av den är inte ointresse för kommunen: valen hålls samma dag och på samma ställe, men de röstberättigade är inte samma personer. ${SHARED_CAVEAT_SV}`,
+    en: `The difference is in percentage points, not percent. It is almost always positive – four of 4,288 points are negative, and all four sit within a tenth of a point of zero – and much of it is not indifference to the municipality: the elections are held on the same day in the same place, but the two electorates are not the same people. ${SHARED_CAVEAT_EN}`,
   },
   sensitivity: 'none',
   sources: [
-    { table: TURNOUT_TABLE, contentCode: 'ME0104B8', note: 'riksdagsval' },
-    { table: TURNOUT_TABLE, contentCode: 'ME0104C6', note: 'kommunfullmäktigval' },
+    {
+      table: TURNOUT_TABLE,
+      contentCode: 'ME0104B8',
+      note: { sv: 'riksdagsval', en: 'general elections' },
+    },
+    {
+      table: TURNOUT_TABLE,
+      contentCode: 'ME0104C6',
+      note: { sv: 'kommunfullmäktigval', en: 'municipal elections' },
+    },
   ],
-  derivation:
-    'turnout-general-election minus turnout-municipal-election, cell by cell, from this ' +
-    'pantry’s own two published series rather than from a third fetch. Where either side is ' +
-    'absent, so is the gap.',
+  derivation: {
+    sv:
+      'turnout-general-election minus turnout-municipal-election, cell för cell, ur den här ' +
+      'datamängdens egna två publicerade serier i stället för ur en tredje hämtning. Där någon ' +
+      'av sidorna saknas saknas också skillnaden.',
+    en:
+      'turnout-general-election minus turnout-municipal-election, cell by cell, from this ' +
+      'pantry’s own two published series rather than from a third fetch. Where either side is ' +
+      'absent, so is the gap.',
+  },
 })
 
 function turnoutSource(content: string) {
