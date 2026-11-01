@@ -15,3 +15,4 @@ The run itself has never been exercised end to end — it reaches the network, o
 and pushes to `main`, so it is not something to trigger casually. `workflow_dispatch` is there for
 whoever wants to prove it works before waiting a month.
 2026-10-01 — refresh ran; job result: failure; new data: unknown
+2026-11-01 — refresh ran; job result: failure; new data: unknown
