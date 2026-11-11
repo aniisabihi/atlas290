@@ -61,7 +61,7 @@
     "subset-font": "^2.7.0",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2",
-    "vite": "^8.3.0",
+    "vite": "^8.3.3",
     "vitest": "^5.0.0",
     "wait-on": "^9.1.0",
     "wrangler": "^4.131.1"
